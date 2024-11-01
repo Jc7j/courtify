@@ -1,9 +1,9 @@
-import Image from "next/image";
-
 export default function Home() {
   return (
-   <main>
-    <h1>hello world</h1>
-   </main>
+    <div className="">
+      <h1 className="text-primary-600 dark:text-primary-400">
+        sd Heading
+      </h1>
+    </div>
   );
 }

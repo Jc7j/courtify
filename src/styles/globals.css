@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: theme('colors.neutral.50');
+    --foreground: theme('colors.neutral.900');
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: theme('colors.neutral.900');
+      --foreground: theme('colors.neutral.50');
+    }
+  }
+
+  body {
+    @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+
+  html {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
