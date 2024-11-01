@@ -9,9 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@apollo/client": "^3.11.8",
+    "@supabase/supabase-js": "^2.46.1",
+    "eslint-plugin-prettier": "^5.2.1",
+    "graphql": "^16.9.0",
+    "next": "15.0.2",
+    "next-auth": "^4.24.10",
+    "prettier": "^3.3.3",
     "react": "19.0.0-rc-02c0e824-20241028",
-    "react-dom": "19.0.0-rc-02c0e824-20241028",
-    "next": "15.0.2"
+    "react-dom": "19.0.0-rc-02c0e824-20241028"
   },
   "devDependencies": {
     "typescript": "^5",
