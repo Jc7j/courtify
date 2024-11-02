@@ -9,13 +9,16 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path }) => {
       console.error(
-        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}, Operation: ${operation.operationName}`
       );
     });
+    // Optionally report to error tracking service
   }
   if (networkError) {
-    console.error(`[Network error]: ${networkError}`);
+    console.error(`[Network error]: ${networkError.message}`);
+    // Handle offline state or retry logic
   }
+  return forward(operation);
 });
 
 // Auth header link

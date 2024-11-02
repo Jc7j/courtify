@@ -11,7 +11,7 @@
 
 1. **Tech Stack**:
    - **Frontend**: Next.js 15, TypeScript, TailwindCSS for styling.
-   - **State Management**: Apollo Client (GraphQL) and React Context for client-side state.
+   - **State Management**: Apollo Client (GraphQL) and React Context for client-side state. Supabase for server-side state.
    - **Backend and Database**: Supabase with PostgreSQL, using GraphQL as the API layer.
    - **Authentication**: NextAuth.js and Supabase Auth for secure user and admin access.
    - **Payment Processing**: Stripe for handling transactions.
@@ -41,7 +41,7 @@
    - **TypeScript**: Use TypeScript for all files, with strict types for data models, API interactions, and components.
    - **Code Structure**:
      - **Components**: Modularize reusable components, particularly for admin and booking interfaces.
-     - **Context and State Management**: Use React Context for global state and Apollo Client for GraphQL cache management.
+     - **Context and State Management**: Use React Context for global state and Apollo Client for GraphQL cache management. Supabase for server-side state.
      - **Error Handling**: Implement error boundaries and clear messaging for user-facing errors.
    - **File Naming and Structure**:
      - Follow Next.js 15 app router conventions 

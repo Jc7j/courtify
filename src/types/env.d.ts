@@ -18,5 +18,13 @@ declare namespace NodeJS {
     // Optional local overrides
     SUPABASE_LOCAL_URL?: string;
     SUPABASE_LOCAL_ANON_KEY?: string;
+    
+    // NextAuth Configuration
+    NEXTAUTH_URL: string;
+    NEXTAUTH_SECRET: string;
+    
+    // Email Provider
+    EMAIL_SERVER: string;
+    EMAIL_FROM: string;
   }
 } 
