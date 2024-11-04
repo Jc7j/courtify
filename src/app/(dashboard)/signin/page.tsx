@@ -7,7 +7,7 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const { signIn, loading } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     await signIn(email);
   };

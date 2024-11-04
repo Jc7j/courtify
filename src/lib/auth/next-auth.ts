@@ -49,13 +49,19 @@ export const authOptions: NextAuthOptions = {
         .from('admins')
         .select()
         .eq('user_id', user.id)
-        .single();
+        .single()
 
-      return !!adminData;
+      // If no admin record exists, redirect to onboarding
+      if (!adminData) {
+        return '/onboarding'
+      }
+
+      return true
     },
   },
   pages: {
-    signIn: ROUTES.AUTH.SIGNIN,
+    signIn: '/signin',
+    newUser: '/onboarding', // Redirect new users to onboarding
     error: ROUTES.AUTH.ERROR,
     verifyRequest: ROUTES.AUTH.VERIFY,
   },
@@ -65,4 +71,4 @@ export const authOptions: NextAuthOptions = {
     },
   },
   debug: process.env.NODE_ENV === 'development',
-}; 
+};

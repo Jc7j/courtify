@@ -1,32 +1,28 @@
-import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import type { NextRequest } from 'next/server';
-import { ROUTES } from '@/constants/routes';
+import { withAuth } from 'next-auth/middleware'
+import { NextResponse } from 'next/server'
 
-interface AuthToken {
-  isAdmin?: boolean;
-  adminData?: {
-    company_id: string;
-  };
-}
-
-export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-
-  // Protect dashboard routes
-  if (path.startsWith('/dashboard')) {
-    const token = await getToken({ req: request }) as AuthToken | null;
-
-    if (!token) {
-      const signInUrl = new URL(ROUTES.AUTH.SIGNIN, request.url);
-      signInUrl.searchParams.set('callbackUrl', path);
-      return NextResponse.redirect(signInUrl);
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token
+    const isOnboarding = req.nextUrl.pathname.startsWith('/onboarding')
+    
+    // Allow access to onboarding only for non-admin users
+    if (isOnboarding && token?.adminData) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+    
+    // Redirect non-admin users to onboarding
+    if (!isOnboarding && !token?.adminData) {
+      return NextResponse.redirect(new URL('/onboarding', req.url))
+    }
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token
     }
   }
-
-  return NextResponse.next();
-}
+)
 
 export const config = {
-  matcher: ['/dashboard/:path*']
-};
+  matcher: ['/dashboard/:path*', '/onboarding/:path*']
+}
