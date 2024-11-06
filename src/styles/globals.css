@@ -4,26 +4,41 @@
 
 @layer base {
   :root {
-    --background: theme('colors.neutral.50');
-    --foreground: theme('colors.neutral.900');
+    --theme-mode: 'light';
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: theme('colors.neutral.900');
-      --foreground: theme('colors.neutral.50');
-    }
+  :root[data-theme="light"] {
+    /* Apply light theme values */
+    --background-default: theme(colors.neutral.50);
+    --background-subtle: theme(colors.neutral.100);
+    --background-muted: theme(colors.neutral.200);
+    --background-emphasis: theme(colors.white);
+    
+    --foreground-default: theme(colors.neutral.900);
+    --foreground-subtle: theme(colors.neutral.700);
+    --foreground-muted: theme(colors.neutral.500);
+    --foreground-emphasis: theme(colors.neutral.950);
+    
+    --border-default: theme(colors.neutral.200);
+    --border-subtle: theme(colors.neutral.100);
+    --border-emphasis: theme(colors.neutral.300);
   }
 
-  body {
-    @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50;
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
-  }
-
-  html {
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  :root[data-theme="dark"] {
+    /* Apply dark theme values */
+    --background-default: theme(colors.neutral.900);
+    --background-subtle: theme(colors.neutral.800);
+    --background-muted: theme(colors.neutral.700);
+    --background-emphasis: theme(colors.neutral.950);
+    
+    --foreground-default: theme(colors.neutral.50);
+    --foreground-subtle: theme(colors.neutral.200);
+    --foreground-muted: theme(colors.neutral.400);
+    --foreground-emphasis: theme(colors.neutral.100);
+    
+    --border-default: theme(colors.neutral.700);
+    --border-subtle: theme(colors.neutral.800);
+    --border-emphasis: theme(colors.neutral.600);
   }
 }
 
@@ -31,5 +46,19 @@
   * {
     scroll-behavior: smooth;
   }
+
+  .bg-background-default {
+    background-color: var(--background-default);
+  }
+
+  .text-foreground-default {
+    color: var(--foreground-default);
+  }
+}
+
+/* Apply default styles */
+body {
+  background-color: var(--background-default);
+  color: var(--foreground-default);
 }
 

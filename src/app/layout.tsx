@@ -1,45 +1,37 @@
-import type { Metadata } from "next";
-import { SessionProvider } from "next-auth/react";
-import localFont from "next/font/local";
-import { ApolloProvider } from "@/providers/ApolloProvider";
-import { SupabaseProvider } from "@/providers/SupabaseProvider";
+import { Inter } from 'next/font/google'
+import { ThemeProvider } from '@/providers/ThemeProvider'
+import { SupabaseProvider } from '@/providers/SupabaseProvider'
+import { ApolloProvider } from '@/providers/ApolloProvider'
+import { NextAuthProvider } from '@/providers/NextAuthProvider'
+import '@/styles/globals.css'
 
-import "../styles/globals.css";
-import "../styles/modern-normalize.css";
-import { NextAuthProvider } from "@/providers/NextAuthProvider";
+const inter = Inter({ subsets: ['latin'] })
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
-
-export const metadata: Metadata = {
-  title: "Courtify",
-  description: "Court booking made simple",
-};
+export const metadata = {
+  title: 'Courtify',
+  description: 'Court rental booking system',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen`}>
         <NextAuthProvider>
-          <SupabaseProvider>
-            <ApolloProvider pageProps={{}}>
-              {children}
-            </ApolloProvider>
-          </SupabaseProvider>
+          <ThemeProvider>
+            <SupabaseProvider>
+              <ApolloProvider>
+                <main className="flex min-h-screen flex-col bg-background-default">
+                  {children}
+                </main>
+              </ApolloProvider>
+            </SupabaseProvider>
+          </ThemeProvider>
         </NextAuthProvider>
       </body>
     </html>
-  );
+  )
 }

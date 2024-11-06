@@ -45,23 +45,11 @@ export const authOptions: NextAuthOptions = {
       };
     },
     async signIn({ user }) {
-      const { data: adminData } = await supabase
-        .from('admins')
-        .select()
-        .eq('user_id', user.id)
-        .single()
-
-      // If no admin record exists, redirect to onboarding
-      if (!adminData) {
-        return '/onboarding'
-      }
-
-      return true
+      return true; // Allow all sign-ins
     },
   },
   pages: {
     signIn: '/signin',
-    newUser: '/onboarding', // Redirect new users to onboarding
     error: ROUTES.AUTH.ERROR,
     verifyRequest: ROUTES.AUTH.VERIFY,
   },

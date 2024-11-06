@@ -13,6 +13,8 @@ export const colors = {
     900: '#312E81',  // Text on light backgrounds
   },
 
+  white: '#FFFFFF',
+
   // Success States
   success: {
     50: '#ECFDF5',
