@@ -23,10 +23,8 @@ export const ROUTES = {
     FORGOT_PASSWORD: '/auth/forgot-password',
   },
   ADMIN: {
-    DASHBOARD: '/admin',
-    COURTS: '/admin/courts',
-    BOOKINGS: '/admin/bookings',
-    SETTINGS: '/admin/settings',
+    DASHBOARD: '/dashboard',
+    SETTINGS: '/settings',
   },
   USER: {
     PROFILE: '/profile',

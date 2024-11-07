@@ -13,14 +13,12 @@ export function useAuth() {
 
   const signIn = useCallback(async (email: string) => {
     try {
-      // Check if user exists in Supabase first
       const { data: user, error: checkError } = await supabase
         .from('users')
         .select('id')
         .eq('email', email)
         .single()
 
-      // If no user found, throw error to redirect to signup
       if (!user) {
         throw new Error(AUTH_ERRORS.NO_USER_FOUND)
       }
@@ -41,9 +39,8 @@ export function useAuth() {
     }
   }, [router])
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, name: string) => {
     try {
-      // Check if user already exists
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
@@ -54,15 +51,14 @@ export function useAuth() {
         throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
       }
 
-      // Create new user in Supabase
-      const { error: supabaseError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
+      // Create new user
+      const { error: createError } = await supabase
+        .from('users')
+        .insert([{ email, name, active: true }])
 
-      if (supabaseError) throw supabaseError
+      if (createError) throw createError
 
-      // Then sign in with NextAuth
+      // Then sign in
       await signIn(email)
     } catch (error) {
       console.error('Error signing up:', error)
@@ -72,10 +68,7 @@ export function useAuth() {
 
   const signOut = useCallback(async () => {
     try {
-      await Promise.all([
-        nextAuthSignOut({ redirect: false }),
-        supabase.auth.signOut(),
-      ])
+      await nextAuthSignOut({ redirect: false })
       router.push(ROUTES.AUTH.SIGNIN)
     } catch (error) {
       console.error('Error signing out:', error)

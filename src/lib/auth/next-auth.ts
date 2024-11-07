@@ -23,14 +23,14 @@ export const authOptions: NextAuthOptions = {
     async session({ session, user }) {
       if (!session?.user) return session;
 
-      const { data: adminData, error } = await supabase
-        .from('admins')
+      const { data: userData, error: userError } = await supabase
+        .from('users')
         .select('*, companies(*)')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching admin data:', error);
+      if (userError) {
+        console.error('Error fetching user data:', userError);
         return session;
       }
 
@@ -39,23 +39,26 @@ export const authOptions: NextAuthOptions = {
         user: {
           ...session.user,
           ...user,
-          isAdmin: !!adminData,
-          adminData: adminData || null,
+          ...userData,
+          company: userData?.companies || null,
         },
       };
     },
     async signIn({ user }) {
-      return true; // Allow all sign-ins
+      return true;
     },
   },
   pages: {
-    signIn: '/signin',
+    signIn: ROUTES.AUTH.SIGNIN,
     error: ROUTES.AUTH.ERROR,
     verifyRequest: ROUTES.AUTH.VERIFY,
   },
   events: {
     async signIn({ user }) {
-      console.log(`User signed in: ${user.email}`);
+      await supabase
+        .from('users')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', user.id);
     },
   },
   debug: process.env.NODE_ENV === 'development',

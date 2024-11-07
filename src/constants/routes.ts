@@ -3,8 +3,8 @@ export const ROUTES = {
   AUTH: {
     SIGNIN: '/signin',
     SIGNUP: '/signup',
-    VERIFY: '/verify',
     ERROR: '/error',
+    VERIFY: '/verify-request',
   },
   DASHBOARD: '/dashboard',
   UNAUTHORIZED: '/unauthorized',

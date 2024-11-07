@@ -5,6 +5,7 @@ export const API_ENDPOINTS = {
 }
 
 export const AUTH_ROUTES = {
-  SIGNIN: '/admin/signin',
-  DASHBOARD: '/admin/dashboard'
+  SIGNIN: '/signin',
+  SIGNUP: '/signup',
+  DASHBOARD: '/dashboard'
 }

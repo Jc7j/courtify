@@ -4,34 +4,35 @@ export interface Company {
   id: string;
   name: string;
   slug: string;
-  branding?: Maybe<CompanyBranding>;
-  pricing: Record<string, unknown>;
-  cancellationPolicy?: Maybe<string>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CompanyBranding {
-  logo?: Maybe<string>;
-  primaryColor?: Maybe<string>;
-  secondaryColor?: Maybe<string>;
+  branding_logo_url?: Maybe<string>;
+  branding_primary_color?: Maybe<string>;
+  branding_secondary_color?: Maybe<string>;
+  branding_additional?: Maybe<Record<string, unknown>>;
+  cancellation_policy?: Maybe<string>;
+  domain?: Maybe<string>;
+  invite_code: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Court {
-  id: string;
-  companyId: string;
+  company_id: string;
+  court_number: number;
   name: string;
-  defaultNetHeight?: Maybe<number>;
   location?: Maybe<string>;
-  status: CourtStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  available: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export enum CourtStatus {
-  AVAILABLE = 'available',
-  MAINTENANCE = 'maintenance',
-  CLOSED = 'closed',
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  company_id?: Maybe<string>;
+  active: boolean;
+  email_verified_at?: Maybe<string>;
+  last_login_at?: Maybe<string>;
+  created_at: string;
+  updated_at: string;
 }
-
-// Add more types as needed... 
