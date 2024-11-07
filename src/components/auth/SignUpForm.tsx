@@ -24,7 +24,6 @@ export function SignUpForm() {
   });
 
   const onSubmit = async (data: SignUpFormData) => {
-    // We'll implement this later
     console.log(data);
   };
 
@@ -35,7 +34,7 @@ export function SignUpForm() {
         <div className="space-y-1.5">
           <label 
             htmlFor="email" 
-            className="block text-[15px] font-medium text-gray-700"
+            className="block text-[15px] font-medium text-foreground-subtle"
           >
             Work email
           </label>
@@ -44,11 +43,14 @@ export function SignUpForm() {
               {...register('email')}
               type="email"
               id="email"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-[15px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2.5 border border-default rounded-md text-[15px] 
+                bg-background-emphasis text-foreground-default
+                focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500
+                disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p className="mt-1 text-sm text-status-error">{errors.email.message}</p>
             )}
           </div>
         </div>
@@ -57,7 +59,7 @@ export function SignUpForm() {
         <div className="space-y-1.5">
           <label 
             htmlFor="password" 
-            className="block text-[15px] font-medium text-gray-700"
+            className="block text-[15px] font-medium text-foreground-subtle"
           >
             Password
           </label>
@@ -66,11 +68,14 @@ export function SignUpForm() {
               {...register('password')}
               type="password"
               id="password"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-[15px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2.5 border border-default rounded-md text-[15px]
+                bg-background-emphasis text-foreground-default
+                focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500
+                disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             />
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              <p className="mt-1 text-sm text-status-error">{errors.password.message}</p>
             )}
           </div>
         </div>
@@ -79,7 +84,11 @@ export function SignUpForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full px-4 py-2.5 bg-[#2d7ff9] text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-[15px] font-medium"
+          className="w-full px-4 py-2.5 bg-primary-600 text-white rounded-md 
+            hover:bg-primary-700 
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 
+            disabled:opacity-50 disabled:cursor-not-allowed 
+            transition-colors text-[15px] font-medium"
         >
           Continue
         </button>
@@ -88,20 +97,20 @@ export function SignUpForm() {
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
+          <div className="w-full border-t border-default"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">or</span>
+          <span className="px-2 bg-background-emphasis text-foreground-muted">or</span>
         </div>
       </div>
 
       {/* Sign In Link */}
       <div className="text-center text-sm">
-        <span className="text-gray-600">Already have an account? </span>
-        <a href="/signin" className="text-[#2d7ff9] hover:underline font-medium">
+        <span className="text-foreground-muted">Already have an account? </span>
+        <a href="/signin" className="text-primary-600 hover:text-primary-700 font-medium">
           Sign in
         </a>
       </div>
     </div>
   );
-} 
+}

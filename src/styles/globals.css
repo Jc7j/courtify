@@ -3,60 +3,101 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --theme-mode: 'light';
-  }
-
+  :root,
   :root[data-theme="light"] {
-    /* Apply light theme values */
+    /* Background colors */
     --background-default: theme(colors.neutral.50);
     --background-subtle: theme(colors.neutral.100);
     --background-muted: theme(colors.neutral.200);
     --background-emphasis: theme(colors.white);
     
+    /* Foreground colors */
     --foreground-default: theme(colors.neutral.900);
     --foreground-subtle: theme(colors.neutral.700);
     --foreground-muted: theme(colors.neutral.500);
     --foreground-emphasis: theme(colors.neutral.950);
     
+    /* Border colors */
     --border-default: theme(colors.neutral.200);
     --border-subtle: theme(colors.neutral.100);
     --border-emphasis: theme(colors.neutral.300);
+
+    /* Primary brand colors */
+    --primary-50: theme(colors.primary.50);
+    --primary-100: theme(colors.primary.100);
+    --primary-500: theme(colors.primary.500);
+    --primary-600: theme(colors.primary.600);
+    --primary-700: theme(colors.primary.700);
+
+    /* Status colors */
+    --status-success: theme(colors.success.500);
+    --status-warning: theme(colors.warning.500);
+    --status-error: theme(colors.error.500);
+    --status-info: theme(colors.primary.500);
   }
 
   :root[data-theme="dark"] {
-    /* Apply dark theme values */
+    /* Background colors */
     --background-default: theme(colors.neutral.900);
     --background-subtle: theme(colors.neutral.800);
     --background-muted: theme(colors.neutral.700);
     --background-emphasis: theme(colors.neutral.950);
     
+    /* Foreground colors */
     --foreground-default: theme(colors.neutral.50);
     --foreground-subtle: theme(colors.neutral.200);
     --foreground-muted: theme(colors.neutral.400);
     --foreground-emphasis: theme(colors.neutral.100);
     
+    /* Border colors */
     --border-default: theme(colors.neutral.700);
     --border-subtle: theme(colors.neutral.800);
     --border-emphasis: theme(colors.neutral.600);
+
+    /* Primary brand colors remain the same */
+    /* Status colors remain the same */
   }
 }
 
-@layer utilities {
-  * {
-    scroll-behavior: smooth;
-  }
-
+@layer components {
   .bg-background-default {
     background-color: var(--background-default);
+  }
+  .bg-background-subtle {
+    background-color: var(--background-subtle);
+  }
+  .bg-background-muted {
+    background-color: var(--background-muted);
+  }
+  .bg-background-emphasis {
+    background-color: var(--background-emphasis);
   }
 
   .text-foreground-default {
     color: var(--foreground-default);
   }
+  .text-foreground-subtle {
+    color: var(--foreground-subtle);
+  }
+  .text-foreground-muted {
+    color: var(--foreground-muted);
+  }
+  .text-foreground-emphasis {
+    color: var(--foreground-emphasis);
+  }
+
+  .border-default {
+    border-color: var(--border-default);
+  }
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+  .border-emphasis {
+    border-color: var(--border-emphasis);
+  }
 }
 
-/* Apply default styles */
+/* Base styles */
 body {
   background-color: var(--background-default);
   color: var(--foreground-default);

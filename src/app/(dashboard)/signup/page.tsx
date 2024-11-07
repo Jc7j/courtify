@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background-emphasis px-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex justify-center">
@@ -20,7 +20,7 @@ export default function SignUpPage() {
         </div>
         
         {/* Title */}
-        <h1 className="text-[32px] font-semibold text-center text-gray-900">
+        <h1 className="text-[32px] font-semibold text-center text-foreground-emphasis">
           Create your free account
         </h1>
         
