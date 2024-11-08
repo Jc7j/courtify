@@ -46,7 +46,6 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
 
     try {
       const company = await createCompany(data.name)
-      if (!company) throw new Error('Failed to create company')
 
       // Update user's company_id
       const { error: updateError } = await supabase

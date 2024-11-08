@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { SignUpForm } from '@/components/auth/SignUpForm'
-import { CreateCompanyStep } from '@/components/onboarding/JoinOrCreate'
+import { CreateCompanyStep } from '@/components/onboarding/CreateCompanyStep'
 import { Logo } from '@/components/ui/Logo'
 import { Progress } from '@/components/ui/progress'
-import { useUser } from '@/hooks/useUser'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
 
@@ -18,13 +17,12 @@ const STEPS = {
 } as const
 
 export default function SignUpPage() {
-  const { loading: userLoading } = useUser()
   const { step: urlStep } = useOnboarding()
   const [step, setStep] = useState<OnboardingStep>('signup')
 
   // Sync step with URL
   useEffect(() => {
-    if (urlStep === 'join-or-create') {
+    if (urlStep === 'create-intro') {
       setStep('create-intro')
     }
   }, [urlStep])
@@ -41,7 +39,7 @@ export default function SignUpPage() {
   const renderStep = () => {
     switch (step) {
       case 'create-intro':
-        return <CreateCompanyStep onNext={handleCreateIntro} isLoading={userLoading} />
+        return <CreateCompanyStep onNext={handleCreateIntro} />
       case 'create':
         return <CreateCompany onBack={() => setStep('create-intro')} />
       default:

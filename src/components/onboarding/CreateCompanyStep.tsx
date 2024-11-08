@@ -9,10 +9,9 @@ import { ROUTES } from '@/constants/routes'
 
 interface CreateCompanyStepProps {
   onNext: () => void
-  isLoading?: boolean
 }
 
-export function CreateCompanyStep({ onNext, isLoading }: CreateCompanyStepProps) {
+export function CreateCompanyStep({ onNext }: CreateCompanyStepProps) {
   const { user, loading } = useUser()
   const router = useRouter()
 
@@ -46,7 +45,6 @@ export function CreateCompanyStep({ onNext, isLoading }: CreateCompanyStepProps)
         size="lg"
         className="w-full h-auto p-6 flex flex-col items-center space-y-4 bg-background-emphasis hover:bg-background-subtle"
         onClick={onNext}
-        disabled={isLoading}
       >
         <Building2 className="h-8 w-8 text-foreground-subtle" />
         <div className="space-y-1.5 text-center">

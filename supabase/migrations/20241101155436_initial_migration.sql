@@ -8,7 +8,6 @@ CREATE TABLE companies (
     slug TEXT UNIQUE NOT NULL,
     branding_logo_url TEXT,
     branding_primary_color TEXT,
-    branding_additional JSONB DEFAULT '{}',
     cancellation_policy TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -78,9 +77,9 @@ CREATE POLICY users_insert_public ON users
     WITH CHECK (true);  -- Allows public insertion for signup
 
 -- Allow authenticated users to insert companies
-CREATE POLICY companies_insert ON companies
+CREATE POLICY "companies_insert_policy" ON companies
     FOR INSERT TO authenticated
-    WITH CHECK (true); 
+    WITH CHECK (true);  -- Allow any authenticated user to insert
 
 -- Courts are readable by users who belong to the company
 CREATE POLICY courts_select ON courts

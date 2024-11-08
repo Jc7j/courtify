@@ -6,8 +6,6 @@ export interface Company {
   slug: string
   branding_logo_url?: Maybe<string>
   branding_primary_color?: Maybe<string>
-  branding_secondary_color?: Maybe<string>
-  branding_additional?: Maybe<Record<string, unknown>>
   cancellation_policy?: Maybe<string>
   created_at: string
   updated_at: string

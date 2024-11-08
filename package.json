@@ -10,6 +10,7 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
+    "supabase:types": "bunx supabase gen types --lang=typescript --local > src/types/supabase.ts",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
     "generate": "graphql-codegen --config codegen.ts"

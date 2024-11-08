@@ -422,7 +422,6 @@ export type UuidListFilter = {
 
 export type Companies = Node & {
   __typename?: 'companies';
-  branding_additional?: Maybe<Scalars['JSON']['output']>;
   branding_logo_url?: Maybe<Scalars['String']['output']>;
   branding_primary_color?: Maybe<Scalars['String']['output']>;
   cancellation_policy?: Maybe<Scalars['String']['output']>;
@@ -498,7 +497,6 @@ export type CompaniesFilter = {
 };
 
 export type CompaniesInsertInput = {
-  branding_additional?: InputMaybe<Scalars['JSON']['input']>;
   branding_logo_url?: InputMaybe<Scalars['String']['input']>;
   branding_primary_color?: InputMaybe<Scalars['String']['input']>;
   cancellation_policy?: InputMaybe<Scalars['String']['input']>;
@@ -529,7 +527,6 @@ export type CompaniesOrderBy = {
 };
 
 export type CompaniesUpdateInput = {
-  branding_additional?: InputMaybe<Scalars['JSON']['input']>;
   branding_logo_url?: InputMaybe<Scalars['String']['input']>;
   branding_primary_color?: InputMaybe<Scalars['String']['input']>;
   cancellation_policy?: InputMaybe<Scalars['String']['input']>;

@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client'
+import type { Companies } from '@/gql/graphql'
 
 // Company Fragments for reuse
 const COMPANY_FIELDS = gql`
@@ -6,15 +7,17 @@ const COMPANY_FIELDS = gql`
     id
     name
     slug
-    branding_logo_url
-    branding_primary_color
-    branding_secondary_color
-    branding_additional
-    cancellation_policy
-    created_at
-    updated_at
   }
 `
+
+export type CreateCompanyResponse = {
+  insert_companies_one: Companies
+}
+
+export type CreateCompanyInput = {
+  name: string
+  slug: string
+}
 
 // Mutations
 export const CREATE_COMPANY = gql`
