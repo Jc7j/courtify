@@ -1,6 +1,6 @@
 import type { Config } from 'tailwindcss'
 import animate from 'tailwindcss-animate'
-import { colors, spacing, typography, elevation, motion, semantic } from './src/styles/theme'
+import { colors, spacing, typography, elevation, motion } from './src/styles/theme'
 
 const config: Config = {
   darkMode: ['class'],
@@ -13,22 +13,14 @@ const config: Config = {
     extend: {
       colors,
       spacing,
-      semantic,
       fontFamily: {
         sans: ['var(--font-geist-sans)'],
         mono: ['var(--font-geist-mono)'],
       },
-      fontSize: {
-        xs: 'typography.sizes.xs',
-        sm: 'typography.sizes.sm',
-        base: 'typography.sizes.base',
-        lg: 'typography.sizes.lg',
-        xl: 'typography.sizes.xl',
-        '2xl': 'typography.sizes["2xl"]',
-        '3xl': 'typography.sizes["3xl"]',
-        '4xl': 'typography.sizes["4xl"]',
-      },
+      fontSize: typography.sizes,
       fontWeight: typography.weights,
+      lineHeight: typography.lineHeights,
+      letterSpacing: typography.tracking,
       boxShadow: elevation,
       zIndex: {
         behind: '-1',
@@ -40,20 +32,15 @@ const config: Config = {
       },
       transitionDuration: {
         fast: '150ms',
-        base: '250ms',
-        slow: '350ms',
+        base: '200ms',
+        slow: '300ms',
+        slower: '500ms',
       },
-      transitionTimingFunction: {
-        'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
-      },
+      transitionTimingFunction: motion.easings,
       keyframes: {
         'fade-in': {
-          '0%': {
-            opacity: '0',
-          },
-          '100%': {
-            opacity: '1',
-          },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
         'slide-up': {
           '0%': {

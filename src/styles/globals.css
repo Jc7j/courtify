@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+
   :root,
   :root[data-theme="light"] {
     /* Background colors */
@@ -22,7 +26,7 @@
     --border-subtle: theme(colors.neutral.100);
     --border-emphasis: theme(colors.neutral.300);
 
-    /* Primary brand colors */
+    /* Primary colors */
     --primary-50: theme(colors.primary.50);
     --primary-100: theme(colors.primary.100);
     --primary-500: theme(colors.primary.500);
@@ -53,56 +57,27 @@
     --border-default: theme(colors.neutral.700);
     --border-subtle: theme(colors.neutral.800);
     --border-emphasis: theme(colors.neutral.600);
-
-    /* Primary brand colors remain the same */
-    /* Status colors remain the same */
-  }
-  :root {
-    --radius: 0.5rem;
   }
 }
 
-@layer components {
-  .bg-background-default {
-    background-color: var(--background-default);
-  }
-  .bg-background-subtle {
-    background-color: var(--background-subtle);
-  }
-  .bg-background-muted {
-    background-color: var(--background-muted);
-  }
-  .bg-background-emphasis {
-    background-color: var(--background-emphasis);
-  }
+@layer utilities {
+  .bg-background-default { @apply bg-neutral-50 dark:bg-neutral-900; }
+  .bg-background-subtle { @apply bg-neutral-100 dark:bg-neutral-800; }
+  .bg-background-muted { @apply bg-neutral-200 dark:bg-neutral-700; }
+  .bg-background-emphasis { @apply bg-white dark:bg-neutral-950; }
 
-  .text-foreground-default {
-    color: var(--foreground-default);
-  }
-  .text-foreground-subtle {
-    color: var(--foreground-subtle);
-  }
-  .text-foreground-muted {
-    color: var(--foreground-muted);
-  }
-  .text-foreground-emphasis {
-    color: var(--foreground-emphasis);
-  }
+  .text-foreground-default { @apply text-neutral-900 dark:text-neutral-50; }
+  .text-foreground-subtle { @apply text-neutral-700 dark:text-neutral-200; }
+  .text-foreground-muted { @apply text-neutral-500 dark:text-neutral-400; }
+  .text-foreground-emphasis { @apply text-neutral-950 dark:text-neutral-100; }
 
-  .border-default {
-    border-color: var(--border-default);
-  }
-  .border-subtle {
-    border-color: var(--border-subtle);
-  }
-  .border-emphasis {
-    border-color: var(--border-emphasis);
-  }
+  .border-default { @apply border-neutral-200 dark:border-neutral-700; }
+  .border-subtle { @apply border-neutral-100 dark:border-neutral-800; }
+  .border-emphasis { @apply border-neutral-300 dark:border-neutral-600; }
 }
 
 /* Base styles */
 body {
-  background-color: var(--background-default);
-  color: var(--foreground-default);
+  @apply bg-background-default text-foreground-default;
 }
 
