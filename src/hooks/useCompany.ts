@@ -1,5 +1,5 @@
 import { useMutation, ApolloError } from '@apollo/client'
-import { CREATE_COMPANY } from '@/graphql/mutations/company'
+import { CREATE_COMPANY } from '@/gql/mutations/company'
 import { Company } from '@/types/graphql'
 import { generateSlug } from '@/lib/utils/string'
 

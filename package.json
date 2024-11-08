@@ -11,7 +11,8 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "db:reset": "supabase db reset",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "generate": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.11.8",
@@ -38,7 +39,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "^5.0.3",
+    "@graphql-codegen/cli": "5.0.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -48,6 +49,7 @@
     "postcss": "^8",
     "supabase": "^1.145.4",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@graphql-codegen/client-preset": "4.5.0"
   }
 }
