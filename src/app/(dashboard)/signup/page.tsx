@@ -19,7 +19,7 @@ const STEPS = {
 } as const
 
 export default function SignUpPage() {
-  const { loading } = useUser()
+  const { loading: userLoading } = useUser()
   const { step: urlStep } = useOnboarding()
   const [step, setStep] = useState<OnboardingStep>('signup')
 
@@ -38,24 +38,13 @@ export default function SignUpPage() {
     setStep(type)
   }
 
-  const handleCreateCompany = async (data: { name: string; inviteCode: string }) => {
-    // We'll implement the actual company creation later
-    console.log('Creating company:', data)
-  }
-
   // Show appropriate step
   const renderStep = () => {
     switch (step) {
       case 'join-or-create':
-        return <JoinOrCreate onSelect={handleJoinOrCreate} isLoading={loading} />
+        return <JoinOrCreate onSelect={handleJoinOrCreate} isLoading={userLoading} />
       case 'create':
-        return (
-          <CreateCompany
-            onSubmit={handleCreateCompany}
-            isLoading={loading}
-            onBack={() => setStep('join-or-create')}
-          />
-        )
+        return <CreateCompany onBack={() => setStep('join-or-create')} />
       default:
         return <SignUpForm onSuccess={handleSignupSuccess} />
     }

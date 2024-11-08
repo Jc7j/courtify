@@ -3,14 +3,16 @@
 import { ApolloProvider as BaseApolloProvider } from '@apollo/client'
 import { useMemo } from 'react'
 import { apolloClient, createApolloClient } from '@/lib/apollo/client'
+import type { NormalizedCacheObject } from '@apollo/client'
 
-export function ApolloProvider({
-  children,
-  pageProps,
-}: {
+interface Props {
   children: React.ReactNode
-  pageProps?: any
-}) {
+  pageProps?: {
+    initialApolloState?: NormalizedCacheObject
+  }
+}
+
+export function ApolloProvider({ children, pageProps }: Props) {
   const client = useMemo(() => {
     if (pageProps?.initialApolloState) {
       const client = createApolloClient()

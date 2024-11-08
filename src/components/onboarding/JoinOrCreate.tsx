@@ -2,6 +2,10 @@
 
 import { Button } from '@/components/ui/Button'
 import { Building2, Users } from 'lucide-react'
+import { useUser } from '@/hooks/useUser'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { ROUTES } from '@/constants/routes'
 
 interface JoinOrCreateProps {
   onSelect: (type: 'join' | 'create') => void
@@ -9,6 +13,23 @@ interface JoinOrCreateProps {
 }
 
 export function JoinOrCreate({ onSelect, isLoading }: JoinOrCreateProps) {
+  const { user, loading } = useUser()
+  const router = useRouter()
+
+  // Check if user already has a company
+  useEffect(() => {
+    if (loading) return
+
+    if (user?.company_id) {
+      router.push(ROUTES.DASHBOARD)
+    }
+  }, [user?.company_id, loading, router])
+
+  // Show loading state while checking
+  if (loading) {
+    return null // Or a loading spinner if preferred
+  }
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">

@@ -14,14 +14,21 @@ export function useOnboarding() {
   useEffect(() => {
     if (loading) return
 
+    // If user is not authenticated and trying to access onboarding steps
+    if (!user && step === 'join-or-create') {
+      router.push(ROUTES.AUTH.SIGNUP)
+      return
+    }
+
     // If user has no company_id and we're not already on signup page
     if (user && !user.company_id && !window.location.pathname.includes(ROUTES.AUTH.SIGNUP)) {
       router.push(`${ROUTES.AUTH.SIGNUP}?step=join-or-create`)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, step])
 
   return {
     isOnboarding: !user?.company_id,
     step: step || 'signup',
+    loading,
   }
 }

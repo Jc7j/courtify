@@ -6,12 +6,9 @@ CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
-    invite_code TEXT UNIQUE NOT NULL,
     branding_logo_url TEXT,
     branding_primary_color TEXT,
-    branding_secondary_color TEXT,
     branding_additional JSONB DEFAULT '{}',
-    domain TEXT,
     cancellation_policy TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -79,6 +76,11 @@ CREATE POLICY users_update_own ON users
 CREATE POLICY users_insert_public ON users
     FOR INSERT
     WITH CHECK (true);  -- Allows public insertion for signup
+
+-- Allow authenticated users to insert companies
+CREATE POLICY companies_insert ON companies
+    FOR INSERT TO authenticated
+    WITH CHECK (true); 
 
 -- Courts are readable by users who belong to the company
 CREATE POLICY courts_select ON courts
