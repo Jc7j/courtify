@@ -57,6 +57,9 @@
     /* Primary brand colors remain the same */
     /* Status colors remain the same */
   }
+  :root {
+    --radius: 0.5rem;
+  }
 }
 
 @layer components {
