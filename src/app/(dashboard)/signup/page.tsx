@@ -4,10 +4,19 @@ import { useState, useEffect } from 'react'
 import { SignUpForm } from '@/components/auth/SignUpForm'
 import { JoinOrCreate } from '@/components/onboarding/JoinOrCreate'
 import { Logo } from '@/components/ui/Logo'
+import { Progress } from '@/components/ui/progress'
 import { useUser } from '@/hooks/useUser'
 import { useOnboarding } from '@/hooks/useOnboarding'
+import { CreateCompany } from '@/components/onboarding/CreateCompany'
 
 type OnboardingStep = 'signup' | 'join-or-create' | 'join' | 'create'
+
+const STEPS = {
+  signup: { number: 1, progress: 33 },
+  'join-or-create': { number: 2, progress: 66 },
+  join: { number: 3, progress: 100 },
+  create: { number: 3, progress: 100 },
+} as const
 
 export default function SignUpPage() {
   const { loading } = useUser()
@@ -29,11 +38,24 @@ export default function SignUpPage() {
     setStep(type)
   }
 
+  const handleCreateCompany = async (data: { name: string; inviteCode: string }) => {
+    // We'll implement the actual company creation later
+    console.log('Creating company:', data)
+  }
+
   // Show appropriate step
   const renderStep = () => {
     switch (step) {
       case 'join-or-create':
         return <JoinOrCreate onSelect={handleJoinOrCreate} isLoading={loading} />
+      case 'create':
+        return (
+          <CreateCompany
+            onSubmit={handleCreateCompany}
+            isLoading={loading}
+            onBack={() => setStep('join-or-create')}
+          />
+        )
       default:
         return <SignUpForm onSuccess={handleSignupSuccess} />
     }
@@ -70,9 +92,16 @@ export default function SignUpPage() {
           <div className="mb-12">
             <Logo size="lg" href="/" clickable />
           </div>
-
           {/* Dynamic content based on step */}
           {renderStep()}
+        </div>
+
+        <div className="mb-8 space-y-2 px-8">
+          <Progress value={STEPS[step].progress} className="h-1" />
+          <div className="flex justify-between text-sm text-foreground-muted">
+            <span>Step {STEPS[step].number} of 3</span>
+            <span>{STEPS[step].progress}% completed</span>
+          </div>
         </div>
 
         {/* Footer */}
