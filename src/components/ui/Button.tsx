@@ -4,6 +4,7 @@ import React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import cn from '@/lib/utils/cn'
 import { Loader2 } from 'lucide-react'
+import { useUser } from '@/hooks/useUser'
 
 const buttonVariants = cva(
   // Base styles
@@ -99,6 +100,8 @@ function Button({
     children,
     ...props 
   }: ButtonProps, ref: React.Ref<HTMLButtonElement>) {
+    const { user } = useUser();
+    console.log(user);
     return (
       <button
         className={cn(

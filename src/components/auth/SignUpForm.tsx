@@ -7,32 +7,50 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Divider } from '@/components/ui/Divider';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z
+    .string()
+    .min(6, 'Password must be at least 6 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
 });
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
 export function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const { signUp } = useAuth();
   
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      name: '',
+    }
   });
 
-  const onSubmit = async (data: SignUpFormData) => {
+  async function onSubmit(data: SignUpFormData) {
     setIsLoading(true);
     try {
-      console.log(data);
-      // Handle submission
+      await signUp(data.email, data.password, data.name);
+      toast.success('Account created successfully!');
     } catch (error) {
-      console.error(error);
+      const message = error instanceof Error ? error.message : 'Something went wrong';
+      
+      if (message.includes('email')) {
+        setError('email', { message });
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -41,15 +59,30 @@ export function SignUpForm() {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Name Field */}
+        <Input
+          {...register('name')}
+          type="text"
+          id="name"
+          label="Full name"
+          placeholder="John Doe"
+          error={errors.name?.message}
+          disabled={isLoading}
+          size="md"
+          autoComplete="name"
+        />
+
         {/* Work Email Field */}
         <Input
           {...register('email')}
           type="email"
           id="email"
           label="Work email"
+          placeholder="john@company.com"
           error={errors.email?.message}
           disabled={isLoading}
           size="md"
+          autoComplete="email"
         />
 
         {/* Password Field */}
@@ -62,10 +95,11 @@ export function SignUpForm() {
             error={errors.password?.message}
             disabled={isLoading}
             size="md"
+            autoComplete="new-password"
           />
           
-          <ul className="text-sm text-foreground-muted list-disc pl-5 space-y-1">
-            <li>At least 8 characters long</li>
+          <ul className="text-sm text-foreground-muted list-disc pl-5">
+            <li>At least 6 characters long</li>
           </ul>
         </div>
 
@@ -76,11 +110,10 @@ export function SignUpForm() {
           fullWidth
           size="md"
         >
-          Continue
+          Create account
         </Button>
       </form>
 
-      {/* Divider */}
       <Divider 
         label="or" 
         labelPosition="center"

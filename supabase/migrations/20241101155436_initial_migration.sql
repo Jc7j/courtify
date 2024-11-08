@@ -75,6 +75,11 @@ CREATE POLICY users_update_own ON users
     FOR UPDATE TO authenticated
     USING (auth.uid() = id);
 
+-- Add this new policy for user insertion
+CREATE POLICY users_insert_public ON users
+    FOR INSERT
+    WITH CHECK (true);  -- Allows public insertion for signup
+
 -- Courts are readable by users who belong to the company
 CREATE POLICY courts_select ON courts
     FOR SELECT TO authenticated

@@ -11,20 +11,11 @@ export function useAuth() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  const signIn = useCallback(async (email: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const { data: user, error: checkError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single()
-
-      if (!user) {
-        throw new Error(AUTH_ERRORS.NO_USER_FOUND)
-      }
-
-      const result = await nextAuthSignIn('email', {
+      const result = await nextAuthSignIn('credentials', {
         email,
+        password,
         redirect: false,
       })
 
@@ -32,15 +23,16 @@ export function useAuth() {
         throw new Error(result.error)
       }
 
-      router.push(ROUTES.AUTH.VERIFY)
+      router.push(ROUTES.DASHBOARD)
     } catch (error) {
       console.error('Error signing in:', error)
       throw new Error(getAuthErrorMessage(error))
     }
   }, [router])
 
-  const signUp = useCallback(async (email: string, name: string) => {
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
     try {
+      // First, check if email exists in our database
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
@@ -51,24 +43,49 @@ export function useAuth() {
         throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
       }
 
-      // Create new user
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+          },
+        },
+      })
+
+      if (authError) throw authError
+
+      // Create user record in our database
       const { error: createError } = await supabase
         .from('users')
-        .insert([{ email, name, active: true }])
+        .insert([{ 
+          id: authData.user?.id,
+          email, 
+          name, 
+          active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }])
 
       if (createError) throw createError
 
-      // Then sign in
-      await signIn(email)
+      // Sign in immediately after signup
+      await signIn(email, password)
+
     } catch (error) {
       console.error('Error signing up:', error)
       throw new Error(getAuthErrorMessage(error))
     }
-  }, [signIn])
+  }, [router, signIn])
 
   const signOut = useCallback(async () => {
     try {
-      await nextAuthSignOut({ redirect: false })
+      await Promise.all([
+        supabase.auth.signOut(),
+        nextAuthSignOut({ redirect: false })
+      ])
+      
       router.push(ROUTES.AUTH.SIGNIN)
     } catch (error) {
       console.error('Error signing out:', error)

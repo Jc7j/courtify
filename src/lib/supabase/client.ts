@@ -11,6 +11,13 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+{/*
+  Uses the public anon key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  Meant for client-side operations
+  Has restricted permissions based on Row Level Security (RLS) policies
+  Safe to use in browser code
+  Used in components and hooks like useUser.ts
+*/}
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -22,6 +29,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+{/* 
+  Uses the service role key (SUPABASE_SERVICE_ROLE_KEY)
+  Strictly for server-side operations
+  Bypasses Row Level Security
+  Has full database access
+  Perfect for background jobs, webhooks, or API routes
+  Never exposed to the client
+*/}
 // Admin client with elevated privileges (only use server-side)
 export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
   ? createClient<Database>(
