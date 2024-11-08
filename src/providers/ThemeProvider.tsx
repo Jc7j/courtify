@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Initial check
     updateSystemTheme(mediaQuery)
-    
+
     // Listen for changes
     mediaQuery.addEventListener('change', updateSystemTheme)
     return () => mediaQuery.removeEventListener('change', updateSystemTheme)
@@ -57,4 +57,4 @@ export function useTheme() {
     throw new Error('useTheme must be used within a ThemeProvider')
   }
   return context
-} 
+}

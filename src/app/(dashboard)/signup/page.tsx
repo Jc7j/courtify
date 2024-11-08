@@ -1,43 +1,43 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { SignUpForm } from '@/components/auth/SignUpForm';
-import { JoinOrCreate } from '@/components/onboarding/JoinOrCreate';
-import { Logo } from '@/components/ui/Logo';
-import { useUser } from '@/hooks/useUser';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { useState, useEffect } from 'react'
+import { SignUpForm } from '@/components/auth/SignUpForm'
+import { JoinOrCreate } from '@/components/onboarding/JoinOrCreate'
+import { Logo } from '@/components/ui/Logo'
+import { useUser } from '@/hooks/useUser'
+import { useOnboarding } from '@/hooks/useOnboarding'
 
-type OnboardingStep = 'signup' | 'join-or-create' | 'join' | 'create';
+type OnboardingStep = 'signup' | 'join-or-create' | 'join' | 'create'
 
 export default function SignUpPage() {
-  const { user, loading } = useUser();
-  const { step: urlStep } = useOnboarding();
-  const [step, setStep] = useState<OnboardingStep>('signup');
+  const { loading } = useUser()
+  const { step: urlStep } = useOnboarding()
+  const [step, setStep] = useState<OnboardingStep>('signup')
 
   // Sync step with URL
   useEffect(() => {
     if (urlStep === 'join-or-create') {
-      setStep('join-or-create');
+      setStep('join-or-create')
     }
-  }, [urlStep]);
+  }, [urlStep])
 
   const handleSignupSuccess = () => {
-    setStep('join-or-create');
-  };
+    setStep('join-or-create')
+  }
 
   const handleJoinOrCreate = (type: 'join' | 'create') => {
-    setStep(type);
-  };
+    setStep(type)
+  }
 
   // Show appropriate step
   const renderStep = () => {
     switch (step) {
       case 'join-or-create':
-        return <JoinOrCreate onSelect={handleJoinOrCreate} isLoading={loading} />;
+        return <JoinOrCreate onSelect={handleJoinOrCreate} isLoading={loading} />
       default:
-        return <SignUpForm onSuccess={handleSignupSuccess} />;
+        return <SignUpForm onSuccess={handleSignupSuccess} />
     }
-  };
+  }
 
   // Conditional layout based on step
   if (step === 'signup') {
@@ -53,11 +53,11 @@ export default function SignUpPage() {
           <h1 className="text-3xl font-semibold text-center text-foreground-emphasis">
             Create your free account
           </h1>
-          
+
           <SignUpForm onSuccess={handleSignupSuccess} />
         </div>
       </div>
-    );
+    )
   }
 
   // Split screen layout for other steps
@@ -88,12 +88,12 @@ export default function SignUpPage() {
             Welcome to Courtify
           </h2>
           <p className="text-foreground-subtle text-center text-base leading-relaxed">
-            Streamline your court management with our comprehensive booking system. 
-            Whether you're joining an existing workspace or creating a new one, 
-            we're here to help you get started.
+            Streamline your court management with our comprehensive booking system. Whether
+            you&apos;re joining an existing workspace or creating a new one, we&apos;re here to help
+            you get started.
           </p>
         </div>
       </div>
     </div>
-  );
+  )
 }

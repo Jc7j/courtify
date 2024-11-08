@@ -38,7 +38,7 @@ export interface DividerProps
   labelPosition?: 'left' | 'center' | 'right'
 }
 
-export function Divider({ 
+export function Divider({
   className,
   variant,
   withLabel,
@@ -58,19 +58,18 @@ export function Divider({
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div
-            className={cn(
-              dividerVariants({ variant, withLabel: true, orientation }),
-              className
-            )}
+            className={cn(dividerVariants({ variant, withLabel, orientation }), className)}
             {...props}
           />
         </div>
-        <div className={cn("relative flex", labelAlignClass)}>
-          <span className={cn(
-            "px-2 text-sm text-foreground-muted bg-background-emphasis",
-            labelPosition === 'left' && "pl-0",
-            labelPosition === 'right' && "pr-0"
-          )}>
+        <div className={cn('relative flex', labelAlignClass)}>
+          <span
+            className={cn(
+              'px-2 text-sm text-foreground-muted bg-background-emphasis',
+              labelPosition === 'left' && 'pl-0',
+              labelPosition === 'right' && 'pr-0'
+            )}
+          >
             {label}
           </span>
         </div>
@@ -80,11 +79,8 @@ export function Divider({
 
   return (
     <div
-      className={cn(
-        dividerVariants({ variant, withLabel: false, orientation }),
-        className
-      )}
+      className={cn(dividerVariants({ variant, withLabel: false, orientation }), className)}
       {...props}
     />
   )
-} 
+}

@@ -12,10 +12,10 @@ export function JoinOrCreate({ onSelect, isLoading }: JoinOrCreateProps) {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground-emphasis text-center">
-          Welcome! Let's get started
+        <h1 className="text-2xl font-semibold text-foreground-emphasis">
+          Welcome! Let&apos;s get started
         </h1>
-        <p className="text-base text-foreground-muted text-center leading-relaxed">
+        <p className="text-base text-foreground-muted leading-relaxed">
           Are you joining an existing company or creating a new one?
         </p>
       </div>
@@ -30,11 +30,9 @@ export function JoinOrCreate({ onSelect, isLoading }: JoinOrCreateProps) {
         >
           <Users className="h-8 w-8 text-foreground-subtle" />
           <div className="space-y-1.5 text-center">
-            <h3 className="text-base font-medium text-foreground-emphasis">
-              Join a company
-            </h3>
+            <h3 className="text-base font-medium text-foreground-emphasis">Join a company</h3>
             <p className="text-sm text-foreground-muted leading-relaxed">
-              Join your team's existing workspace
+              Join your team&apos;s existing workspace
             </p>
           </div>
         </Button>
@@ -48,9 +46,7 @@ export function JoinOrCreate({ onSelect, isLoading }: JoinOrCreateProps) {
         >
           <Building2 className="h-8 w-8 text-foreground-subtle" />
           <div className="space-y-1.5 text-center">
-            <h3 className="text-base font-medium text-foreground-emphasis">
-              Create a company
-            </h3>
+            <h3 className="text-base font-medium text-foreground-emphasis">Create a company</h3>
             <p className="text-sm text-foreground-muted leading-relaxed">
               Set up a new workspace for your team
             </p>
@@ -59,4 +55,4 @@ export function JoinOrCreate({ onSelect, isLoading }: JoinOrCreateProps) {
       </div>
     </div>
   )
-} 
+}

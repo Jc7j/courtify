@@ -11,20 +11,20 @@ const logoVariants = cva(
   {
     variants: {
       size: {
-        sm: 'h-6',    // 24px
-        md: 'h-8',    // 32px
-        lg: 'h-10',   // 40px
-        xl: 'h-12',   // 48px
+        sm: 'h-6', // 24px
+        md: 'h-8', // 32px
+        lg: 'h-10', // 40px
+        xl: 'h-12', // 48px
       },
       clickable: {
         true: 'cursor-pointer hover:opacity-80 transition-opacity duration-200',
         false: '',
-      }
+      },
     },
     defaultVariants: {
       size: 'md',
       clickable: false,
-    }
+    },
   }
 )
 
@@ -36,10 +36,10 @@ interface LogoProps extends VariantProps<typeof logoVariants> {
 export function Logo({ size, clickable, className, href }: LogoProps) {
   const logoContent = (
     <div className={cn(logoVariants({ size, clickable }), className)}>
-      <Image 
-        src="/logo.svg" 
-        alt="Courtify" 
-        width={120} 
+      <Image
+        src="/logo.svg"
+        alt="Courtify"
+        width={120}
         height={40}
         className="h-full w-auto"
         priority
@@ -48,17 +48,14 @@ export function Logo({ size, clickable, className, href }: LogoProps) {
   )
 
   if (href) {
-    return (
-      <Link href={href}>
-        {logoContent}
-      </Link>
-    )
+    return <Link href={href}>{logoContent}</Link>
   }
 
   return logoContent
-} 
+}
 
-{/*
+{
+  /*
 // Basic usage
 <Logo />
 
@@ -78,4 +75,5 @@ export function Logo({ size, clickable, className, href }: LogoProps) {
   href="/home"
   className="custom-class"
 />
-*/}
+*/
+}

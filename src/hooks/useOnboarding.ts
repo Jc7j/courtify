@@ -24,4 +24,4 @@ export function useOnboarding() {
     isOnboarding: !user?.company_id,
     step: step || 'signup',
   }
-} 
+}

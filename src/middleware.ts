@@ -18,11 +18,11 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token
-    }
+      authorized: ({ token }) => !!token,
+    },
   }
 )
 
 export const config = {
-  matcher: ['/dashboard/:path*']
+  matcher: ['/dashboard/:path*'],
 }

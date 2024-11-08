@@ -13,27 +13,27 @@ export const lightTheme = {
     'color-primary-700': colors.primary[700],
     'color-primary-800': colors.primary[800],
     'color-primary-900': colors.primary[900],
-    
+
     // Semantic colors - Light theme
     'background-default': colors.neutral[50],
     'background-subtle': colors.neutral[100],
     'background-muted': colors.neutral[200],
     'background-emphasis': colors.white,
-    
+
     'foreground-default': colors.neutral[900],
     'foreground-subtle': colors.neutral[700],
     'foreground-muted': colors.neutral[500],
     'foreground-emphasis': colors.white,
-    
+
     'border-default': colors.neutral[200],
     'border-subtle': colors.neutral[100],
     'border-emphasis': colors.neutral[300],
-    
+
     'status-success': colors.success[500],
     'status-warning': colors.warning[500],
     'status-error': colors.error[500],
     'status-info': colors.primary[500],
-  }
+  },
 }
 
 export const darkTheme = {
@@ -49,25 +49,25 @@ export const darkTheme = {
     'color-primary-700': colors.primary[700],
     'color-primary-800': colors.primary[800],
     'color-primary-900': colors.primary[900],
-    
+
     // Semantic colors - Dark theme
     'background-default': colors.neutral[900],
     'background-subtle': colors.neutral[800],
     'background-muted': colors.neutral[700],
     'background-emphasis': colors.white,
-    
+
     'foreground-default': colors.neutral[50],
     'foreground-subtle': colors.neutral[200],
     'foreground-muted': colors.neutral[400],
     'foreground-emphasis': colors.neutral[100],
-    
+
     'border-default': colors.neutral[700],
     'border-subtle': colors.neutral[800],
     'border-emphasis': colors.neutral[600],
-    
+
     'status-success': colors.success[500],
     'status-warning': colors.warning[500],
     'status-error': colors.error[500],
     'status-info': colors.primary[500],
-  }
-} 
+  },
+}

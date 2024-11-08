@@ -1,24 +1,21 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const { signIn, loading } = useAuth();
+  const [email, setEmail] = useState('')
+  const { loading } = useAuth()
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    await signIn(email);
-  };
+    e.preventDefault()
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 p-8">
         <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Sign In
-          </h2>
+          <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign In</h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
@@ -48,5 +45,5 @@ export default function SignIn() {
         </form>
       </div>
     </div>
-  );
-} 
+  )
+}

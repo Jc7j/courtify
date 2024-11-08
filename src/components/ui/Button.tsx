@@ -4,7 +4,6 @@ import React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import cn from '@/lib/utils/cn'
 import { Loader2 } from 'lucide-react'
-import { useUser } from '@/hooks/useUser'
 
 const buttonVariants = cva(
   // Base styles
@@ -24,12 +23,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: [
-          'bg-primary-600',
-          'text-white',
-          'hover:bg-primary-700',
-          'focus:ring-primary-500',
-        ],
+        primary: ['bg-primary-600', 'text-white', 'hover:bg-primary-700', 'focus:ring-primary-500'],
         secondary: [
           'bg-primary-100',
           'text-primary-700',
@@ -50,12 +44,7 @@ const buttonVariants = cva(
           'hover:text-foreground-default',
           'focus:ring-primary-500',
         ],
-        danger: [
-          'bg-error-600',
-          'text-white',
-          'hover:bg-error-700',
-          'focus:ring-error-500',
-        ],
+        danger: ['bg-error-600', 'text-white', 'hover:bg-error-700', 'focus:ring-error-500'],
       },
       size: {
         xs: 'h-7 px-2.5 text-xs rounded-md gap-1.5',
@@ -88,50 +77,50 @@ export interface ButtonProps
   rightIcon?: React.ReactNode
 }
 
-function Button({ 
-  className, 
-    variant, 
-    size, 
+function Button(
+  {
+    className,
+    variant,
+    size,
     fullWidth,
     loading,
     disabled,
     leftIcon,
     rightIcon,
     children,
-    ...props 
-  }: ButtonProps, ref: React.Ref<HTMLButtonElement>) {
-    const { user } = useUser();
-
-    return (
-      <button
-        className={cn(
-          buttonVariants({ 
-            variant, 
-            size, 
-            fullWidth,
-            loading,
-          }), 
-          className
-        )}
-        disabled={disabled || loading}
-        ref={ref}
-        {...props}
-      >
-        {loading && (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        )}
-        {!loading && leftIcon}
-        {children}
-        {!loading && rightIcon}
-      </button>
-    )
-  }
+    ...props
+  }: ButtonProps,
+  ref: React.Ref<HTMLButtonElement>
+) {
+  return (
+    <button
+      className={cn(
+        buttonVariants({
+          variant,
+          size,
+          fullWidth,
+          loading,
+        }),
+        className
+      )}
+      disabled={disabled || loading}
+      ref={ref}
+      {...props}
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {!loading && leftIcon}
+      {children}
+      {!loading && rightIcon}
+    </button>
+  )
+}
 
 Button.displayName = 'Button'
 
-export { Button, buttonVariants } 
+export { Button, buttonVariants }
 
-{/* 
+{
+  /* 
 
 // Basic usage
 <Button>Click me</Button>
@@ -169,4 +158,5 @@ export { Button, buttonVariants }
   Delete
 </Button>
 
-*/}
+*/
+}

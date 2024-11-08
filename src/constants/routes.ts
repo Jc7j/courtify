@@ -8,4 +8,4 @@ export const ROUTES = {
   },
   DASHBOARD: '/dashboard',
   UNAUTHORIZED: '/unauthorized',
-} as const; 
+} as const

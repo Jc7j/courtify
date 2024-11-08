@@ -1,33 +1,31 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { Divider } from '@/components/ui/Divider';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Divider } from '@/components/ui/Divider'
+import { useAuth } from '@/hooks/useAuth'
+import { toast } from 'sonner'
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email'),
-  password: z
-    .string()
-    .min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-});
+})
 
-type SignUpFormData = z.infer<typeof signUpSchema>;
+type SignUpFormData = z.infer<typeof signUpSchema>
 
 interface SignUpFormProps {
-  onSuccess?: () => void;
+  onSuccess?: () => void
 }
 
 export function SignUpForm({ onSuccess }: SignUpFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
-  
+  const [isLoading, setIsLoading] = useState(false)
+  const { signUp } = useAuth()
+
   const {
     register,
     handleSubmit,
@@ -39,27 +37,27 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
       email: '',
       password: '',
       name: '',
-    }
-  });
+    },
+  })
 
   async function onSubmit(data: SignUpFormData) {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      await signUp(data.email, data.password, data.name);
-      toast.success('Account created successfully!');
-      onSuccess?.();
+      await signUp(data.email, data.password, data.name)
+      toast.success('Account created successfully!')
+      onSuccess?.()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong';
-      
+      const message = error instanceof Error ? error.message : 'Something went wrong'
+
       if (message.includes('email')) {
-        setError('email', { message });
+        setError('email', { message })
       } else {
-        toast.error(message);
+        toast.error(message)
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -102,37 +100,30 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             size="md"
             autoComplete="new-password"
           />
-          
+
           <ul className="text-sm text-foreground-muted list-disc pl-5">
             <li>At least 6 characters long</li>
           </ul>
         </div>
 
         {/* Continue Button */}
-        <Button
-          type="submit"
-          loading={isLoading}
-          fullWidth
-          size="md"
-        >
+        <Button type="submit" loading={isLoading} fullWidth size="md">
           Create account
         </Button>
       </form>
 
-      <Divider 
-        label="or" 
-        labelPosition="center"
-        variant="default"
-      />
+      <Divider label="or" labelPosition="center" variant="default" />
 
       {/* Sign In Link */}
       <div className="text-center text-sm">
         <span className="text-foreground-muted">Already have an account? </span>
-        <a href="/signin" 
-           className="font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200">
+        <a
+          href="/signin"
+          className="font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200"
+        >
           Sign in
         </a>
       </div>
     </div>
-  );
+  )
 }

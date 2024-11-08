@@ -12,11 +12,7 @@ export const metadata = {
   description: 'Court rental booking system',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen`}>
@@ -24,9 +20,7 @@ export default function RootLayout({
           <ThemeProvider>
             <SupabaseProvider>
               <ApolloProvider>
-                <main className="flex min-h-screen flex-col bg-background-default">
-                  {children}
-                </main>
+                <main className="flex min-h-screen flex-col bg-background-default">{children}</main>
               </ApolloProvider>
             </SupabaseProvider>
           </ThemeProvider>

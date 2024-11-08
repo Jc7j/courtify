@@ -8,7 +8,7 @@ export const themeConfig = {
   components,
   elevation,
   motion,
-  
+
   // Theme-specific values
   light: {
     background: {
@@ -27,9 +27,9 @@ export const themeConfig = {
       default: 'var(--border-default)',
       subtle: 'var(--border-subtle)',
       emphasis: 'var(--border-emphasis)',
-    }
+    },
   },
-  
+
   dark: {
     // Dark theme values are handled via CSS variables
     // This ensures consistent access patterns regardless of theme
@@ -49,8 +49,8 @@ export const themeConfig = {
       default: 'var(--border-default)',
       subtle: 'var(--border-subtle)',
       emphasis: 'var(--border-emphasis)',
-    }
-  }
+    },
+  },
 }
 
-export type ThemeConfig = typeof themeConfig 
+export type ThemeConfig = typeof themeConfig

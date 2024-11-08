@@ -14,7 +14,7 @@ export const APP_CONFIG = {
     DEFAULT_PAGE_SIZE: 10,
     MAX_PAGE_SIZE: 100,
   },
-} as const;
+} as const
 
 export const ROUTES = {
   AUTH: {
@@ -30,4 +30,4 @@ export const ROUTES = {
     PROFILE: '/profile',
     BOOKINGS: '/bookings',
   },
-} as const; 
+} as const

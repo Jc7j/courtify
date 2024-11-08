@@ -28,18 +28,18 @@ const inputVariants = cva(
         sm: 'px-3 py-2 text-sm rounded-md',
         md: 'px-3.5 py-2.5 text-sm rounded-lg',
         lg: 'px-4 py-3 text-base rounded-lg',
-        xl: 'px-4 py-3.5 text-lg rounded-xl'
+        xl: 'px-4 py-3.5 text-lg rounded-xl',
       },
       state: {
         default: '',
         error: 'border-error-300 focus:border-error-500 focus:ring-error-500',
         success: 'border-success-300 focus:border-success-500 focus:ring-success-500',
-      }
+      },
     },
     defaultVariants: {
       inputSize: 'md',
-      state: 'default'
-    }
+      state: 'default',
+    },
   }
 )
 
@@ -55,51 +55,37 @@ export interface InputProps
   size?: InputVariants['inputSize'] // Add size back as an optional prop
 }
 
-function Input({ 
-    className, 
-    type = 'text', 
-    label, 
-    error, 
-    hint, 
-    size, 
-    state, 
-    ...props 
-  }: InputProps, ref: React.Ref<HTMLInputElement>) {
-    // If there's an error, override the state
-    const inputState = error ? 'error' : state
-    
-    return (
-      <div className="space-y-2">
-        {label && (
-          <label 
-            htmlFor={props.id} 
-            className="block text-sm font-medium text-foreground-subtle"
-          >
-            {label}
-          </label>
-        )}
-        
-        <div className="relative">
-          <input
-            type={type}
-            className={cn(inputVariants({ inputSize: size, state: inputState }), className)}
-            ref={ref}
-            {...props}
-          />
-        </div>
+function Input(
+  { className, type = 'text', label, error, hint, size, state, ...props }: InputProps,
+  ref: React.Ref<HTMLInputElement>
+) {
+  // If there's an error, override the state
+  const inputState = error ? 'error' : state
 
-        {/* Error or Hint Text */}
-        {(error || hint) && (
-          <p 
-            className={cn(
-              "mt-1.5 text-sm",
-              error ? "text-status-error" : "text-foreground-muted"
-            )}
-          >
-            {error || hint}
-          </p>
-        )}
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label htmlFor={props.id} className="block text-sm font-medium text-foreground-subtle">
+          {label}
+        </label>
+      )}
+
+      <div className="relative">
+        <input
+          type={type}
+          className={cn(inputVariants({ inputSize: size, state: inputState }), className)}
+          ref={ref}
+          {...props}
+        />
       </div>
+
+      {/* Error or Hint Text */}
+      {(error || hint) && (
+        <p className={cn('mt-1.5 text-sm', error ? 'text-status-error' : 'text-foreground-muted')}>
+          {error || hint}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -107,7 +93,8 @@ Input.displayName = 'Input'
 
 export { Input, inputVariants }
 
-{/* 
+{
+  /* 
 
 // Basic usage
 <Input
@@ -141,4 +128,5 @@ export { Input, inputVariants }
   state="success"
   value="user@example.com"
 />
-*/}
+*/
+}
