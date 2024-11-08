@@ -101,7 +101,7 @@ function Button({
     ...props 
   }: ButtonProps, ref: React.Ref<HTMLButtonElement>) {
     const { user } = useUser();
-    console.log(user);
+
     return (
       <button
         className={cn(

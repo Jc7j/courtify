@@ -23,12 +23,11 @@ export function useAuth() {
         throw new Error(result.error)
       }
 
-      router.push(ROUTES.DASHBOARD)
     } catch (error) {
       console.error('Error signing in:', error)
       throw new Error(getAuthErrorMessage(error))
     }
-  }, [router])
+  }, [])
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
     try {
@@ -77,7 +76,7 @@ export function useAuth() {
       console.error('Error signing up:', error)
       throw new Error(getAuthErrorMessage(error))
     }
-  }, [router, signIn])
+  }, [signIn])
 
   const signOut = useCallback(async () => {
     try {

@@ -20,7 +20,11 @@ const signUpSchema = z.object({
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
-export function SignUpForm() {
+interface SignUpFormProps {
+  onSuccess?: () => void;
+}
+
+export function SignUpForm({ onSuccess }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   
@@ -43,6 +47,7 @@ export function SignUpForm() {
     try {
       await signUp(data.email, data.password, data.name);
       toast.success('Account created successfully!');
+      onSuccess?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Something went wrong';
       
