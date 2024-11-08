@@ -9,10 +9,10 @@ export default withAuth(
     const user = token?.user as User
     const isOnDashboard = req.nextUrl.pathname.startsWith('/dashboard')
 
-    // If user is on dashboard but has no company_id, redirect to signup with join-or-create step
+    // If user is on dashboard but has no company_id, redirect to signup with create-intro step
     if (isOnDashboard && !user?.company_id) {
       const signupUrl = new URL(ROUTES.AUTH.SIGNUP, req.url)
-      signupUrl.searchParams.set('step', 'join-or-create')
+      signupUrl.searchParams.set('step', 'create-intro')
       return NextResponse.redirect(signupUrl)
     }
   },

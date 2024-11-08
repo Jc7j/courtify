@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { SignUpForm } from '@/components/auth/SignUpForm'
-import { JoinOrCreate } from '@/components/onboarding/JoinOrCreate'
+import { CreateCompanyStep } from '@/components/onboarding/JoinOrCreate'
 import { Logo } from '@/components/ui/Logo'
 import { Progress } from '@/components/ui/progress'
 import { useUser } from '@/hooks/useUser'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
 
-type OnboardingStep = 'signup' | 'join-or-create' | 'join' | 'create'
+type OnboardingStep = 'signup' | 'create-intro' | 'create'
 
 const STEPS = {
   signup: { number: 1, progress: 33 },
-  'join-or-create': { number: 2, progress: 66 },
-  join: { number: 3, progress: 100 },
+  'create-intro': { number: 2, progress: 66 },
   create: { number: 3, progress: 100 },
 } as const
 
@@ -26,25 +25,25 @@ export default function SignUpPage() {
   // Sync step with URL
   useEffect(() => {
     if (urlStep === 'join-or-create') {
-      setStep('join-or-create')
+      setStep('create-intro')
     }
   }, [urlStep])
 
   const handleSignupSuccess = () => {
-    setStep('join-or-create')
+    setStep('create-intro')
   }
 
-  const handleJoinOrCreate = (type: 'join' | 'create') => {
-    setStep(type)
+  const handleCreateIntro = () => {
+    setStep('create')
   }
 
   // Show appropriate step
   const renderStep = () => {
     switch (step) {
-      case 'join-or-create':
-        return <JoinOrCreate onSelect={handleJoinOrCreate} isLoading={userLoading} />
+      case 'create-intro':
+        return <CreateCompanyStep onNext={handleCreateIntro} isLoading={userLoading} />
       case 'create':
-        return <CreateCompany onBack={() => setStep('join-or-create')} />
+        return <CreateCompany onBack={() => setStep('create-intro')} />
       default:
         return <SignUpForm onSuccess={handleSignupSuccess} />
     }
