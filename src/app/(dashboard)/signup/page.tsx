@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 import { JoinOrCreate } from '@/components/onboarding/JoinOrCreate';
 import { Logo } from '@/components/ui/Logo';
 import { useUser } from '@/hooks/useUser';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 type OnboardingStep = 'signup' | 'join-or-create' | 'join' | 'create';
 
 export default function SignUpPage() {
   const { user, loading } = useUser();
+  const { step: urlStep } = useOnboarding();
   const [step, setStep] = useState<OnboardingStep>('signup');
+
+  // Sync step with URL
+  useEffect(() => {
+    if (urlStep === 'join-or-create') {
+      setStep('join-or-create');
+    }
+  }, [urlStep]);
 
   const handleSignupSuccess = () => {
     setStep('join-or-create');
