@@ -43,25 +43,22 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
       toast.error('Please sign in to create a company')
       return
     }
-    console.log('Creating company...')
+
     try {
       const company = await createCompany(data.name)
 
-      // Update user's company_id
       const { error: updateError } = await supabase
         .from('users')
         .update({ company_id: company.id })
         .eq('id', session.user.id)
 
       if (updateError) {
-        console.error('Error updating user:', updateError)
         throw new Error('Failed to update user company')
       }
 
       toast.success('Company created successfully!')
       router.push(ROUTES.DASHBOARD)
     } catch (error) {
-      console.error('Create company error:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create company')
     }
   }

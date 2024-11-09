@@ -25,13 +25,7 @@ export function useCompany(): UseCompanyReturn {
         },
       },
       onError: (error) => {
-        console.error('GraphQL Error:', error)
-        console.log('Auth context:', {
-          hasSession: !!session,
-          authStatus: status,
-          hasToken: !!session?.supabaseAccessToken,
-          userId: session?.user?.id,
-        })
+        console.error('Error creating company:', error)
       },
     }
   )
@@ -50,12 +44,6 @@ export function useCompany(): UseCompanyReturn {
     }
 
     try {
-      console.log('Attempting company creation:', {
-        name,
-        userId: session.user.id,
-        hasToken: !!session.supabaseAccessToken,
-      })
-
       const companyInput = {
         name,
         slug: generateSlug(name),
@@ -73,7 +61,6 @@ export function useCompany(): UseCompanyReturn {
 
       return data.insertIntocompaniesCollection.records[0]
     } catch (err) {
-      console.error('Error in createCompany:', err)
       throw err instanceof Error ? err : new Error('Failed to create company')
     }
   }

@@ -17,18 +17,15 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Authenticate with Supabase
           const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: credentials.email,
             password: credentials.password,
           })
-          console.log('Auth data:', authData)
+
           if (authError || !authData.user) {
-            console.error('Auth error:', authError)
             throw new Error('Invalid credentials')
           }
 
-          // Get the session token - this is critical for RLS
           const {
             data: { session },
           } = await supabase.auth.getSession()
@@ -37,13 +34,6 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Failed to get access token')
           }
 
-          // Log successful auth
-          console.log('Auth successful:', {
-            userId: authData.user.id,
-            hasToken: !!session.access_token,
-          })
-
-          // Get user data
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*, companies(*)')
@@ -51,7 +41,6 @@ export const authOptions: NextAuthOptions = {
             .single()
 
           if (userError || !userData) {
-            console.error('User error:', userError)
             throw new Error('User not found')
           }
 
@@ -60,13 +49,13 @@ export const authOptions: NextAuthOptions = {
             email: userData.email,
             name: userData.name,
             company: userData.companies,
-            supabaseAccessToken: session.access_token, // Critical for RLS
+            supabaseAccessToken: session.access_token,
             active: userData.active,
             created_at: userData.created_at,
             updated_at: userData.updated_at,
           } as User
         } catch (error) {
-          console.error('Error in authorize:', error)
+          console.error('Authorization error:', error)
           throw error
         }
       },

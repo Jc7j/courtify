@@ -3,7 +3,7 @@
 
 **Courtify** is a **court rental booking system** tailored for sports facilities, particularly volleyball courts. The platform provides a **company-specific booking experience** with dynamic branding, court management, customizable pricing, and an admin dashboard. Key components include:
 - **Admin Dashboard**: For court availability, pricing management, and user analytics.
-- **Customer Booking Flow**: Allows users to view available courts, select booking times, and complete payments.
+- **Customer Booking Flow**: Allows users (guests who don't need to have an account) to view available courts, select booking times, and complete payments.
 
 ---
 
@@ -16,28 +16,16 @@
    - **Authentication**: NextAuth.js and Supabase Auth for secure user and admin access.
    - **Payment Processing**: Stripe for handling transactions.
    - **Accessibility**: React Aria for accessible components and navigation.
+   - **Email**: Resend for sending emails.
 
-2. **Core Functionalities**:
-   - **Admin Dashboard**:
-     - Court and booking management, with role-based access control.
-     - Real-time court availability settings and price adjustment.
-     - Booking history, customer details, and analytics.
-   - **Customer Booking Flow**:
-     - Branded company landing pages with custom URLs.
-     - Flexible booking options, with a minimum 1-hour booking and 30-minute intervals.
-     - Confirmation emails and notifications.
-   - **Payment Processing**:
-     - Stripe integration for secure transactions.
-     - Adherence to refund policies based on admin-defined rules (e.g., 72-hour no-refund policy).
-
-3. **Key Considerations**:
+2. **Key Considerations**:
    - **Performance**: Optimize for real-time updates and minimal latency.
    - **Scalability**: Support multiple companies with isolated data and settings.
    - **Accessibility**: Ensure all user interactions are accessible with ARIA labels and keyboard navigation.
    - **Data Privacy**: Role-based access to sensitive data and secure user sessions.
    - **Multi-Tenancy**: Each company has unique configurations, branding, and booking policies.
 
-4. **Coding Guidelines**:
+3. **Coding Guidelines**:
    - **TypeScript**: Use TypeScript for all files, with strict types for data models, API interactions, and components.
    - **Code Structure**:
      - **Components**: Modularize reusable components, particularly for admin and booking interfaces.
@@ -46,10 +34,11 @@
    - **File Naming and Structure**:
      - Follow Next.js 15 app router conventions 
 
-5. **Testing Requirements**:
+4. **Testing Requirements**:
    - **Unit Testing**: Use Jest and Testing Library for component and API testing.
    - **End-to-End Testing**: Use Cypress to test the full booking flow and admin operations.
    - **Performance Testing**: Ensure minimal load times for critical pages (admin dashboard, booking selection).
+   - **Stripe Testing**: Use Stripe's testing tools to simulate payments and refunds.
 
 ---
 
@@ -61,3 +50,18 @@
 - **Data Security and Privacy**: Prioritize user and company data privacy with secure authentication and access control.
 
 These foundational guidelines ensure **Courtify** stays aligned with its purpose and business requirements, supporting a multi-tenant, scalable, and user-friendly court booking platform.
+
+---
+
+### Technical Documentation
+
+#### 1. User Signup Flow
+- User initiates signup through `/signup` page
+- `useAuth` hook handles user creation in Supabase
+- NextAuth creates session and manages authentication state
+
+#### 2. Company Creation Flow
+- After signup, user is prompted to create company
+- `useCompany` hook manages company creation logic
+- GraphQL mutation `CREATE_COMPANY` executes with auth headers
+
