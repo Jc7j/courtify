@@ -422,9 +422,6 @@ export type UuidListFilter = {
 
 export type Companies = Node & {
   __typename?: 'companies';
-  branding_logo_url?: Maybe<Scalars['String']['output']>;
-  branding_primary_color?: Maybe<Scalars['String']['output']>;
-  cancellation_policy?: Maybe<Scalars['String']['output']>;
   courtsCollection?: Maybe<CourtsConnection>;
   created_at: Scalars['Datetime']['output'];
   id: Scalars['UUID']['output'];
@@ -481,9 +478,6 @@ export type CompaniesEdge = {
 export type CompaniesFilter = {
   /** Returns true only if all its inner filters are true, otherwise returns false */
   and?: InputMaybe<Array<CompaniesFilter>>;
-  branding_logo_url?: InputMaybe<StringFilter>;
-  branding_primary_color?: InputMaybe<StringFilter>;
-  cancellation_policy?: InputMaybe<StringFilter>;
   created_at?: InputMaybe<DatetimeFilter>;
   id?: InputMaybe<UuidFilter>;
   name?: InputMaybe<StringFilter>;
@@ -497,9 +491,6 @@ export type CompaniesFilter = {
 };
 
 export type CompaniesInsertInput = {
-  branding_logo_url?: InputMaybe<Scalars['String']['input']>;
-  branding_primary_color?: InputMaybe<Scalars['String']['input']>;
-  cancellation_policy?: InputMaybe<Scalars['String']['input']>;
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
   id?: InputMaybe<Scalars['UUID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
@@ -516,9 +507,6 @@ export type CompaniesInsertResponse = {
 };
 
 export type CompaniesOrderBy = {
-  branding_logo_url?: InputMaybe<OrderByDirection>;
-  branding_primary_color?: InputMaybe<OrderByDirection>;
-  cancellation_policy?: InputMaybe<OrderByDirection>;
   created_at?: InputMaybe<OrderByDirection>;
   id?: InputMaybe<OrderByDirection>;
   name?: InputMaybe<OrderByDirection>;
@@ -527,9 +515,6 @@ export type CompaniesOrderBy = {
 };
 
 export type CompaniesUpdateInput = {
-  branding_logo_url?: InputMaybe<Scalars['String']['input']>;
-  branding_primary_color?: InputMaybe<Scalars['String']['input']>;
-  cancellation_policy?: InputMaybe<Scalars['String']['input']>;
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
   id?: InputMaybe<Scalars['UUID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;

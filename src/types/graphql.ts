@@ -4,9 +4,6 @@ export interface Company {
   id: string
   name: string
   slug: string
-  branding_logo_url?: Maybe<string>
-  branding_primary_color?: Maybe<string>
-  cancellation_policy?: Maybe<string>
   created_at: string
   updated_at: string
 }

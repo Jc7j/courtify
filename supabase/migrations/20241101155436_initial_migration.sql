@@ -6,9 +6,6 @@ CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
-    branding_logo_url TEXT,
-    branding_primary_color TEXT,
-    cancellation_policy TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -44,7 +41,13 @@ CREATE TABLE courts (
 
 ALTER TABLE courts ENABLE ROW LEVEL SECURITY;
 
--- Companies are only readable by users who belong to them
+-- Companies policies
+-- Allow any authenticated user to create a company
+CREATE POLICY companies_insert ON companies
+    FOR INSERT TO authenticated
+    WITH CHECK (auth.uid() IS NOT NULL);
+
+-- Users can read companies they belong to
 CREATE POLICY companies_select ON companies
     FOR SELECT TO authenticated
     USING (id IN (
@@ -53,16 +56,25 @@ CREATE POLICY companies_select ON companies
         WHERE users.id = auth.uid()
     ));
 
--- Users can modify companies they belong to
-CREATE POLICY companies_modify ON companies
-    FOR ALL TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM users
+-- Users can update companies they belong to
+CREATE POLICY companies_update ON companies
+    FOR UPDATE TO authenticated
+    USING (id IN (
+        SELECT company_id 
+        FROM users 
         WHERE users.id = auth.uid()
-        AND users.company_id = companies.id
     ));
 
--- Users can read/update their own data
+-- Users can delete companies they belong to
+CREATE POLICY companies_delete ON companies
+    FOR DELETE TO authenticated
+    USING (id IN (
+        SELECT company_id 
+        FROM users 
+        WHERE users.id = auth.uid()
+    ));
+
+-- Users policies
 CREATE POLICY users_select_own ON users
     FOR SELECT TO authenticated
     USING (auth.uid() = id);
@@ -71,17 +83,11 @@ CREATE POLICY users_update_own ON users
     FOR UPDATE TO authenticated
     USING (auth.uid() = id);
 
--- Add this new policy for user insertion
 CREATE POLICY users_insert_public ON users
     FOR INSERT
-    WITH CHECK (true);  -- Allows public insertion for signup
+    WITH CHECK (true);
 
--- Allow authenticated users to insert companies
-CREATE POLICY "companies_insert_policy" ON companies
-    FOR INSERT TO authenticated
-    WITH CHECK (true);  -- Allow any authenticated user to insert
-
--- Courts are readable by users who belong to the company
+-- Courts policies
 CREATE POLICY courts_select ON courts
     FOR SELECT TO authenticated
     USING (company_id IN (
@@ -90,13 +96,12 @@ CREATE POLICY courts_select ON courts
         WHERE users.id = auth.uid()
     ));
 
--- Users can modify courts in their company
 CREATE POLICY courts_modify ON courts
     FOR ALL TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM users
+    USING (company_id IN (
+        SELECT company_id
+        FROM users
         WHERE users.id = auth.uid()
-        AND users.company_id = courts.company_id
     ));
 
 -- Create triggers for updated_at
