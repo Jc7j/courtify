@@ -11,31 +11,25 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
         `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}, Operation: ${operation.operationName}`
       )
     })
-    // Optionally report to error tracking service
   }
   if (networkError) {
-    console.error(`[Network error]: ${networkError}`)
+    console.error(`[Network error]:`, networkError)
   }
   return forward(operation)
 })
 
 const authLink = setContext(async (_, { headers }) => {
-  // Get the authentication token from NextAuth session
   const session = await getSession()
-
-  console.log('Session in authLink:', {
-    hasSession: !!session,
-    hasToken: !!session?.supabaseAccessToken,
-  })
 
   return {
     headers: {
       ...headers,
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      // Use Bearer format for authorization
       authorization: session?.supabaseAccessToken
         ? `Bearer ${session.supabaseAccessToken}`
         : `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
     },
   }
 })
@@ -44,18 +38,30 @@ const httpLink = createHttpLink({
   uri:
     process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT ||
     GRAPHQL_ENDPOINTS[
-      (process.env.NEXT_PUBLIC_APP_ENV || 'local') as keyof typeof GRAPHQL_ENDPOINTS
+      (process.env.NEXT_PUBLIC_APP_ENV as keyof typeof GRAPHQL_ENDPOINTS) || 'local'
     ],
-  credentials: 'include', // Important for auth
+  credentials: 'same-origin', // Changed from 'include'
+  fetchOptions: {
+    mode: 'cors',
+  },
 })
 
-// Combine links
 const link = from([errorLink, authLink, httpLink])
 
 export const apolloClient = new ApolloClient({
   link,
   cache,
-  ...defaultApolloConfig,
+  defaultOptions: {
+    ...defaultApolloConfig.defaultOptions,
+    query: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    },
+    watchQuery: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    },
+  },
 })
 
 // Helper for SSR

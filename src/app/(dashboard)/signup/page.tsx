@@ -27,16 +27,16 @@ export default function SignUpPage() {
     }
   }, [urlStep])
 
-  const handleSignupSuccess = () => {
+  function handleSignupSuccess() {
     setStep('create-intro')
   }
 
-  const handleCreateIntro = () => {
+  function handleCreateIntro() {
     setStep('create')
   }
 
   // Show appropriate step
-  const renderStep = () => {
+  function renderStep() {
     switch (step) {
       case 'create-intro':
         return <CreateCompanyStep onNext={handleCreateIntro} />

@@ -14,9 +14,18 @@ extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
+enabled_apis = ["rest", "graphql", "realtime"]
 
 [api.tls]
 enabled = false
+
+[api.cors]
+enabled = true
+allowed_origins = ["http://localhost:3000"]
+allowed_methods = ["GET", "POST", "OPTIONS"]
+allowed_headers = ["apikey", "authorization", "content-type", "x-client-info"]
+exposed_headers = ["content-range"]
+max_age = 300
 
 [db]
 # Port to use for the local database URL.

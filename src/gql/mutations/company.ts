@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client'
 
 // Company Fragments for reuse
-const COMPANY_FIELDS = gql`
+export const COMPANY_FIELDS = gql`
   fragment CompanyFields on companies {
     id
     name
@@ -11,13 +11,18 @@ const COMPANY_FIELDS = gql`
   }
 `
 
-// Mutations
 export const CREATE_COMPANY = gql`
   ${COMPANY_FIELDS}
   mutation CreateCompany($objects: [companies_insert_input!]!) {
     insertIntocompaniesCollection(objects: $objects) {
       records {
         ...CompanyFields
+      }
+      affectedCount
+      records {
+        id
+        name
+        slug
       }
     }
   }

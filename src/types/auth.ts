@@ -13,6 +13,9 @@ declare module 'next-auth' {
     name: string
     company: Company | null
     supabaseAccessToken?: string
+    active?: boolean
+    created_at?: string
+    updated_at?: string
   }
 
   interface JWT {

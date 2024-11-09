@@ -1,7 +1,7 @@
 import { useMutation, ApolloError } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
 import { generateSlug } from '@/lib/utils/string'
-import type { Companies, CompaniesInsertInput } from '@/gql/graphql'
+import type { Companies } from '@/gql/graphql'
 import { useSession } from 'next-auth/react'
 
 interface UseCompanyReturn {
@@ -39,8 +39,12 @@ export function useCompany(): UseCompanyReturn {
       throw new Error('Authentication required')
     }
 
+    if (!session.user?.id) {
+      throw new Error('User ID required')
+    }
+
     try {
-      const companyInput: CompaniesInsertInput = {
+      const companyInput = {
         name,
         slug: generateSlug(name),
         created_at: new Date().toISOString(),
@@ -58,7 +62,7 @@ export function useCompany(): UseCompanyReturn {
       return data.insertIntocompaniesCollection.records[0]
     } catch (err) {
       console.error('Error in createCompany:', err)
-      throw err
+      throw err instanceof Error ? err : new Error('Failed to create company')
     }
   }
 

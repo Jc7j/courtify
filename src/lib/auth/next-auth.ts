@@ -1,20 +1,72 @@
 import { NextAuthOptions } from 'next-auth'
-import EmailProvider from 'next-auth/providers/email'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase } from '../supabase/client'
 import type { User } from 'next-auth'
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    EmailProvider({
-      server: process.env.EMAIL_SERVER,
-      from: process.env.EMAIL_FROM,
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('Please provide both email and password')
+        }
+
+        try {
+          // Authenticate with Supabase
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+          })
+
+          if (authError || !authData.user) {
+            console.error('Auth error:', authError)
+            throw new Error('Invalid credentials')
+          }
+
+          // Get the session for the token
+          const {
+            data: { session },
+          } = await supabase.auth.getSession()
+
+          // Get user data from our database
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*, companies(*)')
+            .eq('id', authData.user.id)
+            .single()
+
+          if (userError || !userData) {
+            console.error('User error:', userError)
+            throw new Error('User not found')
+          }
+
+          return {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            company: userData.companies,
+            supabaseAccessToken: session?.access_token,
+            active: userData.active,
+            created_at: userData.created_at,
+            updated_at: userData.updated_at,
+          } as User
+        } catch (error) {
+          console.error('Error in authorize:', error)
+          throw error
+        }
+      },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.supabaseAccessToken = user.supabaseAccessToken
-        token.user = user as User
+        token.user = user
       }
       return token
     },
@@ -28,42 +80,6 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user }) {
-      if (!user.email) return false
-
-      try {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*, companies(*)')
-          .eq('email', user.email)
-          .single()
-
-        if (userError || !userData) {
-          // Create new user if doesn't exist
-          const { data: newUser, error: createError } = await supabase
-            .from('users')
-            .insert([
-              {
-                id: user.id,
-                email: user.email,
-                name: user.name || user.email.split('@')[0],
-              },
-            ])
-            .select('*, companies(*)')
-            .single()
-
-          if (createError || !newUser) {
-            console.error('Error creating user:', createError)
-            return false
-          }
-        }
-
-        return true
-      } catch (error) {
-        console.error('Error in signIn callback:', error)
-        return false
-      }
-    },
   },
   session: {
     strategy: 'jwt',
@@ -72,5 +88,6 @@ export const authOptions: NextAuthOptions = {
     signIn: '/signin',
     error: '/signin',
   },
+  secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 }
