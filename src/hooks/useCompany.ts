@@ -2,6 +2,7 @@ import { useMutation, ApolloError } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
 import { generateSlug } from '@/lib/utils/string'
 import type { Companies, CompaniesInsertInput } from '@/gql/graphql'
+import { useSession } from 'next-auth/react'
 
 interface UseCompanyReturn {
   createCompany: (name: string) => Promise<Companies>
@@ -10,37 +11,45 @@ interface UseCompanyReturn {
 }
 
 export function useCompany(): UseCompanyReturn {
+  const { data: session, status } = useSession()
+
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
     CREATE_COMPANY,
     {
+      context: {
+        headers: {
+          authorization: session?.supabaseAccessToken
+            ? `Bearer ${session.supabaseAccessToken}`
+            : '',
+        },
+      },
       onError: (error) => {
         console.error('GraphQL Error:', error)
+        console.log('Auth context:', {
+          hasSession: !!session,
+          authStatus: status,
+          hasToken: !!session?.supabaseAccessToken,
+        })
       },
     }
   )
 
   const createCompany = async (name: string): Promise<Companies> => {
-    try {
-      console.log('Starting company creation...')
-      const now = new Date().toISOString()
-      const slug = generateSlug(name)
+    if (!session?.supabaseAccessToken) {
+      throw new Error('Authentication required')
+    }
 
+    try {
       const companyInput: CompaniesInsertInput = {
         name,
-        slug,
-        created_at: now,
-        updated_at: now,
+        slug: generateSlug(name),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
 
-      console.log('Company input:', companyInput)
-
       const { data } = await createCompanyMutation({
-        variables: {
-          objects: [companyInput],
-        },
+        variables: { objects: [companyInput] },
       })
-
-      console.log('Mutation response:', data)
 
       if (!data?.insertIntocompaniesCollection?.records?.[0]) {
         throw new Error('Failed to create company')
@@ -49,7 +58,7 @@ export function useCompany(): UseCompanyReturn {
       return data.insertIntocompaniesCollection.records[0]
     } catch (err) {
       console.error('Error in createCompany:', err)
-      throw err instanceof Error ? err : new Error('Failed to create company')
+      throw err
     }
   }
 

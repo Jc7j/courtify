@@ -1,11 +1,22 @@
 import { DefaultSession } from 'next-auth'
-import { Company, User } from './graphql'
+import type { Company } from './graphql'
 
 declare module 'next-auth' {
   interface Session {
-    user: DefaultSession['user'] &
-      Partial<User> & {
-        company: Company | null
-      }
+    supabaseAccessToken?: string
+    user: DefaultSession['user'] & User
+  }
+
+  interface User {
+    id: string
+    email: string
+    name: string
+    company: Company | null
+    supabaseAccessToken?: string
+  }
+
+  interface JWT {
+    supabaseAccessToken?: string
+    user?: User
   }
 }
