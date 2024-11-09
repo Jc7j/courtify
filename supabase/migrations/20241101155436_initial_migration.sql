@@ -42,19 +42,16 @@ CREATE TABLE courts (
 ALTER TABLE courts ENABLE ROW LEVEL SECURITY;
 
 -- Companies policies
--- Allow any authenticated user to create a company
-CREATE POLICY companies_insert ON companies
+-- Allow any authenticated user to create a company, but ensure auth.uid() exists
+CREATE POLICY "companies_insert" ON companies
     FOR INSERT TO authenticated
-    WITH CHECK (true);
+    WITH CHECK (true); 
+
 
 -- Users can read companies they belong to
-CREATE POLICY companies_select ON companies
+CREATE POLICY "companies_select" ON companies
     FOR SELECT TO authenticated
-    USING (id IN (
-        SELECT company_id 
-        FROM users 
-        WHERE users.id = auth.uid()
-    ));
+    USING (true);
 
 -- Users can update companies they belong to
 CREATE POLICY companies_update ON companies

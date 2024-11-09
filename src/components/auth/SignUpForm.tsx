@@ -68,7 +68,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
           type="text"
           id="name"
           label="Full name"
-          placeholder="John Doe"
+          placeholder="Acme"
           error={errors.name?.message}
           disabled={isLoading}
           size="md"
@@ -81,7 +81,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
           type="email"
           id="email"
           label="Work email"
-          placeholder="john@company.com"
+          placeholder="acme@acme.com"
           error={errors.email?.message}
           disabled={isLoading}
           size="md"

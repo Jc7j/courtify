@@ -19,11 +19,6 @@ export const CREATE_COMPANY = gql`
         ...CompanyFields
       }
       affectedCount
-      records {
-        id
-        name
-        slug
-      }
     }
   }
 `

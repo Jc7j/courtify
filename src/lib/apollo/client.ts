@@ -24,10 +24,8 @@ const authLink = setContext(async (_, { headers }) => {
   return {
     headers: {
       ...headers,
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      authorization: session?.supabaseAccessToken
-        ? `Bearer ${session.supabaseAccessToken}`
-        : `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      authorization: session?.supabaseAccessToken ? `Bearer ${session.supabaseAccessToken}` : '',
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
@@ -40,7 +38,7 @@ const httpLink = createHttpLink({
     GRAPHQL_ENDPOINTS[
       (process.env.NEXT_PUBLIC_APP_ENV as keyof typeof GRAPHQL_ENDPOINTS) || 'local'
     ],
-  credentials: 'same-origin', // Changed from 'include'
+  credentials: 'same-origin',
   fetchOptions: {
     mode: 'cors',
   },

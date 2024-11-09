@@ -21,6 +21,7 @@ export function useCompany(): UseCompanyReturn {
           authorization: session?.supabaseAccessToken
             ? `Bearer ${session.supabaseAccessToken}`
             : '',
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
         },
       },
       onError: (error) => {
@@ -29,12 +30,17 @@ export function useCompany(): UseCompanyReturn {
           hasSession: !!session,
           authStatus: status,
           hasToken: !!session?.supabaseAccessToken,
+          userId: session?.user?.id,
         })
       },
     }
   )
 
   const createCompany = async (name: string): Promise<Companies> => {
+    if (status === 'loading') {
+      throw new Error('Authentication loading')
+    }
+
     if (!session?.supabaseAccessToken) {
       throw new Error('Authentication required')
     }
@@ -44,6 +50,12 @@ export function useCompany(): UseCompanyReturn {
     }
 
     try {
+      console.log('Attempting company creation:', {
+        name,
+        userId: session.user.id,
+        hasToken: !!session.supabaseAccessToken,
+      })
+
       const companyInput = {
         name,
         slug: generateSlug(name),
