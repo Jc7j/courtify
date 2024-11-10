@@ -2,6 +2,7 @@ import { ThemeProvider } from '@/providers/ThemeProvider'
 import { SupabaseProvider } from '@/providers/SupabaseProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
 import { NextAuthProvider } from '@/providers/NextAuthProvider'
+import { SidebarProvider, SidebarTrigger } from '@/components/ui'
 import '@/styles/globals.css'
 
 export const metadata = {
@@ -16,7 +17,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NextAuthProvider>
           <SupabaseProvider>
             <ApolloProvider>
-              <ThemeProvider>{children}</ThemeProvider>
+              <ThemeProvider>
+                <SidebarProvider>
+                  <SidebarTrigger />
+                  {children}
+                </SidebarProvider>
+              </ThemeProvider>
             </ApolloProvider>
           </SupabaseProvider>
         </NextAuthProvider>

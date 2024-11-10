@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui'
 import { Building2 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
@@ -26,16 +26,14 @@ export function CreateCompanyStep({ onNext }: CreateCompanyStepProps) {
 
   // Show loading state while checking
   if (loading) {
-    return null // Or a loading spinner if preferred
+    return null
   }
 
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground-emphasis">
-          Welcome! Let&apos;s get started
-        </h1>
-        <p className="text-base text-foreground-muted leading-relaxed">
+        <h1 className="text-2xl font-semibold text-foreground">Welcome! Let&apos;s get started</h1>
+        <p className="text-base text-muted-foreground leading-relaxed">
           Create your company workspace to start managing your courts.
         </p>
       </div>
@@ -43,15 +41,13 @@ export function CreateCompanyStep({ onNext }: CreateCompanyStepProps) {
       <Button
         variant="outline"
         size="lg"
-        className="w-full h-auto p-6 flex flex-col items-center space-y-4 bg-background-emphasis hover:bg-background-subtle"
+        className="w-full h-auto p-6 flex flex-col items-center space-y-4"
         onClick={onNext}
       >
-        <Building2 className="h-8 w-8 text-foreground-subtle" />
+        <Building2 className="h-8 w-8 text-muted-foreground" />
         <div className="space-y-1.5 text-center">
-          <h3 className="text-base font-medium text-foreground-emphasis">Create your company</h3>
-          <p className="text-sm text-foreground-muted leading-relaxed">
-            Set up a new workspace for your team
-          </p>
+          <h3 className="text-base font-medium">Create your company</h3>
+          <p className="text-sm text-muted-foreground">Set up a new workspace for your team</p>
         </div>
       </Button>
     </div>

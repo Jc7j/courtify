@@ -1,78 +1,82 @@
-'use client'
-
-import React from 'react'
-import { cva, type VariantProps } from 'class-variance-authority'
+import * as React from 'react'
 import cn from '@/lib/utils/cn'
 
-const inputVariants = cva(
-  [
-    'w-full',
-    'border',
-    'border-input',
-    'bg-background',
-    'text-foreground',
-    'transition-colors',
-    'duration-200',
-    'disabled:opacity-50',
-    'disabled:cursor-not-allowed',
-    'focus:outline-none',
-    'focus:ring-2',
-    'focus:ring-ring',
-    'focus:border-input',
-    'placeholder:text-muted-foreground',
-  ],
-  {
-    variants: {
-      inputSize: {
-        xs: 'px-2.5 py-1.5 text-xs rounded-md',
-        sm: 'px-3 py-2 text-sm rounded-md',
-        md: 'px-3.5 py-2.5 text-sm rounded-lg',
-        lg: 'px-4 py-3 text-base rounded-lg',
-        xl: 'px-4 py-3.5 text-lg rounded-xl',
-      },
-      state: {
-        default: '',
-        error: 'border-destructive focus:border-destructive focus:ring-destructive',
-        success: 'border-success focus:border-success focus:ring-success',
-      },
-    },
-    defaultVariants: {
-      inputSize: 'md',
-      state: 'default',
-    },
-  }
-)
-
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    VariantProps<typeof inputVariants> {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
   hint?: string
-  size?: VariantProps<typeof inputVariants>['inputSize']
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
+  wrapperClassName?: string
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type = 'text', label, error, hint, size, state, ...props }, ref) => {
-    const inputState = error ? 'error' : state
+  (
+    {
+      className,
+      type,
+      label,
+      error,
+      hint,
+      leftIcon,
+      rightIcon,
+      wrapperClassName,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
+    // Generate unique ID for input-label association
+    const id = React.useId()
 
     return (
-      <div className="space-y-2">
+      <div className={cn('space-y-2', wrapperClassName)}>
         {label && (
-          <label htmlFor={props.id} className="text-sm font-medium text-foreground">
+          <label htmlFor={id} className="text-sm font-medium text-foreground">
             {label}
           </label>
         )}
 
-        <input
-          type={type}
-          className={cn(inputVariants({ inputSize: size, state: inputState }), className)}
-          ref={ref}
-          {...props}
-        />
+        <div className="relative">
+          {leftIcon && (
+            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {leftIcon}
+            </div>
+          )}
 
+          <input
+            type={type}
+            id={id}
+            className={cn(
+              'flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors',
+              'placeholder:text-muted-foreground',
+              'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              leftIcon && 'pl-8',
+              rightIcon && 'pr-8',
+              error && 'border-destructive focus-visible:ring-destructive',
+              className
+            )}
+            ref={ref}
+            disabled={disabled}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
+            {...props}
+          />
+
+          {rightIcon && (
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {rightIcon}
+            </div>
+          )}
+        </div>
+
+        {/* Error or Hint Text */}
         {(error || hint) && (
-          <p className={cn('text-sm', error ? 'text-destructive' : 'text-muted-foreground')}>
+          <p
+            id={error ? `${id}-error` : `${id}-hint`}
+            className={cn('text-sm', error ? 'text-destructive' : 'text-muted-foreground')}
+          >
             {error || hint}
           </p>
         )}
@@ -80,7 +84,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     )
   }
 )
-
 Input.displayName = 'Input'
 
-export { Input, inputVariants }
+export { Input }

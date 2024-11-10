@@ -62,11 +62,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.supabaseAccessToken = user.supabaseAccessToken
         token.user = user
       }
+
+      if (trigger === 'update' && session) {
+        token.user = session.user
+      }
+
       return token
     },
     async session({ session, token }) {

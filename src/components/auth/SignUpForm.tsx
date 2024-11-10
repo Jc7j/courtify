@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
-import { Divider } from '@/components/ui/Divider'
+import { Input, Button } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
+import { Separator } from '../ui/separator'
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -63,56 +63,72 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
     <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Name Field */}
-        <Input
-          {...register('name')}
-          type="text"
-          id="name"
-          label="Full name"
-          placeholder="Acme"
-          error={errors.name?.message}
-          disabled={isLoading}
-          size="md"
-          autoComplete="name"
-        />
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-sm font-medium">
+            Full name
+          </label>
+          <Input
+            {...register('name')}
+            type="text"
+            id="name"
+            placeholder="Acme"
+            className={errors.name ? 'border-destructive' : ''}
+            disabled={isLoading}
+            autoComplete="name"
+          />
+          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+        </div>
 
         {/* Work Email Field */}
-        <Input
-          {...register('email')}
-          type="email"
-          id="email"
-          label="Work email"
-          placeholder="acme@acme.com"
-          error={errors.email?.message}
-          disabled={isLoading}
-          size="md"
-          autoComplete="email"
-        />
+        <div className="space-y-2">
+          <label htmlFor="email" className="text-sm font-medium">
+            Work email
+          </label>
+          <Input
+            {...register('email')}
+            type="email"
+            id="email"
+            placeholder="acme@acme.com"
+            className={errors.email ? 'border-destructive' : ''}
+            disabled={isLoading}
+            autoComplete="email"
+          />
+          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+        </div>
 
         {/* Password Field */}
         <div className="space-y-2">
+          <label htmlFor="password" className="text-sm font-medium">
+            Password
+          </label>
           <Input
             {...register('password')}
             type="password"
             id="password"
-            label="Password"
-            error={errors.password?.message}
+            className={errors.password ? 'border-destructive' : ''}
             disabled={isLoading}
-            size="md"
             autoComplete="new-password"
           />
-
+          {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           <ul className="text-sm text-muted-foreground list-disc pl-5">
             <li>At least 6 characters long</li>
           </ul>
         </div>
 
         {/* Continue Button */}
-        <Button type="submit" loading={isLoading} fullWidth size="md">
-          Create account
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <span className="mr-2">Creating account</span>
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </>
+          ) : (
+            'Create account'
+          )}
         </Button>
       </form>
 
-      <Divider label="or" labelPosition="center" />
+      <Separator label="or" labelPosition="center" />
 
       {/* Sign In Link */}
       <div className="text-center text-sm">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { SignUpForm } from '@/components/auth/SignUpForm'
 import { CreateCompanyStep } from '@/components/onboarding/CreateCompanyStep'
-import { Logo } from '@/components/ui/Logo'
+import { Logo } from '@/components/ui/logo'
 import { Progress } from '@/components/ui/progress'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
