@@ -33,8 +33,6 @@ CREATE TABLE courts (
     court_number SERIAL,
     PRIMARY KEY (company_id, court_number),
     name TEXT NOT NULL,
-    location TEXT,
-    available BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

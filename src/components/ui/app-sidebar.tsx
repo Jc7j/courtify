@@ -24,7 +24,7 @@ const items = [
   },
   {
     title: 'Courts',
-    url: '#',
+    url: '/dashboard/courts',
     icon: Calendar,
   },
   {

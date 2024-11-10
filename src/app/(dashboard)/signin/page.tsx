@@ -5,8 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Input, Button, Logo } from '@/components/ui'
-import { toast } from 'sonner'
+import { Input, Button, Logo, success, error as toastError } from '@/components/ui'
 import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 
@@ -35,16 +34,16 @@ export default function SignInPage() {
     setIsLoading(true)
     try {
       await signIn(data.email, data.password)
-      toast.success('Signed in successfully')
+      success('Signed in successfully')
       router.push(ROUTES.DASHBOARD)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to sign in'
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to sign in'
 
       if (message.includes('credentials')) {
         setError('email', { message: 'Invalid email or password' })
         setError('password', { message: 'Invalid email or password' })
       } else {
-        toast.error(message)
+        toastError(message)
       }
     } finally {
       setIsLoading(false)

@@ -3,8 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Input, Button } from '@/components/ui'
-import { toast } from 'sonner'
+import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -40,7 +39,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
 
   async function handleFormSubmit(data: CreateCompanyFormData) {
     if (!session?.user?.id) {
-      toast.error('Please sign in to create a company')
+      error('Please sign in to create a company')
       return
     }
 
@@ -65,10 +64,10 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
         },
       })
 
-      toast.success('Company created successfully!')
+      success('Company created successfully!')
       router.push(ROUTES.DASHBOARD)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create company')
+    } catch (err) {
+      error(err instanceof Error ? err.message : 'Failed to create company')
     }
   }
 

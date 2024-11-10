@@ -4,9 +4,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Input, Button } from '@/components/ui'
+import { Input, Button, success, error as toastError } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
-import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { Separator } from '../ui/separator'
 
@@ -44,15 +43,15 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
     setIsLoading(true)
     try {
       await signUp(data.email, data.password, data.name)
-      toast.success('Account created successfully!')
+      success('Account created successfully!')
       onSuccess?.()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong'
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
 
       if (message.includes('email')) {
         setError('email', { message })
       } else {
-        toast.error(message)
+        toastError(message)
       }
     } finally {
       setIsLoading(false)
