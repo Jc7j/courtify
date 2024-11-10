@@ -101,7 +101,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             autoComplete="new-password"
           />
 
-          <ul className="text-sm text-foreground-muted list-disc pl-5">
+          <ul className="text-sm text-muted-foreground list-disc pl-5">
             <li>At least 6 characters long</li>
           </ul>
         </div>
@@ -112,14 +112,14 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
         </Button>
       </form>
 
-      <Divider label="or" labelPosition="center" variant="default" />
+      <Divider label="or" labelPosition="center" />
 
       {/* Sign In Link */}
       <div className="text-center text-sm">
-        <span className="text-foreground-muted">Already have an account? </span>
+        <span className="text-muted-foreground">Already have an account? </span>
         <a
           href="/signin"
-          className="font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200"
+          className="font-medium text-primary hover:text-primary/90 transition-colors duration-200"
         >
           Sign in
         </a>

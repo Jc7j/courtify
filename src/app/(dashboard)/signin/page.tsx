@@ -54,7 +54,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background-emphasis px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex justify-center">
@@ -63,8 +63,8 @@ export default function SignInPage() {
 
         {/* Title */}
         <div className="text-center">
-          <h1 className="text-3xl font-semibold text-foreground-emphasis">Welcome back</h1>
-          <p className="mt-2 text-base text-foreground-muted">
+          <h1 className="text-3xl font-semibold text-foreground">Welcome back</h1>
+          <p className="mt-2 text-base text-muted-foreground">
             Sign in to your account to continue
           </p>
         </div>
@@ -97,10 +97,10 @@ export default function SignInPage() {
 
         {/* Sign Up Link */}
         <div className="text-center text-sm">
-          <span className="text-foreground-muted">Don&apos;t have an account? </span>
+          <span className="text-muted-foreground">Don&apos;t have an account? </span>
           <a
             href={ROUTES.AUTH.SIGNUP}
-            className="font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200"
+            className="font-medium text-primary hover:text-primary/90 transition-colors duration-200"
           >
             Sign up
           </a>

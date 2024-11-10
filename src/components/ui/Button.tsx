@@ -6,7 +6,6 @@ import cn from '@/lib/utils/cn'
 import { Loader2 } from 'lucide-react'
 
 const buttonVariants = cva(
-  // Base styles
   [
     'inline-flex',
     'items-center',
@@ -18,33 +17,23 @@ const buttonVariants = cva(
     'disabled:cursor-not-allowed',
     'focus:outline-none',
     'focus:ring-2',
+    'focus:ring-ring',
     'focus:ring-offset-2',
   ],
   {
     variants: {
       variant: {
-        primary: ['bg-primary-600', 'text-white', 'hover:bg-primary-700', 'focus:ring-primary-500'],
-        secondary: [
-          'bg-primary-100',
-          'text-primary-700',
-          'hover:bg-primary-200',
-          'focus:ring-primary-500',
-        ],
+        primary: ['bg-primary', 'text-primary-foreground', 'hover:bg-primary/90'],
+        secondary: ['bg-secondary', 'text-secondary-foreground', 'hover:bg-secondary/80'],
         outline: [
           'border',
-          'border-default',
-          'bg-background-emphasis',
-          'text-foreground-default',
-          'hover:bg-background-subtle',
-          'focus:ring-primary-500',
+          'border-input',
+          'bg-background',
+          'hover:bg-accent',
+          'hover:text-accent-foreground',
         ],
-        ghost: [
-          'text-foreground-subtle',
-          'hover:bg-background-subtle',
-          'hover:text-foreground-default',
-          'focus:ring-primary-500',
-        ],
-        danger: ['bg-error-600', 'text-white', 'hover:bg-error-700', 'focus:ring-error-500'],
+        ghost: ['hover:bg-accent', 'hover:text-accent-foreground'],
+        destructive: ['bg-destructive', 'text-destructive-foreground', 'hover:bg-destructive/90'],
       },
       size: {
         xs: 'h-7 px-2.5 text-xs rounded-md gap-1.5',
@@ -77,43 +66,37 @@ export interface ButtonProps
   rightIcon?: React.ReactNode
 }
 
-function Button(
-  {
-    className,
-    variant,
-    size,
-    fullWidth,
-    loading,
-    disabled,
-    leftIcon,
-    rightIcon,
-    children,
-    ...props
-  }: ButtonProps,
-  ref: React.Ref<HTMLButtonElement>
-) {
-  return (
-    <button
-      className={cn(
-        buttonVariants({
-          variant,
-          size,
-          fullWidth,
-          loading,
-        }),
-        className
-      )}
-      disabled={disabled || loading}
-      ref={ref}
-      {...props}
-    >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-      {!loading && leftIcon}
-      {children}
-      {!loading && rightIcon}
-    </button>
-  )
-}
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant,
+      size,
+      fullWidth,
+      loading,
+      disabled,
+      leftIcon,
+      rightIcon,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <button
+        className={cn(buttonVariants({ variant, size, fullWidth, loading }), className)}
+        disabled={disabled || loading}
+        ref={ref}
+        {...props}
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {!loading && leftIcon}
+        {children}
+        {!loading && rightIcon}
+      </button>
+    )
+  }
+)
 
 Button.displayName = 'Button'
 

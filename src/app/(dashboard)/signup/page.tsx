@@ -50,7 +50,7 @@ export default function SignUpPage() {
   // Conditional layout based on step
   if (step === 'signup') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background-emphasis px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="flex justify-center">
@@ -58,7 +58,7 @@ export default function SignUpPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl font-semibold text-center text-foreground-emphasis">
+          <h1 className="text-3xl font-semibold text-center text-foreground">
             Create your free account
           </h1>
 
@@ -72,7 +72,7 @@ export default function SignUpPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Form */}
-      <div className="w-full lg:w-1/2 min-h-screen bg-background-emphasis flex flex-col">
+      <div className="w-full lg:w-1/2 min-h-screen bg-background flex flex-col">
         <div className="flex-1 px-8 py-12">
           {/* Logo */}
           <div className="mb-12">
@@ -84,25 +84,25 @@ export default function SignUpPage() {
 
         <div className="mb-8 space-y-2 px-8">
           <Progress value={STEPS[step].progress} className="h-1" />
-          <div className="flex justify-between text-sm text-foreground-muted">
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span>Step {STEPS[step].number} of 3</span>
             <span>{STEPS[step].progress}% completed</span>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 text-sm text-foreground-muted border-t border-default">
+        <div className="px-8 py-6 text-sm text-muted-foreground border-t">
           <p>© {new Date().getFullYear()} Courtify. All rights reserved.</p>
         </div>
       </div>
 
       {/* Right side - Preview/Info */}
-      <div className="hidden lg:flex flex-1 bg-background-subtle items-center justify-center p-12">
+      <div className="hidden lg:flex flex-1 bg-secondary items-center justify-center p-12">
         <div className="max-w-lg space-y-4">
-          <h2 className="text-2xl font-semibold text-foreground-emphasis text-center">
+          <h2 className="text-2xl font-semibold text-secondary-foreground text-center">
             Welcome to Courtify
           </h2>
-          <p className="text-foreground-subtle text-center text-base leading-relaxed">
+          <p className="text-secondary-foreground/80 text-center text-base leading-relaxed">
             Streamline your court management with our comprehensive booking system. Whether
             you&apos;re joining an existing workspace or creating a new one, we&apos;re here to help
             you get started.

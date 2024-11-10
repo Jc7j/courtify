@@ -43,13 +43,65 @@
 ---
 
 ### **Development Goals for Courtify**
-
 - **Simplicity and Usability**: Provide a seamless booking experience with a clear, intuitive design.
 - **Scalability and Flexibility**: Support multiple companies with independent configurations.
 - **Accessibility and Inclusivity**: Ensure accessibility for all users, meeting WCAG standards.
 - **Data Security and Privacy**: Prioritize user and company data privacy with secure authentication and access control.
 
-These foundational guidelines ensure **Courtify** stays aligned with its purpose and business requirements, supporting a multi-tenant, scalable, and user-friendly court booking platform.
+---
+### **Design System Documentation**
+
+#### 1. Color System
+Our color system uses HSL values through CSS variables, providing consistent theming across light and dark modes.
+
+##### Brand Colors
+- **Primary (Indigo)**: `#6366F1` - Main brand color, used for CTAs and key actions
+  - Light mode: HSL(239 84% 67%)
+  - Dark mode: Maintains consistency for brand recognition
+
+##### Semantic Colors
+- **Success**: Used for confirmations, successful bookings
+- **Warning**: Used for important notices, booking conflicts
+- **Destructive**: Used for errors, cancellations
+- **Info**: Matches primary, used for informational messages
+
+##### UI Colors
+- **Background**: Page and component backgrounds
+- **Foreground**: Text and content colors
+- **Border**: Component borders and dividers
+- **Ring**: Focus states and outlines
+- **Muted**: Subtle text and backgrounds
+- **Accent**: Hover states and highlights
+
+#### 2. Spacing & Layout
+- Border radius: Consistent `--radius` variable (0.5rem)
+- Component sizing: Consistent scales (xs, sm, md, lg, xl)
+- Spacing: Following Tailwind's spacing scale
+
+#### 3. Dark Mode
+Automatic dark mode support using `data-theme="dark"` attribute:
+- Maintains brand colors
+- Adjusts contrast for readability
+- Preserves component hierarchy
+
+#### 4. Accessibility
+- ARIA labels and roles
+- Keyboard navigation
+- Focus states with visible rings
+- Color contrast compliance
+
+#### 5. Usage Guidelines
+- Use primary buttons for main actions (Book, Create, Submit)
+- Use secondary/outline for supporting actions
+- Maintain consistent spacing and typography
+- Follow semantic color usage for clear user feedback
+- Ensure proper contrast in both light and dark modes
+
+This design system supports Courtify's goals of:
+- Professional and modern appearance
+- Clear user feedback and states
+- Consistent booking experience
+- Accessible interface for all users
 
 ---
 

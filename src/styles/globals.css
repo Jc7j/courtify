@@ -4,80 +4,109 @@
 
 @layer base {
   :root {
+    /* Core backgrounds */
+    --background: 0 0% 100%;
+    --foreground: 224 71.4% 4.1%;
+    
+    /* Card & Popover */
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+    
+    /* Primary - Indigo for main actions & branding */
+    --primary: 239 84% 67%;    /* #6366F1 */
+    --primary-foreground: 210 40% 98%;
+    
+    /* Secondary - Cool gray for supporting elements */
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    
+    /* Muted & Accent */
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220.9 39.3% 11%;
+    
+    /* Status Colors */
+    --success: 142 72% 29%;    /* #16A34A */
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;     /* #F59E0B */
+    --warning-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;  /* #EF4444 */
+    --destructive-foreground: 210 40% 98%;
+    --info: 239 84% 67%;      /* #6366F1 - Matching primary */
+    --info-foreground: 210 40% 98%;
+    
+    /* Borders & UI Elements */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;      /* Matching primary */
+    
+    /* Radius */
     --radius: 0.5rem;
   }
 
-  :root,
-  :root[data-theme="light"] {
-    /* Background colors */
-    --background-default: theme(colors.neutral.50);
-    --background-subtle: theme(colors.neutral.100);
-    --background-muted: theme(colors.neutral.200);
-    --background-emphasis: theme(colors.white);
+  [data-theme="dark"] {
+    /* Core backgrounds */
+    --background: 224 71.4% 4.1%;
+    --foreground: 210 20% 98%;
     
-    /* Foreground colors */
-    --foreground-default: theme(colors.neutral.900);
-    --foreground-subtle: theme(colors.neutral.700);
-    --foreground-muted: theme(colors.neutral.500);
-    --foreground-emphasis: theme(colors.neutral.950);
+    /* Card & Popover */
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
     
-    /* Border colors */
-    --border-default: theme(colors.neutral.200);
-    --border-subtle: theme(colors.neutral.100);
-    --border-emphasis: theme(colors.neutral.300);
-
-    /* Primary colors */
-    --primary-50: theme(colors.primary.50);
-    --primary-100: theme(colors.primary.100);
-    --primary-500: theme(colors.primary.500);
-    --primary-600: theme(colors.primary.600);
-    --primary-700: theme(colors.primary.700);
-
-    /* Status colors */
-    --status-success: theme(colors.success.500);
-    --status-warning: theme(colors.warning.500);
-    --status-error: theme(colors.error.500);
-    --status-info: theme(colors.primary.500);
+    /* Primary - Brighter in dark mode for contrast */
+    --primary: 239 84% 67%;    /* Keeping consistent */
+    --primary-foreground: 210 20% 98%;
+    
+    /* Secondary - Darker gray for supporting elements */
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+    
+    /* Muted & Accent */
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 20% 98%;
+    
+    /* Status Colors - Adjusted for dark mode */
+    --success: 142 72% 29%;
+    --success-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --info: 239 84% 67%;      /* Matching primary */
+    --info-foreground: 210 40% 98%;
+    
+    /* Borders & UI Elements */
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 239 84% 67%;      /* Matching primary */
   }
+}
 
-  :root[data-theme="dark"] {
-    /* Background colors */
-    --background-default: theme(colors.neutral.900);
-    --background-subtle: theme(colors.neutral.800);
-    --background-muted: theme(colors.neutral.700);
-    --background-emphasis: theme(colors.neutral.950);
-    
-    /* Foreground colors */
-    --foreground-default: theme(colors.neutral.50);
-    --foreground-subtle: theme(colors.neutral.200);
-    --foreground-muted: theme(colors.neutral.400);
-    --foreground-emphasis: theme(colors.neutral.100);
-    
-    /* Border colors */
-    --border-default: theme(colors.neutral.700);
-    --border-subtle: theme(colors.neutral.800);
-    --border-emphasis: theme(colors.neutral.600);
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
   }
 }
 
 @layer utilities {
-  .bg-background-default { @apply bg-neutral-50 dark:bg-neutral-900; }
-  .bg-background-subtle { @apply bg-neutral-100 dark:bg-neutral-800; }
-  .bg-background-muted { @apply bg-neutral-200 dark:bg-neutral-700; }
-  .bg-background-emphasis { @apply bg-white dark:bg-neutral-950; }
+  .step {
+    counter-increment: step;
+  }
 
-  .text-foreground-default { @apply text-neutral-900 dark:text-neutral-50; }
-  .text-foreground-subtle { @apply text-neutral-700 dark:text-neutral-200; }
-  .text-foreground-muted { @apply text-neutral-500 dark:text-neutral-400; }
-  .text-foreground-emphasis { @apply text-neutral-950 dark:text-neutral-100; }
-
-  .border-default { @apply border-neutral-200 dark:border-neutral-700; }
-  .border-subtle { @apply border-neutral-100 dark:border-neutral-800; }
-  .border-emphasis { @apply border-neutral-300 dark:border-neutral-600; }
-}
-
-/* Base styles */
-body {
-  @apply bg-background-default text-foreground-default;
+  .step:before {
+    @apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px;
+    @apply ml-[-50px] mt-[-4px];
+    content: counter(step);
+  }
 }
 
