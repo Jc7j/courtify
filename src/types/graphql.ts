@@ -8,12 +8,22 @@ export interface Company {
   updated_at: string
 }
 
-export interface Court {
+export interface Node {
+  nodeId: string
+}
+
+export interface Companies {
+  id: string
+  name: string
+  slug: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Courts extends Node {
   company_id: string
   court_number: number
   name: string
-  location?: Maybe<string>
-  available: boolean
   created_at: string
   updated_at: string
 }

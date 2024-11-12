@@ -1,5 +1,4 @@
-import { AppSidebar } from '@/components/ui/app-sidebar'
-import { AppHeader } from '@/components/ui/app-header'
+import { AppSidebar, AppHeader } from '@/components/ui'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -83,17 +83,37 @@ CREATE POLICY users_insert_public ON users
     WITH CHECK (true);
 
 -- Courts policies
+-- Users can only select courts from their company
 CREATE POLICY courts_select ON courts
     FOR SELECT TO authenticated
-    USING (company_id IN (
+    USING (company_id = (
         SELECT company_id
         FROM users
         WHERE users.id = auth.uid()
     ));
 
-CREATE POLICY courts_modify ON courts
-    FOR ALL TO authenticated
-    USING (company_id IN (
+-- Users can only insert courts into their company
+CREATE POLICY courts_insert ON courts
+    FOR INSERT TO authenticated
+    WITH CHECK (company_id = (
+        SELECT company_id
+        FROM users
+        WHERE users.id = auth.uid()
+    ));
+
+-- Users can only update courts in their company
+CREATE POLICY courts_update ON courts
+    FOR UPDATE TO authenticated
+    USING (company_id = (
+        SELECT company_id
+        FROM users
+        WHERE users.id = auth.uid()
+    ));
+
+-- Users can only delete courts in their company
+CREATE POLICY courts_delete ON courts
+    FOR DELETE TO authenticated
+    USING (company_id = (
         SELECT company_id
         FROM users
         WHERE users.id = auth.uid()
