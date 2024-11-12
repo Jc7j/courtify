@@ -1,7 +1,8 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase } from '../supabase/client'
-import type { User } from 'next-auth'
+import { ROUTES } from '@/constants/routes'
+import { AuthorizedUser } from '@/types/auth'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,7 +12,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<AuthorizedUser | null> {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Please provide both email and password')
         }
@@ -34,9 +35,22 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Failed to get access token')
           }
 
+          // Get user data
           const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('*, companies(*)')
+            .select(
+              `
+              id,
+              email,
+              name,
+              company_id,
+              active,
+              email_verified_at,
+              last_login_at,
+              created_at,
+              updated_at
+            `
+            )
             .eq('id', authData.user.id)
             .single()
 
@@ -44,16 +58,24 @@ export const authOptions: NextAuthOptions = {
             throw new Error('User not found')
           }
 
+          // Update last_login_at
+          await supabase
+            .from('users')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', userData.id)
+
           return {
             id: userData.id,
             email: userData.email,
             name: userData.name,
-            company: userData.companies,
-            supabaseAccessToken: session.access_token,
+            company_id: userData.company_id,
             active: userData.active,
+            email_verified_at: userData.email_verified_at,
+            last_login_at: userData.last_login_at,
             created_at: userData.created_at,
             updated_at: userData.updated_at,
-          } as User
+            supabaseAccessToken: session.access_token,
+          }
         } catch (error) {
           console.error('Authorization error:', error)
           throw error
@@ -62,16 +84,22 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user }) {
       if (user) {
-        token.supabaseAccessToken = user.supabaseAccessToken
-        token.user = user
+        const typedUser = user as AuthorizedUser
+        token.supabaseAccessToken = typedUser.supabaseAccessToken
+        token.user = {
+          id: typedUser.id,
+          email: typedUser.email,
+          name: typedUser.name,
+          company_id: typedUser.company_id,
+          active: typedUser.active,
+          email_verified_at: typedUser.email_verified_at,
+          last_login_at: typedUser.last_login_at,
+          created_at: typedUser.created_at,
+          updated_at: typedUser.updated_at,
+        }
       }
-
-      if (trigger === 'update' && session) {
-        token.user = session.user
-      }
-
       return token
     },
     async session({ session, token }) {
@@ -79,18 +107,23 @@ export const authOptions: NextAuthOptions = {
         session.supabaseAccessToken = token.supabaseAccessToken as string
         session.user = {
           ...session.user,
-          ...(token.user as User),
+          ...(token.user || {}),
         }
       }
       return session
     },
   },
+  pages: {
+    signIn: ROUTES.AUTH.SIGNIN,
+    error: ROUTES.AUTH.SIGNIN,
+  },
+  events: {
+    async signOut() {
+      await supabase.auth.signOut()
+    },
+  },
   session: {
     strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/signin',
-    error: '/signin',
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',

@@ -2,17 +2,11 @@
 
 import { useSession } from 'next-auth/react'
 import { useCallback, useEffect, useState } from 'react'
-import { User } from '@/types/graphql'
-import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/types/supabase'
-
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { BaseUser } from '@/types/auth'
+import { supabase } from '@/lib/supabase/client'
 
 interface UseUserReturn {
-  user: User | null
+  user: BaseUser | null
   loading: boolean
   error: Error | null
   refetch: () => Promise<void>
@@ -20,7 +14,7 @@ interface UseUserReturn {
 
 export function useUser(): UseUserReturn {
   const { data: session } = useSession()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<BaseUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -34,13 +28,25 @@ export function useUser(): UseUserReturn {
     try {
       const { data, error: userError } = await supabase
         .from('users')
-        .select('*')
+        .select(
+          `
+          id,
+          email,
+          name,
+          company_id,
+          active,
+          email_verified_at,
+          last_login_at,
+          created_at,
+          updated_at
+        `
+        )
         .eq('id', session.user.id)
         .single()
 
       if (userError) throw userError
 
-      setUser(data as User)
+      setUser(data as BaseUser)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch user'))

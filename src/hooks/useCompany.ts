@@ -1,8 +1,10 @@
+'use client'
+
 import { useMutation, ApolloError } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
 import { generateSlug } from '@/lib/utils/string'
 import type { Companies } from '@/gql/graphql'
-import { useSession } from 'next-auth/react'
+import { useUser } from '@/hooks/useUser'
 
 interface UseCompanyReturn {
   createCompany: (name: string) => Promise<Companies>
@@ -11,19 +13,11 @@ interface UseCompanyReturn {
 }
 
 export function useCompany(): UseCompanyReturn {
-  const { data: session, status } = useSession()
+  const { user, loading } = useUser()
 
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
     CREATE_COMPANY,
     {
-      context: {
-        headers: {
-          authorization: session?.supabaseAccessToken
-            ? `Bearer ${session.supabaseAccessToken}`
-            : '',
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        },
-      },
       onError: (error) => {
         console.error('Error creating company:', error)
       },
@@ -31,16 +25,12 @@ export function useCompany(): UseCompanyReturn {
   )
 
   const createCompany = async (name: string): Promise<Companies> => {
-    if (status === 'loading') {
+    if (loading) {
       throw new Error('Authentication loading')
     }
 
-    if (!session?.supabaseAccessToken) {
+    if (!user?.id) {
       throw new Error('Authentication required')
-    }
-
-    if (!session.user?.id) {
-      throw new Error('User ID required')
     }
 
     try {

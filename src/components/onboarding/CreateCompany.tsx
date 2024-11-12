@@ -5,11 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import { supabase } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
+import { useUser } from '@/hooks/useUser'
 
 const createCompanySchema = z.object({
   name: z
@@ -26,7 +26,7 @@ interface CreateCompanyProps {
 
 export function CreateCompany({ onBack }: CreateCompanyProps) {
   const { createCompany, creating, createError } = useCompany()
-  const { data: session, update: updateSession } = useSession()
+  const { user, refetch: refetchUser } = useUser()
   const router = useRouter()
 
   const {
@@ -38,7 +38,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
   })
 
   async function handleFormSubmit(data: CreateCompanyFormData) {
-    if (!session?.user?.id) {
+    if (!user?.id) {
       error('Please sign in to create a company')
       return
     }
@@ -49,21 +49,13 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
       const { error: updateError } = await supabase
         .from('users')
         .update({ company_id: company.id })
-        .eq('id', session.user.id)
+        .eq('id', user.id)
 
       if (updateError) {
         throw new Error('Failed to update user company')
       }
 
-      await updateSession({
-        ...session,
-        user: {
-          ...session.user,
-          company_id: company.id,
-          company: company,
-        },
-      })
-
+      await refetchUser()
       success('Company created successfully!')
       router.push(ROUTES.DASHBOARD)
     } catch (err) {

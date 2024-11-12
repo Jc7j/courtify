@@ -1,7 +1,9 @@
+'use client'
+
 import { useMutation, ApolloError } from '@apollo/client'
 import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/gql/mutations/court'
-import type { Courts } from '@/gql/graphql'
-import { useSession } from 'next-auth/react'
+import type { Courts } from '@/types/graphql'
+import { useUser } from '@/hooks/useUser'
 
 interface UseCourtReturn {
   createCourt: (name: string) => Promise<Courts>
@@ -16,66 +18,28 @@ interface UseCourtReturn {
 }
 
 export function useCourt(): UseCourtReturn {
-  const { data: session, status } = useSession()
+  const { user, loading } = useUser()
 
-  const [createCourtMutation, { loading: creating, error: createError }] = useMutation(
-    CREATE_COURT,
-    {
-      context: {
-        headers: {
-          authorization: session?.supabaseAccessToken
-            ? `Bearer ${session.supabaseAccessToken}`
-            : '',
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        },
-      },
-    }
-  )
-
-  const [updateCourtMutation, { loading: updating, error: updateError }] = useMutation(
-    UPDATE_COURT,
-    {
-      context: {
-        headers: {
-          authorization: session?.supabaseAccessToken
-            ? `Bearer ${session.supabaseAccessToken}`
-            : '',
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        },
-      },
-    }
-  )
-
-  const [deleteCourtMutation, { loading: deleting, error: deleteError }] = useMutation(
-    DELETE_COURT,
-    {
-      context: {
-        headers: {
-          authorization: session?.supabaseAccessToken
-            ? `Bearer ${session.supabaseAccessToken}`
-            : '',
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        },
-      },
-    }
-  )
+  const [createCourtMutation, { loading: creating, error: createError }] = useMutation(CREATE_COURT)
+  const [updateCourtMutation, { loading: updating, error: updateError }] = useMutation(UPDATE_COURT)
+  const [deleteCourtMutation, { loading: deleting, error: deleteError }] = useMutation(DELETE_COURT)
 
   const createCourt = async (name: string): Promise<Courts> => {
-    if (status === 'loading') {
+    if (loading) {
       throw new Error('Authentication loading')
     }
 
-    if (!session?.supabaseAccessToken) {
+    if (!user?.id) {
       throw new Error('Authentication required')
     }
 
-    if (!session.user?.company?.id) {
+    if (!user.company_id) {
       throw new Error('Company required')
     }
 
     try {
       const courtInput = {
-        company_id: session.user.company.id,
+        company_id: user.company_id,
         name,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -98,14 +62,14 @@ export function useCourt(): UseCourtReturn {
   }
 
   const updateCourt = async (courtNumber: number, name: string): Promise<Courts> => {
-    if (!session?.user?.company?.id) {
+    if (!user?.company_id) {
       throw new Error('Company required')
     }
 
     try {
       const { data } = await updateCourtMutation({
         variables: {
-          company_id: session.user.company.id,
+          company_id: user.company_id,
           court_number: courtNumber,
           set: {
             name,
@@ -126,14 +90,14 @@ export function useCourt(): UseCourtReturn {
   }
 
   const deleteCourt = async (courtNumber: number): Promise<Courts> => {
-    if (!session?.user?.company?.id) {
+    if (!user?.company_id) {
       throw new Error('Company required')
     }
 
     try {
       const { data } = await deleteCourtMutation({
         variables: {
-          company_id: session.user.company.id,
+          company_id: user.company_id,
           court_number: courtNumber,
         },
       })

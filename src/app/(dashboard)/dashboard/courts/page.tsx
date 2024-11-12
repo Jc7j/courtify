@@ -14,22 +14,22 @@ import {
   success as toastSuccess,
 } from '@/components/ui'
 import { useCourt } from '@/hooks/useCourt'
-import { Courts } from '@/gql/graphql'
-import { useSession } from 'next-auth/react'
+import type { Courts } from '@/types/graphql'
+import { useUser } from '@/hooks/useUser'
 import { useQuery } from '@apollo/client'
 import { GET_COMPANY_COURTS } from '@/gql/queries/court'
 
 export default function CourtsPage() {
-  const { data: session } = useSession()
-  const { createCourt, updateCourt, deleteCourt } = useCourt()
+  const { user } = useUser()
+  const { createCourt, updateCourt, deleteCourt, creating, updating, deleting } = useCourt()
   const [localCourts, setLocalCourts] = useState<Courts[]>([])
 
   // Query courts with Apollo
   const { data, loading, error, refetch } = useQuery(GET_COMPANY_COURTS, {
     variables: {
-      company_id: session?.user?.company?.id,
+      company_id: user?.company_id,
     },
-    skip: !session?.user?.company?.id,
+    skip: !user?.company_id,
     onError: (error) => {
       console.error('Error fetching courts:', error)
       toastError('Failed to load courts')
@@ -46,14 +46,23 @@ export default function CourtsPage() {
 
   // Optimistic create court
   const handleCreateCourt = async (name: string) => {
+    if (!user?.company_id) {
+      toastError('Company ID is required')
+      return
+    }
+
     const tempCourtNumber = Math.max(0, ...localCourts.map((c) => c.court_number)) + 1
-    const tempCourt: Partial<Courts> = {
+    const tempCourt: Courts = {
+      nodeId: `temp-${Date.now()}`,
+      company_id: user.company_id,
       court_number: tempCourtNumber,
       name,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
 
     // Update local state immediately
-    setLocalCourts((prev) => [...prev, tempCourt as Courts])
+    setLocalCourts((prev) => [...prev, tempCourt])
 
     try {
       const newCourt = await createCourt(name)
@@ -65,7 +74,29 @@ export default function CourtsPage() {
     } catch (err) {
       // Revert local state on error
       setLocalCourts((prev) => prev.filter((c) => c.nodeId !== tempCourt.nodeId))
-      toastError(`Failed to create court: ${err}`)
+      toastError(err instanceof Error ? err.message : 'Failed to create court')
+    }
+  }
+
+  // Handle update court
+  const handleUpdateCourt = async (courtNumber: number, name: string) => {
+    try {
+      await updateCourt(courtNumber, name)
+      await refetch() // Refresh the court list
+      toastSuccess('Court updated successfully')
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Failed to update court')
+    }
+  }
+
+  // Handle delete court
+  const handleDeleteCourt = async (courtNumber: number) => {
+    try {
+      await deleteCourt(courtNumber)
+      setLocalCourts((prev) => prev.filter((c) => c.court_number !== courtNumber))
+      toastSuccess('Court deleted successfully')
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Failed to delete court')
     }
   }
 
@@ -90,8 +121,12 @@ export default function CourtsPage() {
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-foreground">Courts</h1>
-        <Button onClick={() => handleCreateCourt('New Court')}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => handleCreateCourt('New Court')} disabled={creating}>
+          {creating ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+          ) : (
+            <Plus className="h-4 w-4 mr-2" />
+          )}
           Add Court
         </Button>
       </div>
@@ -126,7 +161,7 @@ export default function CourtsPage() {
               </TableRow>
             ) : (
               localCourts.map((court) => (
-                <TableRow key={court.court_number}>
+                <TableRow key={court.nodeId}>
                   <TableCell className="font-medium">Court {court.court_number}</TableCell>
                   <TableCell>{court.name}</TableCell>
                   <TableCell>{new Date(court.created_at).toLocaleDateString()}</TableCell>
@@ -134,16 +169,28 @@ export default function CourtsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => updateCourt(court.court_number, `${court.name} (Updated)`)}
+                      onClick={() =>
+                        handleUpdateCourt(court.court_number, `${court.name} (Updated)`)
+                      }
+                      disabled={updating}
                     >
-                      Edit
+                      {updating ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-2" />
+                      ) : (
+                        'Edit'
+                      )}
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => deleteCourt(court.court_number)}
+                      onClick={() => handleDeleteCourt(court.court_number)}
+                      disabled={deleting}
                     >
-                      Delete
+                      {deleting ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                      ) : (
+                        'Delete'
+                      )}
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -18,6 +18,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   return forward(operation)
 })
 
+// Centralized auth header handling
 const authLink = setContext(async (_, { headers }) => {
   const session = await getSession()
 
@@ -39,27 +40,15 @@ const httpLink = createHttpLink({
       (process.env.NEXT_PUBLIC_APP_ENV as keyof typeof GRAPHQL_ENDPOINTS) || 'local'
     ],
   credentials: 'same-origin',
-  fetchOptions: {
-    mode: 'cors',
-  },
 })
 
 const link = from([errorLink, authLink, httpLink])
 
+// Shared Apollo client instance
 export const apolloClient = new ApolloClient({
   link,
   cache,
-  defaultOptions: {
-    ...defaultApolloConfig.defaultOptions,
-    query: {
-      fetchPolicy: 'network-only',
-      errorPolicy: 'all',
-    },
-    watchQuery: {
-      fetchPolicy: 'network-only',
-      errorPolicy: 'all',
-    },
-  },
+  ...defaultApolloConfig,
 })
 
 // Helper for SSR
