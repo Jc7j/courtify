@@ -5,11 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
-import { useRouter } from 'next/navigation'
-import { ROUTES } from '@/constants/routes'
-import { supabase } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
-import { useUser } from '@/hooks/useUser'
+import { BaseUser } from '@/types/auth'
+import { useOnboarding } from '@/hooks/useOnboarding'
 
 const createCompanySchema = z.object({
   name: z
@@ -21,13 +19,13 @@ const createCompanySchema = z.object({
 type CreateCompanyFormData = z.infer<typeof createCompanySchema>
 
 interface CreateCompanyProps {
+  user: BaseUser | null
   onBack?: () => void
 }
 
-export function CreateCompany({ onBack }: CreateCompanyProps) {
-  const { createCompany, creating, createError } = useCompany()
-  const { user, refetch: refetchUser } = useUser()
-  const router = useRouter()
+export function CreateCompany({ user, onBack }: CreateCompanyProps) {
+  const { createCompany, creating } = useCompany()
+  const { handleCompanyCreated } = useOnboarding()
 
   const {
     register,
@@ -38,26 +36,12 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
   })
 
   async function handleFormSubmit(data: CreateCompanyFormData) {
-    if (!user?.id) {
-      error('Please sign in to create a company')
-      return
-    }
+    if (!user?.id) return
 
     try {
       const company = await createCompany(data.name)
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ company_id: company.id })
-        .eq('id', user.id)
-
-      if (updateError) {
-        throw new Error('Failed to update user company')
-      }
-
-      await refetchUser()
       success('Company created successfully!')
-      router.push(ROUTES.DASHBOARD)
+      await handleCompanyCreated(company.id)
     } catch (err) {
       error(err instanceof Error ? err.message : 'Failed to create company')
     }
@@ -86,8 +70,6 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
           />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
-
-        {createError && <p className="text-sm text-destructive">{createError.message}</p>}
 
         <div className="flex gap-3 pt-4">
           {onBack && (

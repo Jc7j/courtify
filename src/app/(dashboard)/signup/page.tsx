@@ -1,14 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { SignUpForm } from '@/components/auth/SignUpForm'
 import { CreateCompanyStep } from '@/components/onboarding/CreateCompanyStep'
-import { Logo } from '@/components/ui/logo'
-import { Progress } from '@/components/ui/progress'
-import { useOnboarding } from '@/hooks/useOnboarding'
+import { Logo, Progress } from '@/components/ui'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
-
-type OnboardingStep = 'signup' | 'create-intro' | 'create'
+import { useUser } from '@/hooks/useUser'
+import { useOnboarding } from '@/hooks/useOnboarding'
 
 const STEPS = {
   signup: { number: 1, progress: 33 },
@@ -17,31 +14,24 @@ const STEPS = {
 } as const
 
 export default function SignUpPage() {
-  const { step: urlStep } = useOnboarding()
-  const [step, setStep] = useState<OnboardingStep>('signup')
-
-  // Sync step with URL
-  useEffect(() => {
-    if (urlStep === 'create-intro') {
-      setStep('create-intro')
-    }
-  }, [urlStep])
+  const { user } = useUser()
+  const { step, handleStepChange } = useOnboarding()
 
   function handleSignupSuccess() {
-    setStep('create-intro')
+    handleStepChange('create-intro')
   }
 
   function handleCreateIntro() {
-    setStep('create')
+    handleStepChange('create')
   }
 
   // Show appropriate step
   function renderStep() {
     switch (step) {
       case 'create-intro':
-        return <CreateCompanyStep onNext={handleCreateIntro} />
+        return <CreateCompanyStep user={user} onNext={handleCreateIntro} />
       case 'create':
-        return <CreateCompany onBack={() => setStep('create-intro')} />
+        return <CreateCompany user={user} onBack={() => handleStepChange('create-intro')} />
       default:
         return <SignUpForm onSuccess={handleSignupSuccess} />
     }

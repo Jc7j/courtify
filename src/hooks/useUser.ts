@@ -13,13 +13,13 @@ interface UseUserReturn {
 }
 
 export function useUser(): UseUserReturn {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<BaseUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
   const fetchUser = useCallback(async () => {
-    if (!session?.user?.id) {
+    if (!session?.user?.id || status === 'loading') {
       setUser(null)
       setLoading(false)
       return
@@ -46,18 +46,24 @@ export function useUser(): UseUserReturn {
 
       if (userError) throw userError
 
-      setUser(data as BaseUser)
+      setUser(data)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch user'))
+      setUser(null)
     } finally {
       setLoading(false)
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, status])
 
   useEffect(() => {
     fetchUser()
   }, [fetchUser])
 
-  return { user, loading, error, refetch: fetchUser }
+  return {
+    user,
+    loading: loading || status === 'loading',
+    error,
+    refetch: fetchUser,
+  }
 }

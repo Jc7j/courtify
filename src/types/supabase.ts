@@ -54,29 +54,23 @@ export type Database = {
       }
       courts: {
         Row: {
-          available: boolean
           company_id: string
           court_number: number
           created_at: string
-          location: string | null
           name: string
           updated_at: string
         }
         Insert: {
-          available?: boolean
           company_id: string
           court_number?: number
           created_at?: string
-          location?: string | null
           name: string
           updated_at?: string
         }
         Update: {
-          available?: boolean
           company_id?: string
           court_number?: number
           created_at?: string
-          location?: string | null
           name?: string
           updated_at?: string
         }

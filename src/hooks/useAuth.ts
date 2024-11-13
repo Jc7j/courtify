@@ -6,7 +6,6 @@ import { useCallback } from 'react'
 import { ROUTES } from '@/constants/routes'
 import { supabase } from '@/lib/supabase/client'
 import { getAuthErrorMessage, AUTH_ERRORS } from '@/lib/utils/auth-errors'
-import { BaseUser } from '@/types/auth'
 
 export function useAuth() {
   const { data: session, status, update: updateSession } = useSession()
@@ -25,21 +24,19 @@ export function useAuth() {
           throw new Error(result.error)
         }
 
-        // If successful, redirect based on company_id
         await updateSession()
-        const user = session?.user
 
-        if (user?.company_id) {
-          router.push(ROUTES.DASHBOARD)
+        if (session?.user?.company_id) {
+          router.replace(ROUTES.DASHBOARD)
         } else {
-          router.push(`${ROUTES.AUTH.SIGNUP}?step=create-intro`)
+          router.replace(`${ROUTES.AUTH.SIGNUP}?step=create-intro`)
         }
       } catch (error) {
         console.error('Error signing in:', error)
         throw new Error(getAuthErrorMessage(error))
       }
     },
-    [router, session?.user, updateSession]
+    [session?.user?.company_id, updateSession, router]
   )
 
   const signUp = useCallback(
@@ -69,8 +66,7 @@ export function useAuth() {
 
         if (authError) throw authError
 
-        // Create user record
-        const newUser: Partial<BaseUser> = {
+        const newUser = {
           id: authData.user?.id,
           email,
           name,
@@ -98,7 +94,7 @@ export function useAuth() {
   const signOut = useCallback(async () => {
     try {
       await nextAuthSignOut({ redirect: false })
-      router.push(ROUTES.AUTH.SIGNIN)
+      router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {
       console.error('Error signing out:', error)
       throw new Error(getAuthErrorMessage(error))

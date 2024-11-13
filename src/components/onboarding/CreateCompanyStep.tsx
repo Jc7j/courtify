@@ -1,38 +1,19 @@
-'use client'
-
 import { Button } from '@/components/ui'
 import { Building2 } from 'lucide-react'
-import { useUser } from '@/hooks/useUser'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { ROUTES } from '@/constants/routes'
+import { BaseUser } from '@/types/auth'
 
 interface CreateCompanyStepProps {
+  user: BaseUser | null
   onNext: () => void
 }
 
-export function CreateCompanyStep({ onNext }: CreateCompanyStepProps) {
-  const { user, loading } = useUser()
-  const router = useRouter()
-
-  // Check if user already has a company
-  useEffect(() => {
-    if (loading) return
-
-    if (user?.company_id) {
-      router.push(ROUTES.DASHBOARD)
-    }
-  }, [user?.company_id, loading, router])
-
-  // Show loading state while checking
-  if (loading) {
-    return null
-  }
-
+export function CreateCompanyStep({ user, onNext }: CreateCompanyStepProps) {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Welcome! Let&apos;s get started</h1>
+        <h1 className="text-2xl font-semibold text-foreground">
+          Welcome {user?.name}! Let&apos;s get started
+        </h1>
         <p className="text-base text-muted-foreground leading-relaxed">
           Create your company workspace to start managing your courts.
         </p>

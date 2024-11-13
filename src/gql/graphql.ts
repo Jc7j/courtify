@@ -532,12 +532,10 @@ export type CompaniesUpdateResponse = {
 
 export type Courts = Node & {
   __typename?: 'courts';
-  available: Scalars['Boolean']['output'];
   companies: Companies;
   company_id: Scalars['UUID']['output'];
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
-  location?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   /** Globally Unique Record Identifier */
   nodeId: Scalars['ID']['output'];
@@ -567,11 +565,9 @@ export type CourtsEdge = {
 export type CourtsFilter = {
   /** Returns true only if all its inner filters are true, otherwise returns false */
   and?: InputMaybe<Array<CourtsFilter>>;
-  available?: InputMaybe<BooleanFilter>;
   company_id?: InputMaybe<UuidFilter>;
   court_number?: InputMaybe<IntFilter>;
   created_at?: InputMaybe<DatetimeFilter>;
-  location?: InputMaybe<StringFilter>;
   name?: InputMaybe<StringFilter>;
   nodeId?: InputMaybe<IdFilter>;
   /** Negates a filter */
@@ -582,10 +578,8 @@ export type CourtsFilter = {
 };
 
 export type CourtsInsertInput = {
-  available?: InputMaybe<Scalars['Boolean']['input']>;
   company_id?: InputMaybe<Scalars['UUID']['input']>;
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
-  location?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   updated_at?: InputMaybe<Scalars['Datetime']['input']>;
 };
@@ -599,20 +593,16 @@ export type CourtsInsertResponse = {
 };
 
 export type CourtsOrderBy = {
-  available?: InputMaybe<OrderByDirection>;
   company_id?: InputMaybe<OrderByDirection>;
   court_number?: InputMaybe<OrderByDirection>;
   created_at?: InputMaybe<OrderByDirection>;
-  location?: InputMaybe<OrderByDirection>;
   name?: InputMaybe<OrderByDirection>;
   updated_at?: InputMaybe<OrderByDirection>;
 };
 
 export type CourtsUpdateInput = {
-  available?: InputMaybe<Scalars['Boolean']['input']>;
   company_id?: InputMaybe<Scalars['UUID']['input']>;
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
-  location?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   updated_at?: InputMaybe<Scalars['Datetime']['input']>;
 };
