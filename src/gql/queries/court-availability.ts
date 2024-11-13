@@ -10,23 +10,17 @@ export const GET_COURT_AVAILABILITIES = gql`
     $end_time: Datetime!
   ) {
     court_availabilitiesCollection(
-      first: 50
-      orderBy: [{ start_time: AscNullsFirst }, { status: AscNullsFirst }]
       filter: {
         company_id: { eq: $company_id }
         court_number: { eq: $court_number }
-        start_time: { gte: $start_time }
-        end_time: { lte: $end_time }
+        and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
       }
+      orderBy: [{ start_time: AscNullsFirst }]
     ) {
       edges {
         node {
           ...CourtAvailabilityFields
         }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
       }
     }
   }

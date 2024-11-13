@@ -9,6 +9,7 @@ import type { Courts } from '@/types/graphql'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { toast } from 'sonner'
 import { useUser } from '@/providers/UserProvider'
+import dayjs from 'dayjs'
 
 interface CourtCalendarProps {
   court: Courts
@@ -17,8 +18,8 @@ interface CourtCalendarProps {
 export function CourtCalendar({ court }: CourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const [currentRange, setCurrentRange] = useState({
-    start: new Date().toISOString(),
-    end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+    start: dayjs().startOf('week').toISOString(),
+    end: dayjs().endOf('week').toISOString(),
   })
 
   const { availabilities, createAvailability, updateAvailability } = useCourtAvailability({
@@ -27,18 +28,34 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
     endTime: currentRange.end,
   })
 
+  console.log('Current Range:', {
+    start: currentRange.start,
+    end: currentRange.end,
+    availabilities,
+  })
+
   const { user } = useUser()
 
-  // Convert availabilities to FullCalendar events
+  // Convert availabilities to FullCalendar events with better formatting
   const events = availabilities.map((availability) => ({
     id: `${availability.court_number}-${availability.start_time}`,
-    title: `Court ${availability.court_number} - ${availability.status}`,
+    title: `${dayjs(availability.start_time).format('h:mm A')} - ${dayjs(
+      availability.end_time
+    ).format('h:mm A')}`,
     start: availability.start_time,
     end: availability.end_time,
     backgroundColor: getStatusColor(availability.status),
+    borderColor: 'transparent',
+    textColor: '#fff',
     extendedProps: {
       status: availability.status,
+      courtNumber: availability.court_number,
     },
+    classNames: [
+      'cursor-pointer',
+      'hover:opacity-90',
+      availability.status === 'past' ? 'opacity-50' : '',
+    ],
   }))
 
   // Handle slot selection for creating new availability
@@ -98,20 +115,20 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
         slotMaxTime="23:00:00"
         allDaySlot={false}
         height="auto"
-        expandRows={true}
-        stickyHeaderDates={true}
-        nowIndicator={true}
-        selectable={true}
-        selectMirror={true}
-        dayMaxEvents={true}
-        weekends={true}
+        expandRows
+        stickyHeaderDates
+        nowIndicator
+        selectable
+        selectMirror
+        dayMaxEvents
+        weekends
         events={events}
         select={handleSelect}
         eventClick={handleEventClick}
         datesSet={(dateInfo) => {
           setCurrentRange({
-            start: dateInfo.start.toISOString(),
-            end: dateInfo.end.toISOString(),
+            start: dayjs(dateInfo.start).toISOString(),
+            end: dayjs(dateInfo.end).toISOString(),
           })
         }}
         selectConstraint={{
@@ -120,13 +137,35 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
         }}
         slotDuration="00:30:00"
         slotLabelInterval="01:00"
-        timeZone="UTC"
+        timeZone="local"
+        slotLabelFormat={{
+          hour: 'numeric',
+          minute: '2-digit',
+          meridiem: 'short',
+        }}
+        eventTimeFormat={{
+          hour: 'numeric',
+          minute: '2-digit',
+          meridiem: 'short',
+        }}
+        dayHeaderFormat={{
+          weekday: 'short',
+          month: 'numeric',
+          day: 'numeric',
+          omitCommas: true,
+        }}
+        eventContent={(eventInfo) => (
+          <div className="p-1 text-xs">
+            <div className="font-semibold">{eventInfo.event.title}</div>
+            <div className="opacity-75 capitalize">{eventInfo.event.extendedProps.status}</div>
+          </div>
+        )}
       />
     </div>
   )
 }
 
-// Helper function to get color based on status
+// Update color function to include better contrast
 function getStatusColor(status: string): string {
   switch (status) {
     case 'available':

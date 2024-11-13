@@ -57,12 +57,18 @@ export function useCourtAvailability({
 }: UseCourtAvailabilityProps = {}): UseCourtAvailabilityReturn {
   const { user, loading: userLoading, isAuthenticated } = useUser()
 
-  // Query for availabilities
+  console.log('useCourtAvailability params:', {
+    courtNumber,
+    startTime,
+    endTime,
+    userId: user?.id,
+    companyId: user?.company_id,
+  })
+
   const {
     data,
     loading: queryLoading,
     error: queryError,
-    refetch,
   } = useQuery<AvailabilitiesQueryData>(
     courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
     {
@@ -76,6 +82,12 @@ export function useCourtAvailability({
       fetchPolicy: 'cache-and-network',
     }
   )
+
+  console.log('Query result:', {
+    data,
+    loading: queryLoading,
+    error: queryError,
+  })
 
   // Create mutation
   const [createAvailabilityMutation, { loading: creating }] = useMutation(
@@ -159,6 +171,10 @@ export function useCourtAvailability({
       throw new Error('Authentication and company required')
     }
 
+    // Convert to UTC for storage
+    const utcStart = new Date(startTime).toISOString()
+    const utcEnd = new Date(endTime).toISOString()
+
     try {
       const { data } = await createAvailabilityMutation({
         variables: {
@@ -166,8 +182,8 @@ export function useCourtAvailability({
             {
               company_id: user.company_id,
               court_number: courtNumber,
-              start_time: startTime, // Use original ISO string
-              end_time: endTime, // Use original ISO string
+              start_time: utcStart,
+              end_time: utcEnd,
               status,
             },
           ],
@@ -236,6 +252,6 @@ export function useCourtAvailability({
     updateAvailability,
     creating,
     updating,
-    refetch: refetch as unknown as () => Promise<void>,
+    refetch: fetch as unknown as () => Promise<void>,
   }
 }
