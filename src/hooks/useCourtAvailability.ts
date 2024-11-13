@@ -50,14 +50,6 @@ interface AvailabilitiesQueryData {
   court_availabilitiesCollection: CourtAvailabilityConnection
 }
 
-const errorMessages = {
-  no_overlapping_slots: 'This time slot overlaps with an existing booking',
-  min_slot_duration: 'Booking must be at least 30 minutes',
-  max_slot_duration: 'Booking cannot exceed 4 hours',
-  business_hours: 'Bookings only available between 6 AM and 11 PM',
-  past_modification: 'Cannot modify past bookings',
-} as const
-
 export function useCourtAvailability({
   courtNumber,
   startTime,
@@ -174,11 +166,9 @@ export function useCourtAvailability({
             {
               company_id: user.company_id,
               court_number: courtNumber,
-              start_time: startTime,
-              end_time: endTime,
+              start_time: startTime, // Use original ISO string
+              end_time: endTime, // Use original ISO string
               status,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
             },
           ],
         },
@@ -191,13 +181,8 @@ export function useCourtAvailability({
 
       return newAvailability
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      const constraintError = Object.keys(errorMessages).find((key) => message.includes(key))
-      throw new Error(
-        constraintError
-          ? errorMessages[constraintError as keyof typeof errorMessages]
-          : 'Failed to create availability'
-      )
+      console.error('Detailed creation error:', err)
+      throw err instanceof Error ? err : new Error('Failed to create availability')
     }
   }
 

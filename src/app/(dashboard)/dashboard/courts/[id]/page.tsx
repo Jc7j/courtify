@@ -116,8 +116,21 @@ export default function CourtPage() {
         </Button>
       </div>
 
-      {/* Calendar Section */}
-      <CourtCalendar court={court} />
+      {/* Calendar Section with Loading State */}
+      {courtLoading ? (
+        <div className="mt-8 bg-background border rounded-lg p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-muted rounded w-full" />
+            <div className="grid grid-cols-7 gap-2">
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className="h-96 bg-muted rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        court && <CourtCalendar court={court} />
+      )}
     </div>
   )
 }

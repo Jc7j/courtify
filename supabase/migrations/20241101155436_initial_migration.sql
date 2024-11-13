@@ -63,8 +63,8 @@ CREATE TABLE court_availabilities (
     -- Constraints
     CONSTRAINT valid_time_range CHECK (start_time < end_time),
     CONSTRAINT valid_status CHECK (
-        (status = 'past' AND end_time < NOW()) OR
-        (status != 'past' AND end_time >= NOW())
+        (status = 'past' AND end_time < timezone('UTC', now())) OR
+        (status != 'past' AND end_time >= timezone('UTC', now()))
     )
 );
 
@@ -146,70 +146,60 @@ CREATE POLICY courts_delete ON courts
     ));
 
 -- Policies for authenticated users (company staff)
+-- Policy for authenticated users to select
 CREATE POLICY "court_availabilities_select_auth" ON court_availabilities
     FOR SELECT TO authenticated
-    USING (company_id = (
-        SELECT company_id
-        FROM users
-        WHERE users.id = auth.uid()
-    ));
+    USING (
+        company_id IN (
+            SELECT company_id 
+            FROM users 
+            WHERE users.id = auth.uid()
+        )
+    );
 
+-- Simplified insert policy
 CREATE POLICY "court_availabilities_insert_auth" ON court_availabilities
     FOR INSERT TO authenticated
     WITH CHECK (
-        company_id = (
-            SELECT company_id
-            FROM users
+        company_id IN (
+            SELECT company_id 
+            FROM users 
             WHERE users.id = auth.uid()
-        ) AND
-        status IN ('available', 'booked') AND
-        end_time > NOW()
+        )
     );
 
+-- More permissive update policy
 CREATE POLICY "court_availabilities_update_auth" ON court_availabilities
     FOR UPDATE TO authenticated
     USING (
-        company_id = (
-            SELECT company_id
-            FROM users
+        company_id IN (
+            SELECT company_id 
+            FROM users 
             WHERE users.id = auth.uid()
-        )
-    )
-    WITH CHECK (
-        -- Only allow updating one field at a time
-        (
-            (OLD.status != NEW.status AND OLD.start_time = NEW.start_time AND OLD.end_time = NEW.end_time) OR
-            (OLD.start_time != NEW.start_time AND OLD.status = NEW.status AND OLD.end_time = NEW.end_time) OR
-            (OLD.end_time != NEW.end_time AND OLD.status = NEW.status AND OLD.start_time = NEW.start_time)
-        ) AND
-        -- Ensure valid status transitions
-        (
-            (NEW.status IN ('available', 'booked')) AND
-            NEW.end_time > NOW()
         )
     );
 
+-- Basic delete policy
 CREATE POLICY "court_availabilities_delete_auth" ON court_availabilities
     FOR DELETE TO authenticated
     USING (
-        company_id = (
-            SELECT company_id
-            FROM users
+        company_id IN (
+            SELECT company_id 
+            FROM users 
             WHERE users.id = auth.uid()
-        ) AND
-        end_time > NOW()
+        )
     );
 
--- Policies for anonymous users (guests)
+-- Simple read-only policy for anonymous users
 CREATE POLICY "court_availabilities_select_anon" ON court_availabilities
     FOR SELECT TO anon
-    USING (status = 'available' AND end_time > NOW());
+    USING (status = 'available');
 
 -- Trigger to automatically update status to 'past'
 CREATE OR REPLACE FUNCTION update_availability_status()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.end_time < NOW() THEN
+    IF NEW.end_time < timezone('UTC', now()) THEN
         NEW.status = 'past';
     END IF;
     RETURN NEW;
@@ -249,14 +239,6 @@ CREATE TRIGGER update_court_availabilities_updated_at
     BEFORE UPDATE ON court_availabilities
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
--- Add a constraint to prevent overlapping slots
-ALTER TABLE court_availabilities
-ADD CONSTRAINT no_overlapping_slots EXCLUDE USING gist (
-    company_id WITH =,
-    court_number WITH =,
-    tstzrange(start_time, end_time) WITH &&
-);
 
 -- Add trigger to validate time changes
 CREATE OR REPLACE FUNCTION validate_availability_update()

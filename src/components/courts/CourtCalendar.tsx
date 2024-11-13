@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useRef, useState } from 'react'
+import { EventClickArg, DateSelectArg } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import type { Courts } from '@/types/graphql'
+import { useCourtAvailability } from '@/hooks/useCourtAvailability'
+import { toast } from 'sonner'
+import { useUser } from '@/providers/UserProvider'
 
 interface CourtCalendarProps {
   court: Courts
@@ -12,6 +16,72 @@ interface CourtCalendarProps {
 
 export function CourtCalendar({ court }: CourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
+  const [currentRange, setCurrentRange] = useState({
+    start: new Date().toISOString(),
+    end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+  })
+
+  const { availabilities, createAvailability, updateAvailability } = useCourtAvailability({
+    courtNumber: court.court_number,
+    startTime: currentRange.start,
+    endTime: currentRange.end,
+  })
+
+  const { user } = useUser()
+
+  // Convert availabilities to FullCalendar events
+  const events = availabilities.map((availability) => ({
+    id: `${availability.court_number}-${availability.start_time}`,
+    title: `Court ${availability.court_number} - ${availability.status}`,
+    start: availability.start_time,
+    end: availability.end_time,
+    backgroundColor: getStatusColor(availability.status),
+    extendedProps: {
+      status: availability.status,
+    },
+  }))
+
+  // Handle slot selection for creating new availability
+  const handleSelect = async (selectInfo: DateSelectArg) => {
+    if (!user?.company_id) {
+      toast.error('Company ID is required')
+      return
+    }
+
+    // Ensure dates are in ISO format with timezone
+    const startTime = new Date(selectInfo.start).toISOString()
+    const endTime = new Date(selectInfo.end).toISOString()
+
+    try {
+      await createAvailability({
+        courtNumber: court.court_number,
+        startTime,
+        endTime,
+        status: 'available',
+      })
+      toast.success('Availability created')
+    } catch (error) {
+      console.error('Creation error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to create availability')
+    }
+  }
+
+  // Handle event click for updating status
+  const handleEventClick = async (clickInfo: EventClickArg) => {
+    const currentStatus = clickInfo.event.extendedProps.status
+    const newStatus = currentStatus === 'available' ? 'booked' : 'available'
+
+    try {
+      await updateAvailability({
+        courtNumber: court.court_number,
+        startTime: clickInfo.event.startStr,
+        update: { status: newStatus },
+      })
+      toast.success(`Status updated to ${newStatus}`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update status')
+    }
+  }
 
   return (
     <div className="mt-8 bg-background border rounded-lg p-6">
@@ -24,8 +94,8 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
           center: 'title',
           right: 'timeGridWeek,timeGridDay',
         }}
-        slotMinTime="06:00:00" // Start at 6 AM
-        slotMaxTime="23:00:00" // End at 11 PM
+        slotMinTime="06:00:00"
+        slotMaxTime="23:00:00"
         allDaySlot={false}
         height="auto"
         expandRows={true}
@@ -35,16 +105,37 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
         selectMirror={true}
         dayMaxEvents={true}
         weekends={true}
-        select={async (selectInfo) => {
-          // Handle slot selection
-          console.log('Selected:', selectInfo)
+        events={events}
+        select={handleSelect}
+        eventClick={handleEventClick}
+        datesSet={(dateInfo) => {
+          setCurrentRange({
+            start: dateInfo.start.toISOString(),
+            end: dateInfo.end.toISOString(),
+          })
         }}
-        eventClick={async (clickInfo) => {
-          // Handle event click
-          console.log('Event clicked:', clickInfo)
+        selectConstraint={{
+          startTime: '06:00:00',
+          endTime: '23:00:00',
         }}
-        events={[]} // We'll add events later
+        slotDuration="00:30:00"
+        slotLabelInterval="01:00"
+        timeZone="UTC"
       />
     </div>
   )
+}
+
+// Helper function to get color based on status
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'available':
+      return '#22c55e' // green-500
+    case 'booked':
+      return '#ef4444' // red-500
+    case 'past':
+      return '#6b7280' // gray-500
+    default:
+      return '#cbd5e1' // slate-300
+  }
 }
