@@ -13,22 +13,14 @@ import {
   success as toastSuccess,
 } from '@/components/ui'
 import { useCourt } from '@/hooks/useCourt'
+import { useRouter } from 'next/navigation'
+import { ROUTES } from '@/constants/routes'
 
 export default function CourtsPage() {
-  const {
-    courts,
-    loading,
-    error,
-    createCourt,
-    updateCourt,
-    deleteCourt,
-    creating,
-    updating,
-    deleting,
-    refetch,
-  } = useCourt()
-  console.log('courts', courts)
-  const handleCreateCourt = async (name: string) => {
+  const router = useRouter()
+  const { courts, loading, error, createCourt, creating, refetch } = useCourt()
+
+  async function handleCreateCourt(name: string) {
     try {
       await createCourt(name)
       toastSuccess('Court created successfully')
@@ -37,24 +29,8 @@ export default function CourtsPage() {
     }
   }
 
-  const handleUpdateCourt = async (courtNumber: number, name: string) => {
-    try {
-      await updateCourt(courtNumber, name)
-      await refetch()
-      toastSuccess('Court updated successfully')
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to update court')
-    }
-  }
-
-  const handleDeleteCourt = async (courtNumber: number) => {
-    try {
-      await deleteCourt(courtNumber)
-      await refetch()
-      toastSuccess('Court deleted successfully')
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to delete court')
-    }
+  function handleCourtClick(courtNumber: number) {
+    router.push(`${ROUTES.DASHBOARD}/courts/${courtNumber}`)
   }
 
   // Error state
@@ -92,16 +68,15 @@ export default function CourtsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Court Number</TableHead>
+              <TableHead>ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && courts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground h-32">
+                <TableCell colSpan={3} className="text-center text-muted-foreground h-32">
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
@@ -109,7 +84,7 @@ export default function CourtsPage() {
               </TableRow>
             ) : courts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center h-32">
+                <TableCell colSpan={3} className="text-center h-32">
                   <div className="text-muted-foreground">
                     <p>No courts found.</p>
                     <p className="text-sm">Add your first court to get started.</p>
@@ -118,38 +93,14 @@ export default function CourtsPage() {
               </TableRow>
             ) : (
               courts.map((court) => (
-                <TableRow key={court.court_number}>
+                <TableRow
+                  key={court.court_number}
+                  onClick={() => handleCourtClick(court.court_number)}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                >
                   <TableCell className="font-medium">{court.court_number}</TableCell>
                   <TableCell>{court.name}</TableCell>
                   <TableCell>{new Date(court.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleUpdateCourt(court.court_number, `${court.name} (Updated)`)
-                      }
-                      disabled={updating}
-                    >
-                      {updating ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-2" />
-                      ) : (
-                        'Edit'
-                      )}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteCourt(court.court_number)}
-                      disabled={deleting}
-                    >
-                      {deleting ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
-                      ) : (
-                        'Delete'
-                      )}
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             )}

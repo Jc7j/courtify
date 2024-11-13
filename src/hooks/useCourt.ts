@@ -1,8 +1,8 @@
 'use client'
 
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation, useQuery, useLazyQuery } from '@apollo/client'
 import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/gql/mutations/court'
-import { GET_COMPANY_COURTS } from '@/gql/queries/court'
+import { GET_COMPANY_COURTS, GET_COURT } from '@/gql/queries/court'
 import type { Courts } from '@/types/graphql'
 import { useUser } from '@/hooks/useUser'
 
@@ -17,6 +17,9 @@ interface UseCourtReturn {
   updating: boolean
   deleting: boolean
   refetch: () => Promise<void>
+  getCourt: (courtNumber: number) => Promise<Courts | null>
+  courtLoading: boolean
+  courtError: Error | null
 }
 
 export function useCourt(): UseCourtReturn {
@@ -37,7 +40,9 @@ export function useCourt(): UseCourtReturn {
   const [updateCourtMutation, { loading: updating }] = useMutation(UPDATE_COURT)
   const [deleteCourtMutation, { loading: deleting }] = useMutation(DELETE_COURT)
 
-  const getNextCourtNumber = (): number => {
+  const [getCourt, { loading: courtLoading, error: courtError }] = useLazyQuery(GET_COURT)
+
+  function getNextCourtNumber(): number {
     if (!courtsData?.courtsCollection?.edges) return 1
 
     const existingCourts = courtsData.courtsCollection.edges.map(
@@ -46,7 +51,7 @@ export function useCourt(): UseCourtReturn {
     return Math.max(0, ...existingCourts.map((c: Courts) => c.court_number)) + 1
   }
 
-  const createCourt = async (name: string): Promise<Courts> => {
+  async function createCourt(name: string): Promise<Courts> {
     if (userLoading) {
       throw new Error('Authentication loading')
     }
@@ -85,7 +90,7 @@ export function useCourt(): UseCourtReturn {
     }
   }
 
-  const updateCourt = async (courtNumber: number, name: string): Promise<Courts> => {
+  async function updateCourt(courtNumber: number, name: string): Promise<Courts> {
     if (!user?.company_id) {
       throw new Error('Company required')
     }
@@ -113,7 +118,7 @@ export function useCourt(): UseCourtReturn {
     }
   }
 
-  const deleteCourt = async (courtNumber: number): Promise<Courts> => {
+  async function deleteCourt(courtNumber: number): Promise<Courts> {
     if (!user?.company_id) {
       throw new Error('Company required')
     }
@@ -137,13 +142,33 @@ export function useCourt(): UseCourtReturn {
     }
   }
 
+  async function fetchCourt(courtNumber: number): Promise<Courts | null> {
+    if (!user?.company_id) {
+      throw new Error('Company required')
+    }
+
+    try {
+      const { data } = await getCourt({
+        variables: {
+          company_id: user?.company_id,
+          court_number: courtNumber,
+        },
+      })
+
+      return data?.courtsCollection?.edges?.[0]?.node || null
+    } catch (err) {
+      console.error('Error fetching court:', err)
+      throw err instanceof Error ? err : new Error('Failed to fetch court')
+    }
+  }
+
   const courts =
     courtsData?.courtsCollection?.edges?.map((edge: { node: Courts }) => edge.node) || []
 
   return {
     courts,
     loading: userLoading || courtsLoading,
-    error: courtsError ? new Error('Failed to load courts') : null,
+    error: courtsError ? new Error(`Failed to load courts, ${courtsError.message}`) : null,
     createCourt,
     updateCourt,
     deleteCourt,
@@ -151,5 +176,8 @@ export function useCourt(): UseCourtReturn {
     updating,
     deleting,
     refetch: refetch as unknown as () => Promise<void>,
+    getCourt: fetchCourt,
+    courtLoading,
+    courtError: courtError ? new Error('Failed to fetch court') : null,
   }
 }

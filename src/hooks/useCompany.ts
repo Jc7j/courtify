@@ -25,7 +25,7 @@ export function useCompany(): UseCompanyReturn {
     }
   )
 
-  const createCompany = async (name: string): Promise<Companies> => {
+  async function createCompany(name: string): Promise<Companies> {
     if (loading || !user?.id) {
       throw new Error('Authentication required')
     }

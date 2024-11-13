@@ -16,3 +16,18 @@ export const GET_COMPANY_COURTS = gql`
     }
   }
 `
+
+export const GET_COURT = gql`
+  ${COURT_FIELDS}
+  query GetCourt($company_id: UUID!, $court_number: Int!) {
+    courtsCollection(
+      filter: { company_id: { eq: $company_id }, court_number: { eq: $court_number } }
+    ) {
+      edges {
+        node {
+          ...CourtFields
+        }
+      }
+    }
+  }
+`
