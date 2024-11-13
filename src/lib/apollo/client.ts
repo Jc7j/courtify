@@ -49,7 +49,19 @@ export const apolloClient = new ApolloClient({
   link,
   cache,
   ...defaultApolloConfig,
+  defaultOptions: {
+    ...defaultApolloConfig.defaultOptions,
+    watchQuery: {
+      ...defaultApolloConfig.defaultOptions?.watchQuery,
+      fetchPolicy: 'cache-and-network',
+    },
+  },
 })
+
+// Add this function to clear cache on logout
+export function clearApolloCache() {
+  return apolloClient.clearStore()
+}
 
 // Helper for SSR
 export function createApolloClient() {

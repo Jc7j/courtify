@@ -5,9 +5,10 @@ import { Button } from './button'
 import { Logo } from './logo'
 import { useUser } from '@/hooks/useUser'
 import { memo } from 'react'
+import { Skeleton } from './skeleton'
 
 function AppHeaderComponent() {
-  const { user } = useUser()
+  const { user, loading } = useUser()
 
   return (
     <header className="border-b border-border bg-background w-full">
@@ -26,15 +27,27 @@ function AppHeaderComponent() {
 
           {/* User Info */}
           <div className="flex items-center gap-2">
-            <div className="text-sm">
-              <p className="font-medium text-foreground">{user?.name}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
-              <span className="text-sm font-medium text-secondary-foreground">
-                {user?.name?.[0]?.toUpperCase()}
-              </span>
-            </div>
+            {loading ? (
+              <>
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </>
+            ) : (
+              <>
+                <div className="text-sm">
+                  <p className="font-medium text-foreground">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                  <span className="text-sm font-medium text-secondary-foreground">
+                    {user?.name?.[0]?.toUpperCase()}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -19,3 +19,23 @@ export interface Courts {
   created_at: string
   updated_at: string
 }
+
+export interface CourtsEdge {
+  node: Courts
+  __typename: 'CourtsEdge'
+}
+
+export interface CourtsConnection {
+  edges: CourtsEdge[]
+  __typename: 'CourtsConnection'
+}
+
+export interface CompaniesEdge {
+  node: Company
+  __typename: 'CompaniesEdge'
+}
+
+export interface CompaniesConnection {
+  edges: CompaniesEdge[]
+  __typename: 'CompaniesConnection'
+}

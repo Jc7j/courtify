@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import { supabase } from '@/lib/supabase/client'
 import { getAuthErrorMessage, AUTH_ERRORS } from '@/lib/utils/auth-errors'
+import { clearApolloCache } from '@/lib/apollo/client'
 
 export function useAuth() {
   const { data: session, status, update: updateSession } = useSession()
@@ -87,6 +88,7 @@ export function useAuth() {
   async function signOut() {
     try {
       await nextAuthSignOut({ redirect: false })
+      await clearApolloCache()
       router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {
       console.error('Error signing out:', error)

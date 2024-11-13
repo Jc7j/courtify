@@ -13,20 +13,35 @@ export const GRAPHQL_ENDPOINTS = {
   production: 'https://api.courtify.com/graphql/v1',
 } as const
 
+interface BookingEdge {
+  node: {
+    id: string
+    [key: string]: unknown
+  }
+}
+
+interface BookingsConnection {
+  edges: BookingEdge[]
+}
+
 // Create a shared cache instance
 export const cache = new InMemoryCache({
   typePolicies: {
     Query: {
       fields: {
         courts: {
-          merge: false, // Don't merge court arrays
+          merge: false,
         },
         bookings: {
-          // Pagination merge function
-          keyArgs: ['where'], // Fields that uniquely identify the list
-          merge(existing = [], incoming: any[]) {
-            return [...existing, ...incoming]
+          keyArgs: ['where'],
+          merge(existing: BookingsConnection = { edges: [] }, incoming: BookingsConnection) {
+            return {
+              edges: [...existing.edges, ...incoming.edges],
+            }
           },
+        },
+        usersCollection: {
+          merge: false,
         },
       },
     },

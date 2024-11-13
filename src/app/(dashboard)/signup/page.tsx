@@ -6,6 +6,7 @@ import { Logo, Progress } from '@/components/ui'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
 import { useUser } from '@/hooks/useUser'
 import { useOnboarding } from '@/hooks/useOnboarding'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const STEPS = {
   signup: { number: 1, progress: 33 },
@@ -14,8 +15,25 @@ const STEPS = {
 } as const
 
 export default function SignUpPage() {
-  const { user } = useUser()
+  const { user, loading } = useUser()
   const { step, handleStepChange } = useOnboarding()
+
+  // Show loading state while checking user status
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="space-y-4 w-full max-w-md p-4">
+          <Skeleton className="h-8 w-32 mx-auto" />
+          <Skeleton className="h-4 w-48 mx-auto" />
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   function handleSignupSuccess() {
     handleStepChange('create-intro')

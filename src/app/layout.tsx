@@ -4,6 +4,7 @@ import { ApolloProvider } from '@/providers/ApolloProvider'
 import { NextAuthProvider } from '@/providers/NextAuthProvider'
 import '@/styles/globals.css'
 import { Toaster } from '@/components/ui'
+import { UserProvider } from '@/providers/UserProvider'
 
 export const metadata = {
   title: 'Courtify',

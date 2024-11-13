@@ -2,13 +2,14 @@
 
 import { useMutation, ApolloError } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
+import { GET_USER } from '@/gql/queries/user'
 import { generateSlug } from '@/lib/utils/string'
-import type { Companies } from '@/gql/graphql'
+import type { Company } from '@/types/graphql'
 import { useUser } from '@/hooks/useUser'
 import { supabase } from '@/lib/supabase/client'
 
 interface UseCompanyReturn {
-  createCompany: (name: string) => Promise<Companies>
+  createCompany: (name: string) => Promise<Company>
   creating: boolean
   createError: ApolloError | null
 }
@@ -19,13 +20,43 @@ export function useCompany(): UseCompanyReturn {
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
     CREATE_COMPANY,
     {
+      update(cache, { data }) {
+        const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
+        if (newCompany && user?.id) {
+          // Update user data in cache with new company_id
+          cache.modify({
+            fields: {
+              usersCollection(existingUsers = { edges: [] }) {
+                return {
+                  ...existingUsers,
+                  edges: existingUsers.edges.map((edge: { node: { id: string } }) =>
+                    edge.node.id === user.id
+                      ? {
+                          ...edge,
+                          node: { ...edge.node, company_id: newCompany.id },
+                        }
+                      : edge
+                  ),
+                }
+              },
+            },
+          })
+        }
+      },
+      // Refetch user data after company creation
+      refetchQueries: [
+        {
+          query: GET_USER,
+          variables: { id: user?.id },
+        },
+      ],
       onError: (error) => {
         console.error('Error creating company:', error)
       },
     }
   )
 
-  async function createCompany(name: string): Promise<Companies> {
+  async function createCompany(name: string): Promise<Company> {
     if (loading || !user?.id) {
       throw new Error('Authentication required')
     }

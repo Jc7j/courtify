@@ -1,12 +1,15 @@
 'use client'
 
-import { useMutation, useQuery, useLazyQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/gql/mutations/court'
 import { GET_COMPANY_COURTS, GET_COURT } from '@/gql/queries/court'
-import type { Courts } from '@/types/graphql'
+import type { Courts, CourtsEdge, CourtsConnection } from '@/types/graphql'
 import { useUser } from '@/hooks/useUser'
 
 interface UseCourtReturn {
+  court: Courts | null
+  courtLoading: boolean
+  courtError: Error | null
   courts: Courts[]
   loading: boolean
   error: Error | null
@@ -17,15 +20,28 @@ interface UseCourtReturn {
   updating: boolean
   deleting: boolean
   refetch: () => Promise<void>
-  getCourt: (courtNumber: number) => Promise<Courts | null>
-  courtLoading: boolean
-  courtError: Error | null
 }
 
-export function useCourt(): UseCourtReturn {
+interface CourtsQueryData {
+  courtsCollection: CourtsConnection
+}
+
+export function useCourt(courtNumber?: number): UseCourtReturn {
   const { user, loading: userLoading } = useUser()
 
-  // Query existing courts
+  const {
+    data: courtData,
+    loading: singleCourtLoading,
+    error: singleCourtError,
+  } = useQuery(GET_COURT, {
+    variables: {
+      company_id: user?.company_id,
+      court_number: courtNumber,
+    },
+    skip: !user?.company_id || !courtNumber,
+    fetchPolicy: 'cache-and-network',
+  })
+
   const {
     data: courtsData,
     loading: courtsLoading,
@@ -34,13 +50,76 @@ export function useCourt(): UseCourtReturn {
   } = useQuery(GET_COMPANY_COURTS, {
     variables: { company_id: user?.company_id },
     skip: !user?.company_id,
+    fetchPolicy: 'cache-and-network',
   })
 
-  const [createCourtMutation, { loading: creating }] = useMutation(CREATE_COURT)
-  const [updateCourtMutation, { loading: updating }] = useMutation(UPDATE_COURT)
-  const [deleteCourtMutation, { loading: deleting }] = useMutation(DELETE_COURT)
+  const [createCourtMutation, { loading: creating }] = useMutation(CREATE_COURT, {
+    update(cache, { data }) {
+      const newCourt = data?.insertIntocourtsCollection?.records?.[0]
+      if (newCourt && user?.company_id) {
+        const existingData = cache.readQuery<CourtsQueryData>({
+          query: GET_COMPANY_COURTS,
+          variables: { company_id: user.company_id },
+        })
 
-  const [getCourt, { loading: courtLoading, error: courtError }] = useLazyQuery(GET_COURT)
+        cache.writeQuery<CourtsQueryData>({
+          query: GET_COMPANY_COURTS,
+          variables: { company_id: user.company_id },
+          data: {
+            courtsCollection: {
+              edges: [
+                ...(existingData?.courtsCollection?.edges || []),
+                { node: newCourt, __typename: 'CourtsEdge' },
+              ],
+              __typename: 'CourtsConnection',
+            },
+          },
+        })
+      }
+    },
+  })
+
+  const [updateCourtMutation, { loading: updating }] = useMutation(UPDATE_COURT, {
+    update(cache, { data }) {
+      const updatedCourt = data?.updatecourtsCollection?.records?.[0]
+      if (updatedCourt && user?.company_id) {
+        cache.modify({
+          fields: {
+            courtsCollection(existingCourts = { edges: [] }) {
+              return {
+                ...existingCourts,
+                edges: existingCourts.edges.map((edge: CourtsEdge) =>
+                  edge.node.court_number === updatedCourt.court_number
+                    ? { ...edge, node: updatedCourt }
+                    : edge
+                ),
+              }
+            },
+          },
+        })
+      }
+    },
+  })
+
+  const [deleteCourtMutation, { loading: deleting }] = useMutation(DELETE_COURT, {
+    update(cache, { data }) {
+      const deletedCourt = data?.deleteFromcourtsCollection?.records?.[0]
+      if (deletedCourt && user?.company_id) {
+        cache.modify({
+          fields: {
+            courtsCollection(existingCourts = { edges: [] }) {
+              return {
+                ...existingCourts,
+                edges: existingCourts.edges.filter(
+                  (edge: CourtsEdge) => edge.node.court_number !== deletedCourt.court_number
+                ),
+              }
+            },
+          },
+        })
+      }
+    },
+  })
 
   function getNextCourtNumber(): number {
     if (!courtsData?.courtsCollection?.edges) return 1
@@ -52,16 +131,8 @@ export function useCourt(): UseCourtReturn {
   }
 
   async function createCourt(name: string): Promise<Courts> {
-    if (userLoading) {
-      throw new Error('Authentication loading')
-    }
-
-    if (!user?.id) {
+    if (userLoading || !user?.id || !user.company_id) {
       throw new Error('Authentication required')
-    }
-
-    if (!user.company_id) {
-      throw new Error('Company required')
     }
 
     try {
@@ -82,7 +153,6 @@ export function useCourt(): UseCourtReturn {
         throw new Error('Failed to create court')
       }
 
-      await refetch()
       return newCourt
     } catch (err) {
       console.error('Error in createCourt:', err)
@@ -142,33 +212,13 @@ export function useCourt(): UseCourtReturn {
     }
   }
 
-  async function fetchCourt(courtNumber: number): Promise<Courts | null> {
-    if (!user?.company_id) {
-      throw new Error('Company required')
-    }
-
-    try {
-      const { data } = await getCourt({
-        variables: {
-          company_id: user?.company_id,
-          court_number: courtNumber,
-        },
-      })
-
-      return data?.courtsCollection?.edges?.[0]?.node || null
-    } catch (err) {
-      console.error('Error fetching court:', err)
-      throw err instanceof Error ? err : new Error('Failed to fetch court')
-    }
-  }
-
-  const courts =
-    courtsData?.courtsCollection?.edges?.map((edge: { node: Courts }) => edge.node) || []
-
   return {
-    courts,
+    court: courtData?.courtsCollection?.edges?.[0]?.node || null,
+    courtLoading: userLoading || singleCourtLoading,
+    courtError: singleCourtError ? new Error(singleCourtError.message) : null,
+    courts: courtsData?.courtsCollection?.edges?.map((edge: { node: Courts }) => edge.node) || [],
     loading: userLoading || courtsLoading,
-    error: courtsError ? new Error(`Failed to load courts, ${courtsError.message}`) : null,
+    error: courtsError ? new Error(courtsError.message) : null,
     createCourt,
     updateCourt,
     deleteCourt,
@@ -176,8 +226,5 @@ export function useCourt(): UseCourtReturn {
     updating,
     deleting,
     refetch: refetch as unknown as () => Promise<void>,
-    getCourt: fetchCourt,
-    courtLoading,
-    courtError: courtError ? new Error('Failed to fetch court') : null,
   }
 }
