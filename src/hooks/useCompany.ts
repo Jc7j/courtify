@@ -1,21 +1,19 @@
 'use client'
 
-import { useMutation, ApolloError } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
-import { GET_USER } from '@/gql/queries/user'
-import { generateSlug } from '@/lib/utils/string'
+import { useUser } from '@/providers/UserProvider'
 import type { Company } from '@/types/graphql'
-import { useUser } from '@/hooks/useUser'
 import { supabase } from '@/lib/supabase/client'
 
 interface UseCompanyReturn {
-  createCompany: (name: string) => Promise<Company>
   creating: boolean
-  createError: ApolloError | null
+  error: Error | null
+  createCompany: (name: string) => Promise<Company>
 }
 
 export function useCompany(): UseCompanyReturn {
-  const { user, loading } = useUser()
+  const { user, refetch: refetchUser } = useUser()
 
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
     CREATE_COMPANY,
@@ -44,12 +42,9 @@ export function useCompany(): UseCompanyReturn {
         }
       },
       // Refetch user data after company creation
-      refetchQueries: [
-        {
-          query: GET_USER,
-          variables: { id: user?.id },
-        },
-      ],
+      onCompleted: async () => {
+        await refetchUser()
+      },
       onError: (error) => {
         console.error('Error creating company:', error)
       },
@@ -57,46 +52,48 @@ export function useCompany(): UseCompanyReturn {
   )
 
   async function createCompany(name: string): Promise<Company> {
-    if (loading || !user?.id) {
+    if (!user?.id) {
       throw new Error('Authentication required')
     }
 
     try {
-      const companyInput = {
-        name,
-        slug: generateSlug(name),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
       const { data } = await createCompanyMutation({
-        variables: { objects: [companyInput] },
+        variables: {
+          objects: [
+            {
+              name,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ],
+        },
       })
 
-      const company = data?.insertIntocompaniesCollection?.records?.[0]
-      if (!company) {
+      const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
+      if (!newCompany) {
         throw new Error('Failed to create company')
       }
 
       // Update user's company_id
       const { error: updateError } = await supabase
         .from('users')
-        .update({ company_id: company.id })
+        .update({ company_id: newCompany.id })
         .eq('id', user.id)
 
       if (updateError) {
         throw new Error('Failed to update user company')
       }
 
-      return company
+      return newCompany
     } catch (err) {
+      console.error('Error in createCompany:', err)
       throw err instanceof Error ? err : new Error('Failed to create company')
     }
   }
 
   return {
-    createCompany,
     creating,
-    createError: createError || null,
+    error: createError ? new Error(createError.message) : null,
+    createCompany,
   }
 }

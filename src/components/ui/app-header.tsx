@@ -3,7 +3,7 @@
 import { Bell } from 'lucide-react'
 import { Button } from './button'
 import { Logo } from './logo'
-import { useUser } from '@/hooks/useUser'
+import { useUser } from '@/providers/UserProvider'
 import { memo } from 'react'
 import { Skeleton } from './skeleton'
 

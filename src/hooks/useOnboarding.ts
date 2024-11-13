@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from '@/hooks/useUser'
+import { useUser } from '@/providers/UserProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
@@ -17,7 +17,7 @@ interface UseOnboardingReturn {
 }
 
 export function useOnboarding(): UseOnboardingReturn {
-  const { user, loading: userLoading, refetch: refetchUser } = useUser()
+  const { user, loading: userLoading, refetch: refetchUser, isAuthenticated } = useUser()
   const { update: updateSession } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,11 +35,17 @@ export function useOnboarding(): UseOnboardingReturn {
       return
     }
 
+    // If user is not authenticated and not on signup step, redirect to signup
+    if (!isAuthenticated && currentStep !== 'signup') {
+      router.replace(ROUTES.AUTH.SIGNUP)
+      return
+    }
+
     // Otherwise, sync step with URL if it's valid
     if (urlStep && (urlStep === 'create-intro' || urlStep === 'create')) {
       setCurrentStep(urlStep)
     }
-  }, [user?.company_id, urlStep, userLoading, isRedirecting, router])
+  }, [user?.company_id, urlStep, userLoading, isRedirecting, router, isAuthenticated, currentStep])
 
   // Handle step changes with URL updates
   const handleStepChange = useCallback(
@@ -57,7 +63,9 @@ export function useOnboarding(): UseOnboardingReturn {
   // Handle company creation success
   const handleCompanyCreated = useCallback(
     async (companyId: string) => {
-      if (!user) return
+      if (!isAuthenticated || !user) {
+        throw new Error('User must be authenticated to create a company')
+      }
 
       setIsRedirecting(true)
       try {
@@ -75,15 +83,15 @@ export function useOnboarding(): UseOnboardingReturn {
       } catch (err) {
         setIsRedirecting(false)
         console.error('Error updating session after company creation:', err)
-        throw err
+        throw err instanceof Error ? err : new Error('Failed to update session')
       }
     },
-    [user, refetchUser, updateSession, router]
+    [user, refetchUser, updateSession, router, isAuthenticated]
   )
 
   return {
     step: currentStep,
-    isOnboarding: !user?.company_id,
+    isOnboarding: isAuthenticated && !user?.company_id,
     loading: userLoading || isRedirecting,
     handleStepChange,
     handleCompanyCreated,

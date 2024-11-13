@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/gql/mutations/court'
 import { GET_COMPANY_COURTS, GET_COURT } from '@/gql/queries/court'
 import type { Courts, CourtsEdge, CourtsConnection } from '@/types/graphql'
-import { useUser } from '@/hooks/useUser'
+import { useUser } from '@/providers/UserProvider'
 
 interface UseCourtReturn {
   court: Courts | null
@@ -27,7 +27,7 @@ interface CourtsQueryData {
 }
 
 export function useCourt(courtNumber?: number): UseCourtReturn {
-  const { user, loading: userLoading } = useUser()
+  const { user, loading: userLoading, isAuthenticated } = useUser()
 
   const {
     data: courtData,
@@ -38,7 +38,7 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
       company_id: user?.company_id,
       court_number: courtNumber,
     },
-    skip: !user?.company_id || !courtNumber,
+    skip: !isAuthenticated || !user?.company_id || !courtNumber,
     fetchPolicy: 'cache-and-network',
   })
 
@@ -49,7 +49,7 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
     refetch,
   } = useQuery(GET_COMPANY_COURTS, {
     variables: { company_id: user?.company_id },
-    skip: !user?.company_id,
+    skip: !isAuthenticated || !user?.company_id,
     fetchPolicy: 'cache-and-network',
   })
 
@@ -131,8 +131,8 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
   }
 
   async function createCourt(name: string): Promise<Courts> {
-    if (userLoading || !user?.id || !user.company_id) {
-      throw new Error('Authentication required')
+    if (!isAuthenticated || !user?.company_id) {
+      throw new Error('Authentication and company required')
     }
 
     try {
@@ -161,8 +161,8 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
   }
 
   async function updateCourt(courtNumber: number, name: string): Promise<Courts> {
-    if (!user?.company_id) {
-      throw new Error('Company required')
+    if (!isAuthenticated || !user?.company_id) {
+      throw new Error('Authentication and company required')
     }
 
     try {
@@ -189,8 +189,8 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
   }
 
   async function deleteCourt(courtNumber: number): Promise<Courts> {
-    if (!user?.company_id) {
-      throw new Error('Company required')
+    if (!isAuthenticated || !user?.company_id) {
+      throw new Error('Authentication and company required')
     }
 
     try {

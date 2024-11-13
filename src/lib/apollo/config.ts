@@ -13,17 +13,6 @@ export const GRAPHQL_ENDPOINTS = {
   production: 'https://api.courtify.com/graphql/v1',
 } as const
 
-interface BookingEdge {
-  node: {
-    id: string
-    [key: string]: unknown
-  }
-}
-
-interface BookingsConnection {
-  edges: BookingEdge[]
-}
-
 // Create a shared cache instance
 export const cache = new InMemoryCache({
   typePolicies: {
@@ -34,7 +23,7 @@ export const cache = new InMemoryCache({
         },
         bookings: {
           keyArgs: ['where'],
-          merge(existing: BookingsConnection = { edges: [] }, incoming: BookingsConnection) {
+          merge(existing, incoming) {
             return {
               edges: [...existing.edges, ...incoming.edges],
             }

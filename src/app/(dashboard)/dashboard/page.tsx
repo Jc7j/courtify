@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from '@/hooks/useUser'
+import { useUser } from '@/providers/UserProvider'
 import { Skeleton } from '@/components/ui'
 
 export default function DashboardPage() {

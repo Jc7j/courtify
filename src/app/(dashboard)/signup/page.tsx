@@ -4,7 +4,7 @@ import { SignUpForm } from '@/components/auth/SignUpForm'
 import { CreateCompanyStep } from '@/components/onboarding/CreateCompanyStep'
 import { Logo, Progress } from '@/components/ui'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
-import { useUser } from '@/hooks/useUser'
+import { useUser } from '@/providers/UserProvider'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { Skeleton } from '@/components/ui/skeleton'
 
