@@ -6,6 +6,7 @@ import { ArrowLeft, Pencil, Save, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { useCourt } from '@/hooks/useCourt'
 import { toast } from 'sonner'
+import { CourtCalendar } from '@/components/courts/CourtCalendar'
 
 export default function CourtPage() {
   const params = useParams()
@@ -114,6 +115,9 @@ export default function CourtPage() {
           Delete Court
         </Button>
       </div>
+
+      {/* Calendar Section */}
+      <CourtCalendar court={court} />
     </div>
   )
 }

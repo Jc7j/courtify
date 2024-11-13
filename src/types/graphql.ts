@@ -20,6 +20,24 @@ export interface Courts {
   updated_at: string
 }
 
+export interface CourtAvailability {
+  nodeId: string
+  company_id: string
+  court_number: number
+  start_time: string
+  end_time: string
+  status: AvailabilityStatus
+  created_at: string
+  updated_at: string
+  courts?: Courts
+}
+
+export enum AvailabilityStatus {
+  Available = 'available',
+  Booked = 'booked',
+  Past = 'past',
+}
+
 export interface CourtsEdge {
   node: Courts
   __typename: 'CourtsEdge'
@@ -28,6 +46,16 @@ export interface CourtsEdge {
 export interface CourtsConnection {
   edges: CourtsEdge[]
   __typename: 'CourtsConnection'
+}
+
+export interface CourtAvailabilityEdge {
+  node: CourtAvailability
+  __typename: 'CourtAvailabilityEdge'
+}
+
+export interface CourtAvailabilityConnection {
+  edges: CourtAvailabilityEdge[]
+  __typename: 'CourtAvailabilityConnection'
 }
 
 export interface CompaniesEdge {

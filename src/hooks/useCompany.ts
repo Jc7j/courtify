@@ -5,6 +5,7 @@ import { CREATE_COMPANY } from '@/gql/mutations/company'
 import { useUser } from '@/providers/UserProvider'
 import type { Company } from '@/types/graphql'
 import { supabase } from '@/lib/supabase/client'
+import { generateSlug } from '@/lib/utils/string'
 
 interface UseCompanyReturn {
   creating: boolean
@@ -55,13 +56,14 @@ export function useCompany(): UseCompanyReturn {
     if (!user?.id) {
       throw new Error('Authentication required')
     }
-
+    const slug = generateSlug(name)
     try {
       const { data } = await createCompanyMutation({
         variables: {
           objects: [
             {
               name,
+              slug,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },
