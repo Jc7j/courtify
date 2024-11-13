@@ -3,6 +3,7 @@ import { SupabaseProvider } from '@/providers/SupabaseProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
 import { NextAuthProvider } from '@/providers/NextAuthProvider'
 import '@/styles/globals.css'
+import { Toaster } from '@/components/ui'
 
 export const metadata = {
   title: 'Courtify',
@@ -16,7 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NextAuthProvider>
           <SupabaseProvider>
             <ApolloProvider>
-              <ThemeProvider>{children}</ThemeProvider>
+              <ThemeProvider>
+                {children}
+                <Toaster />
+              </ThemeProvider>
             </ApolloProvider>
           </SupabaseProvider>
         </NextAuthProvider>

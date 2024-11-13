@@ -27,31 +27,30 @@ CREATE TABLE users (
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- Create courts table with RLS
+-- Create courts table with RLS and company-specific court numbering
 CREATE TABLE courts (
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    court_number SERIAL,
-    PRIMARY KEY (company_id, court_number),
+    court_number INTEGER NOT NULL,
     name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- Make court_number unique within each company
+    PRIMARY KEY (company_id, court_number),
+    -- Add constraint to ensure court_number is positive
+    CONSTRAINT positive_court_number CHECK (court_number > 0)
 );
 
 ALTER TABLE courts ENABLE ROW LEVEL SECURITY;
 
 -- Companies policies
--- Allow any authenticated user to create a company, but ensure auth.uid() exists
 CREATE POLICY "companies_insert" ON companies
     FOR INSERT TO authenticated
-    WITH CHECK (true); 
+    WITH CHECK (true);
 
-
--- Users can read companies they belong to
 CREATE POLICY "companies_select" ON companies
     FOR SELECT TO authenticated
     USING (true);
 
--- Users can update companies they belong to
 CREATE POLICY companies_update ON companies
     FOR UPDATE TO authenticated
     USING (id IN (
@@ -60,7 +59,6 @@ CREATE POLICY companies_update ON companies
         WHERE users.id = auth.uid()
     ));
 
--- Users can delete companies they belong to
 CREATE POLICY companies_delete ON companies
     FOR DELETE TO authenticated
     USING (id IN (
@@ -83,7 +81,6 @@ CREATE POLICY users_insert_public ON users
     WITH CHECK (true);
 
 -- Courts policies
--- Users can only select courts from their company
 CREATE POLICY courts_select ON courts
     FOR SELECT TO authenticated
     USING (company_id = (
@@ -92,7 +89,6 @@ CREATE POLICY courts_select ON courts
         WHERE users.id = auth.uid()
     ));
 
--- Users can only insert courts into their company
 CREATE POLICY courts_insert ON courts
     FOR INSERT TO authenticated
     WITH CHECK (company_id = (
@@ -101,7 +97,6 @@ CREATE POLICY courts_insert ON courts
         WHERE users.id = auth.uid()
     ));
 
--- Users can only update courts in their company
 CREATE POLICY courts_update ON courts
     FOR UPDATE TO authenticated
     USING (company_id = (
@@ -110,7 +105,6 @@ CREATE POLICY courts_update ON courts
         WHERE users.id = auth.uid()
     ));
 
--- Users can only delete courts in their company
 CREATE POLICY courts_delete ON courts
     FOR DELETE TO authenticated
     USING (company_id = (

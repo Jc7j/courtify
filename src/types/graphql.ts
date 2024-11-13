@@ -12,7 +12,7 @@ export interface Company {
   updated_at: string
 }
 
-export interface Courts extends Node {
+export interface Courts {
   company_id: string
   court_number: number
   name: string

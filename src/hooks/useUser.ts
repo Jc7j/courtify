@@ -19,7 +19,7 @@ export function useUser(): UseUserReturn {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchUser = useCallback(async () => {
-    if (!session?.user?.id || status === 'loading') {
+    if (!session?.user?.id) {
       setUser(null)
       setLoading(false)
       return
@@ -54,7 +54,7 @@ export function useUser(): UseUserReturn {
     } finally {
       setLoading(false)
     }
-  }, [session?.user?.id, status])
+  }, [session?.user?.id])
 
   useEffect(() => {
     fetchUser()
