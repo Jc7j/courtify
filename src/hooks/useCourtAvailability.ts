@@ -10,7 +10,12 @@ import {
   UPDATE_COURT_AVAILABILITY,
 } from '@/gql/mutations/court-availability'
 import { useUser } from '@/providers/UserProvider'
-import type { CourtAvailability, CourtAvailabilityConnection } from '@/types/graphql'
+import type {
+  CourtAvailability,
+  CourtAvailabilityConnection,
+  AvailabilityStatus,
+} from '@/types/graphql'
+import { useState } from 'react'
 
 interface UseCourtAvailabilityProps {
   courtNumber?: number
@@ -30,14 +35,14 @@ interface CreateAvailabilityInput {
   courtNumber: number
   startTime: string
   endTime: string
-  status?: 'available' | 'booked'
+  status?: AvailabilityStatus
 }
 
 interface UpdateAvailabilityInput {
   courtNumber: number
   startTime: string
   update: {
-    status?: 'available' | 'booked'
+    status?: AvailabilityStatus
   }
 }
 
@@ -51,12 +56,9 @@ export function useCourtAvailability({
   endTime,
 }: UseCourtAvailabilityProps = {}): UseCourtAvailabilityReturn {
   const { user, loading: userLoading, isAuthenticated } = useUser()
+  const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
 
-  const {
-    data,
-    loading: queryLoading,
-    error: queryError,
-  } = useQuery<AvailabilitiesQueryData>(
+  const { loading: queryLoading, error: queryError } = useQuery<AvailabilitiesQueryData>(
     courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
     {
       variables: {
@@ -67,6 +69,13 @@ export function useCourtAvailability({
       },
       skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
       fetchPolicy: 'cache-and-network',
+      onCompleted: (data) => {
+        const availabilities =
+          data?.court_availabilitiesCollection?.edges?.map(
+            (edge) => edge.node as CourtAvailability
+          ) || []
+        setLocalAvailabilities(availabilities)
+      },
     }
   )
 
@@ -78,6 +87,19 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
+    const newAvailability: CourtAvailability = {
+      nodeId: `temp-${Date.now()}`,
+      company_id: user.company_id,
+      court_number: input.courtNumber,
+      start_time: input.startTime,
+      end_time: input.endTime,
+      status: input.status as AvailabilityStatus,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    setLocalAvailabilities((prev) => [...prev, newAvailability])
+
     try {
       const { data } = await createAvailabilityMutation({
         variables: {
@@ -87,14 +109,24 @@ export function useCourtAvailability({
               court_number: input.courtNumber,
               start_time: input.startTime,
               end_time: input.endTime,
-              status: input.status || 'available',
+              status: input.status as AvailabilityStatus,
             },
           ],
         },
       })
 
-      return data?.insertIntocourt_availabilitiesCollection?.records?.[0]
+      const createdAvailability = data?.insertIntocourt_availabilitiesCollection?.records?.[0]
+      if (!createdAvailability) {
+        throw new Error('Failed to create availability')
+      }
+
+      setLocalAvailabilities((prev) =>
+        prev.map((a) => (a.nodeId === newAvailability.nodeId ? createdAvailability : a))
+      )
+
+      return createdAvailability
     } catch (err) {
+      setLocalAvailabilities((prev) => prev.filter((a) => a.nodeId !== newAvailability.nodeId))
       throw err instanceof Error ? err : new Error('Failed to create availability')
     }
   }
@@ -104,6 +136,28 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
+    const existingAvailability = localAvailabilities.find(
+      (a) => a.court_number === input.courtNumber && a.start_time === input.startTime
+    )
+
+    if (!existingAvailability) {
+      throw new Error('Availability not found')
+    }
+
+    const updatedAvailability: CourtAvailability = {
+      ...existingAvailability,
+      ...input.update,
+      updated_at: new Date().toISOString(),
+    }
+
+    setLocalAvailabilities((prev) =>
+      prev.map((a) =>
+        a.court_number === input.courtNumber && a.start_time === input.startTime
+          ? updatedAvailability
+          : a
+      )
+    )
+
     try {
       const { data } = await updateAvailabilityMutation({
         variables: {
@@ -111,22 +165,32 @@ export function useCourtAvailability({
           court_number: input.courtNumber,
           start_time: input.startTime,
           set: {
-            status: input.update.status,
+            ...input.update,
             updated_at: new Date().toISOString(),
           },
         },
       })
 
-      return data?.updatecourt_availabilitiesCollection?.records?.[0]
+      const serverAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
+      if (!serverAvailability) {
+        throw new Error('Failed to update availability')
+      }
+
+      return serverAvailability
     } catch (err) {
+      setLocalAvailabilities((prev) =>
+        prev.map((a) =>
+          a.court_number === input.courtNumber && a.start_time === input.startTime
+            ? existingAvailability
+            : a
+        )
+      )
       throw err instanceof Error ? err : new Error('Failed to update availability')
     }
   }
 
   return {
-    availabilities:
-      data?.court_availabilitiesCollection?.edges?.map((edge) => edge.node as CourtAvailability) ||
-      [],
+    availabilities: localAvailabilities,
     loading: userLoading || queryLoading,
     error: queryError ? new Error(queryError.message) : null,
     createAvailability,
