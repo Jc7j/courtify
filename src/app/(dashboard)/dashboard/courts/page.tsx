@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Plus, Calendar, Clock, Badge } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -15,6 +15,10 @@ import {
 import { useCourt } from '@/hooks/useCourt'
 import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+dayjs.extend(relativeTime)
 
 export default function CourtsPage() {
   const router = useRouter()
@@ -53,7 +57,12 @@ export default function CourtsPage() {
   return (
     <div className="p-8 space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-foreground">Courts</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-foreground">Courts</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your courts and their availability schedules
+          </p>
+        </div>
         <Button onClick={() => handleCreateCourt('New Court')} disabled={creating}>
           {creating ? (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
@@ -68,15 +77,17 @@ export default function CourtsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>Court</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Operating Hours</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading && courts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground h-32">
+                <TableCell colSpan={5} className="text-center text-muted-foreground h-32">
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
@@ -84,10 +95,18 @@ export default function CourtsPage() {
               </TableRow>
             ) : courts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center h-32">
+                <TableCell colSpan={5} className="text-center h-32">
                   <div className="text-muted-foreground">
-                    <p>No courts found.</p>
-                    <p className="text-sm">Add your first court to get started.</p>
+                    <p>No courts found</p>
+                    <p className="text-sm mt-1">Get started by adding your first court</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleCreateCourt('New Court')}
+                      className="mt-4"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Court
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -96,11 +115,38 @@ export default function CourtsPage() {
                 <TableRow
                   key={court.court_number}
                   onClick={() => handleCourtClick(court.court_number)}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="cursor-pointer hover:bg-muted/50 transition-colors group"
                 >
-                  <TableCell className="font-medium">{court.court_number}</TableCell>
-                  <TableCell>{court.name}</TableCell>
-                  <TableCell>{new Date(court.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <div className="font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>
+                        {court.name}
+                        <span className="text-muted-foreground ml-1">#{court.court_number}</span>
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="bg-green-50 text-green-700 border-green-200">Active</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>6:00 AM - 11:00 PM</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {dayjs(court.updated_at).fromNow()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      View Schedule
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}

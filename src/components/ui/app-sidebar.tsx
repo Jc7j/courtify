@@ -18,11 +18,6 @@ const items = [
     icon: Home,
   },
   {
-    title: 'Analytics',
-    url: '#',
-    icon: BarChart2,
-  },
-  {
     title: 'Courts',
     url: '/dashboard/courts',
     icon: Calendar,

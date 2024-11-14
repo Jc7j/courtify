@@ -133,9 +133,9 @@ export function useCourtAvailability({
     const endTime = dayjs(input.endTime)
     const now = dayjs()
 
-    // Check if the start time is in the past
-    if (startTime.isBefore(now)) {
-      throw new Error('Cannot create availability in the past')
+    // Allow creating availability if it's today or in the future
+    if (startTime.isBefore(now.startOf('day'))) {
+      throw new Error('Cannot create availability for past dates')
     }
 
     // Check if the end time is before start time
@@ -197,8 +197,8 @@ export function useCourtAvailability({
       throw new Error('Availability not found')
     }
 
-    // Prevent updating past availabilities
-    if (dayjs(existingAvailability.start_time).isBefore(dayjs())) {
+    // Allow updating if it's today or in the future
+    if (dayjs(existingAvailability.start_time).isBefore(dayjs().startOf('day'))) {
       throw new Error('Cannot modify past availability')
     }
 
@@ -273,8 +273,8 @@ export function useCourtAvailability({
       throw new Error('Availability not found')
     }
 
-    // Prevent deleting past availabilities
-    if (dayjs(availabilityToDelete.start_time).isBefore(dayjs())) {
+    // Allow deleting if it's today or in the future
+    if (dayjs(availabilityToDelete.start_time).isBefore(dayjs().startOf('day'))) {
       throw new Error('Cannot delete past availability')
     }
 

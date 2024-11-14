@@ -73,14 +73,15 @@ export function CourtAvailabilityDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent loading={loading || isUpdating}>
         <DialogHeader>
-          <DialogTitle>Court {availability.court_number} Availability</DialogTitle>
+          <DialogTitle>
+            <div className="flex items-center gap-2 text-muted-foreground font-semibold">
+              <Calendar className="h-5 w-5" />
+              <span>{dayjs(availability.start_time).format('dddd, MMMM D, YYYY')}</span>
+            </div>
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-2 py-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>{dayjs(availability.start_time).format('dddd, MMMM D, YYYY')}</span>
-          </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-4 w-4" />
             <span>
@@ -121,15 +122,17 @@ export function CourtAvailabilityDialog({
               )}
             </>
           )}
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isUpdating}
-            className="gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
+          {!isPast && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isUpdating}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

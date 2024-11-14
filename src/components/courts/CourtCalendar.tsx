@@ -46,8 +46,8 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
     const selectedStart = dayjs(selectInfo.startStr)
     const now = dayjs()
 
-    if (selectedStart.isBefore(now)) {
-      toast.error('Cannot create availability in the past')
+    if (selectedStart.isBefore(now.startOf('day'))) {
+      toast.error('Cannot create availability for past dates')
       return
     }
 
@@ -199,7 +199,7 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
           select={handleSelect}
           eventClick={handleEventClick}
           selectConstraint={{
-            start: dayjs().startOf('hour').toISOString(),
+            start: dayjs().startOf('day').toISOString(),
             end: dayjs().add(6, 'months').toISOString(),
           }}
           selectOverlap={false}
