@@ -1,7 +1,7 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
-import { ROUTES } from '@/constants/routes'
-import { AuthorizedUser } from '@/types/auth'
+import { AuthorizedUser } from './types/auth'
+import { ROUTES } from './constants/routes'
 
 export default withAuth(
   function middleware(req) {
@@ -14,8 +14,6 @@ export default withAuth(
         return NextResponse.redirect(new URL(ROUTES.AUTH.SIGNUP, req.url))
       }
     }
-
-    return NextResponse.next()
   },
   {
     callbacks: {

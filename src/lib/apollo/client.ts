@@ -1,8 +1,44 @@
 import { ApolloClient, createHttpLink, from, InMemoryCache } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
-import { defaultApolloConfig, GRAPHQL_ENDPOINTS, cache } from './config'
 import { getSession } from 'next-auth/react'
+import { loadErrorMessages, loadDevMessages } from '@apollo/client/dev'
+
+// Enable detailed error messages in development
+if (process.env.NODE_ENV !== 'production') {
+  loadDevMessages()
+  loadErrorMessages()
+}
+
+const GRAPHQL_ENDPOINTS = {
+  local: 'http://localhost:54321/graphql/v1',
+  staging: 'https://staging.api.courtify.com/graphql/v1',
+  production: 'https://api.courtify.com/graphql/v1',
+} as const
+
+// Create a shared cache instance with type policies
+const cache = new InMemoryCache({
+  typePolicies: {
+    Query: {
+      fields: {
+        courts: {
+          merge: false,
+        },
+        bookings: {
+          keyArgs: ['where'],
+          merge(existing, incoming) {
+            return {
+              edges: [...(existing?.edges || []), ...(incoming?.edges || [])],
+            }
+          },
+        },
+        usersCollection: {
+          merge: false,
+        },
+      },
+    },
+  },
+})
 
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
@@ -18,7 +54,6 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   return forward(operation)
 })
 
-// Centralized auth header handling
 const authLink = setContext(async (_, { headers }) => {
   const session = await getSession()
 
@@ -42,33 +77,36 @@ const httpLink = createHttpLink({
   credentials: 'same-origin',
 })
 
-const link = from([errorLink, authLink, httpLink])
-
-// Shared Apollo client instance
-export const apolloClient = new ApolloClient({
-  link,
-  cache,
-  ...defaultApolloConfig,
-  defaultOptions: {
-    ...defaultApolloConfig.defaultOptions,
-    watchQuery: {
-      ...defaultApolloConfig.defaultOptions?.watchQuery,
-      fetchPolicy: 'cache-and-network',
-    },
+const defaultOptions = {
+  watchQuery: {
+    fetchPolicy: 'cache-and-network' as const,
+    errorPolicy: 'ignore' as const,
   },
+  query: {
+    fetchPolicy: 'network-only' as const,
+    errorPolicy: 'all' as const,
+  },
+  mutate: {
+    errorPolicy: 'all' as const,
+  },
+}
+
+export const apolloClient = new ApolloClient({
+  link: from([errorLink, authLink, httpLink]),
+  cache,
+  defaultOptions,
 })
 
-// Add this function to clear cache on logout
 export function clearApolloCache() {
   return apolloClient.clearStore()
 }
 
-// Helper for SSR
+// Helper for SSR with isolated cache
 export function createApolloClient() {
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
-    link,
+    link: from([errorLink, authLink, httpLink]),
     cache: new InMemoryCache(),
-    ...defaultApolloConfig,
+    defaultOptions,
   })
 }

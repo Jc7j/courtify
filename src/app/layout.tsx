@@ -1,3 +1,4 @@
+import React from 'react'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { SupabaseProvider } from '@/providers/SupabaseProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
