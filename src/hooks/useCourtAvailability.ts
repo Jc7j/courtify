@@ -24,9 +24,6 @@ interface UseCourtAvailabilityReturn {
   error: Error | null
   createAvailability: (input: CreateAvailabilityInput) => Promise<CourtAvailability>
   updateAvailability: (input: UpdateAvailabilityInput) => Promise<CourtAvailability>
-  creating: boolean
-  updating: boolean
-  refetch: () => Promise<void>
 }
 
 interface CreateAvailabilityInput {
@@ -41,8 +38,6 @@ interface UpdateAvailabilityInput {
   startTime: string
   update: {
     status?: 'available' | 'booked'
-    startTime?: string
-    endTime?: string
   }
 }
 
@@ -56,14 +51,6 @@ export function useCourtAvailability({
   endTime,
 }: UseCourtAvailabilityProps = {}): UseCourtAvailabilityReturn {
   const { user, loading: userLoading, isAuthenticated } = useUser()
-
-  console.log('useCourtAvailability params:', {
-    courtNumber,
-    startTime,
-    endTime,
-    userId: user?.id,
-    companyId: user?.company_id,
-  })
 
   const {
     data,
@@ -83,97 +70,13 @@ export function useCourtAvailability({
     }
   )
 
-  console.log('Query result:', {
-    data,
-    loading: queryLoading,
-    error: queryError,
-  })
+  const [createAvailabilityMutation] = useMutation(CREATE_COURT_AVAILABILITY)
+  const [updateAvailabilityMutation] = useMutation(UPDATE_COURT_AVAILABILITY)
 
-  // Create mutation
-  const [createAvailabilityMutation, { loading: creating }] = useMutation(
-    CREATE_COURT_AVAILABILITY,
-    {
-      update(cache, { data }) {
-        const newAvailability = data?.insertIntocourt_availabilitiesCollection?.records?.[0]
-        if (newAvailability && user?.company_id) {
-          const queries = [
-            {
-              query: GET_COURT_AVAILABILITIES,
-              variables: {
-                company_id: user.company_id,
-                court_number: newAvailability.court_number,
-              },
-            },
-            {
-              query: GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
-              variables: { company_id: user.company_id },
-            },
-          ]
-
-          queries.forEach(({ query, variables }) => {
-            try {
-              const existingData = cache.readQuery({ query, variables })
-              if (existingData) {
-                cache.updateQuery({ query, variables }, (data) => ({
-                  ...data,
-                  court_availabilitiesCollection: {
-                    ...data.court_availabilitiesCollection,
-                    edges: [
-                      ...data.court_availabilitiesCollection.edges,
-                      { node: newAvailability },
-                    ],
-                  },
-                }))
-              }
-            } catch (e) {
-              // Query not in cache, skip update
-            }
-          })
-        }
-      },
-    }
-  )
-
-  // Update mutation
-  const [updateAvailabilityMutation, { loading: updating }] = useMutation(
-    UPDATE_COURT_AVAILABILITY,
-    {
-      update(cache, { data }) {
-        const updatedAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
-        if (updatedAvailability && user?.company_id) {
-          cache.modify({
-            fields: {
-              court_availabilitiesCollection(existingAvailabilities = { edges: [] }) {
-                return {
-                  ...existingAvailabilities,
-                  edges: existingAvailabilities.edges.map((edge: any) =>
-                    edge.node.court_number === updatedAvailability.court_number &&
-                    edge.node.start_time === updatedAvailability.start_time
-                      ? { ...edge, node: updatedAvailability }
-                      : edge
-                  ),
-                }
-              },
-            },
-          })
-        }
-      },
-    }
-  )
-
-  async function createAvailability({
-    courtNumber,
-    startTime,
-    endTime,
-    status = 'available',
-  }: CreateAvailabilityInput): Promise<CourtAvailability> {
+  async function createAvailability(input: CreateAvailabilityInput): Promise<CourtAvailability> {
     if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication and company required')
+      throw new Error('Authentication required')
     }
-
-    // Convert to UTC for storage
-    const utcStart = new Date(startTime).toISOString()
-    const utcEnd = new Date(endTime).toISOString()
 
     try {
       const { data } = await createAvailabilityMutation({
@@ -181,63 +84,41 @@ export function useCourtAvailability({
           objects: [
             {
               company_id: user.company_id,
-              court_number: courtNumber,
-              start_time: utcStart,
-              end_time: utcEnd,
-              status,
+              court_number: input.courtNumber,
+              start_time: input.startTime,
+              end_time: input.endTime,
+              status: input.status || 'available',
             },
           ],
         },
       })
 
-      const newAvailability = data?.insertIntocourt_availabilitiesCollection?.records?.[0]
-      if (!newAvailability) {
-        throw new Error('Failed to create availability')
-      }
-
-      return newAvailability
+      return data?.insertIntocourt_availabilitiesCollection?.records?.[0]
     } catch (err) {
-      console.error('Detailed creation error:', err)
       throw err instanceof Error ? err : new Error('Failed to create availability')
     }
   }
 
-  async function updateAvailability({
-    courtNumber,
-    startTime,
-    update,
-  }: UpdateAvailabilityInput): Promise<CourtAvailability> {
+  async function updateAvailability(input: UpdateAvailabilityInput): Promise<CourtAvailability> {
     if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication and company required')
-    }
-
-    if (!update.status && !update.startTime && !update.endTime) {
-      throw new Error('At least one update field must be provided')
+      throw new Error('Authentication required')
     }
 
     try {
       const { data } = await updateAvailabilityMutation({
         variables: {
           company_id: user.company_id,
-          court_number: courtNumber,
-          start_time: startTime,
+          court_number: input.courtNumber,
+          start_time: input.startTime,
           set: {
-            ...(update.status && { status: update.status }),
-            ...(update.startTime && { start_time: update.startTime }),
-            ...(update.endTime && { end_time: update.endTime }),
+            status: input.update.status,
             updated_at: new Date().toISOString(),
           },
         },
       })
 
-      const updatedAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
-      if (!updatedAvailability) {
-        throw new Error('Failed to update availability')
-      }
-
-      return updatedAvailability
+      return data?.updatecourt_availabilitiesCollection?.records?.[0]
     } catch (err) {
-      console.error('Error in updateAvailability:', err)
       throw err instanceof Error ? err : new Error('Failed to update availability')
     }
   }
@@ -250,8 +131,5 @@ export function useCourtAvailability({
     error: queryError ? new Error(queryError.message) : null,
     createAvailability,
     updateAvailability,
-    creating,
-    updating,
-    refetch: fetch as unknown as () => Promise<void>,
   }
 }

@@ -268,3 +268,15 @@ CREATE TRIGGER validate_availability_update
     FOR EACH ROW
     EXECUTE FUNCTION validate_availability_update();
 
+-- Add GIST extension for range operations
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+-- Add exclusion constraint to prevent overlapping slots
+ALTER TABLE court_availabilities
+ADD CONSTRAINT no_overlapping_slots 
+EXCLUDE USING gist (
+    company_id WITH =,
+    court_number WITH =,
+    tstzrange(start_time, end_time) WITH &&
+);
+
