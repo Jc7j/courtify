@@ -8,6 +8,7 @@ import {
 import {
   CREATE_COURT_AVAILABILITY,
   UPDATE_COURT_AVAILABILITY,
+  DELETE_COURT_AVAILABILITY,
 } from '@/gql/mutations/court-availability'
 import { useUser } from '@/providers/UserProvider'
 import type {
@@ -16,6 +17,7 @@ import type {
   AvailabilityStatus,
 } from '@/types/graphql'
 import { useState } from 'react'
+import dayjs from 'dayjs'
 
 interface UseCourtAvailabilityProps {
   courtNumber?: number
@@ -29,6 +31,7 @@ interface UseCourtAvailabilityReturn {
   error: Error | null
   createAvailability: (input: CreateAvailabilityInput) => Promise<CourtAvailability>
   updateAvailability: (input: UpdateAvailabilityInput) => Promise<CourtAvailability>
+  deleteAvailability: (input: DeleteAvailabilityInput) => Promise<void>
 }
 
 interface CreateAvailabilityInput {
@@ -46,6 +49,11 @@ interface UpdateAvailabilityInput {
   }
 }
 
+interface DeleteAvailabilityInput {
+  courtNumber: number
+  startTime: string
+}
+
 interface AvailabilitiesQueryData {
   court_availabilitiesCollection: CourtAvailabilityConnection
 }
@@ -58,16 +66,22 @@ export function useCourtAvailability({
   const { user, loading: userLoading, isAuthenticated } = useUser()
   const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
 
+  // Define query options for refetching
+  const queryOptions = {
+    variables: {
+      company_id: user?.company_id,
+      court_number: courtNumber,
+      start_time: startTime,
+      end_time: endTime,
+    },
+    skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
+  }
+
+  // Query with refetch capability
   const { loading: queryLoading, error: queryError } = useQuery<AvailabilitiesQueryData>(
     courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
     {
-      variables: {
-        company_id: user?.company_id,
-        court_number: courtNumber,
-        start_time: startTime,
-        end_time: endTime,
-      },
-      skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
+      ...queryOptions,
       fetchPolicy: 'cache-and-network',
       onCompleted: (data) => {
         const availabilities =
@@ -79,12 +93,54 @@ export function useCourtAvailability({
     }
   )
 
-  const [createAvailabilityMutation] = useMutation(CREATE_COURT_AVAILABILITY)
-  const [updateAvailabilityMutation] = useMutation(UPDATE_COURT_AVAILABILITY)
+  const [createAvailabilityMutation] = useMutation(CREATE_COURT_AVAILABILITY, {
+    refetchQueries: [
+      {
+        query: courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
+        variables: queryOptions.variables,
+      },
+    ],
+    awaitRefetchQueries: true,
+  })
+
+  const [updateAvailabilityMutation] = useMutation(UPDATE_COURT_AVAILABILITY, {
+    refetchQueries: [
+      {
+        query: courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
+        variables: queryOptions.variables,
+      },
+    ],
+    awaitRefetchQueries: true,
+  })
+
+  const [deleteAvailabilityMutation] = useMutation(DELETE_COURT_AVAILABILITY, {
+    refetchQueries: [
+      {
+        query: courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
+        variables: queryOptions.variables,
+      },
+    ],
+    awaitRefetchQueries: true,
+  })
 
   async function createAvailability(input: CreateAvailabilityInput): Promise<CourtAvailability> {
     if (!isAuthenticated || !user?.company_id) {
       throw new Error('Authentication required')
+    }
+
+    // Validate time constraints
+    const startTime = dayjs(input.startTime)
+    const endTime = dayjs(input.endTime)
+    const now = dayjs()
+
+    // Check if the start time is in the past
+    if (startTime.isBefore(now)) {
+      throw new Error('Cannot create availability in the past')
+    }
+
+    // Check if the end time is before start time
+    if (endTime.isBefore(startTime)) {
+      throw new Error('End time must be after start time')
     }
 
     const newAvailability: CourtAvailability = {
@@ -93,11 +149,12 @@ export function useCourtAvailability({
       court_number: input.courtNumber,
       start_time: input.startTime,
       end_time: input.endTime,
-      status: input.status as AvailabilityStatus,
+      status: input.status as AvailabilityStatus.Available,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
 
+    // Optimistic update
     setLocalAvailabilities((prev) => [...prev, newAvailability])
 
     try {
@@ -109,7 +166,7 @@ export function useCourtAvailability({
               court_number: input.courtNumber,
               start_time: input.startTime,
               end_time: input.endTime,
-              status: input.status as AvailabilityStatus,
+              status: input.status as AvailabilityStatus.Available,
             },
           ],
         },
@@ -119,10 +176,6 @@ export function useCourtAvailability({
       if (!createdAvailability) {
         throw new Error('Failed to create availability')
       }
-
-      setLocalAvailabilities((prev) =>
-        prev.map((a) => (a.nodeId === newAvailability.nodeId ? createdAvailability : a))
-      )
 
       return createdAvailability
     } catch (err) {
@@ -144,12 +197,19 @@ export function useCourtAvailability({
       throw new Error('Availability not found')
     }
 
+    // Prevent updating past availabilities
+    if (dayjs(existingAvailability.start_time).isBefore(dayjs())) {
+      throw new Error('Cannot modify past availability')
+    }
+
+    // Create updated availability with all required fields
     const updatedAvailability: CourtAvailability = {
       ...existingAvailability,
-      ...input.update,
+      status: input.update.status || existingAvailability.status,
       updated_at: new Date().toISOString(),
     }
 
+    // Optimistic update
     setLocalAvailabilities((prev) =>
       prev.map((a) =>
         a.court_number === input.courtNumber && a.start_time === input.startTime
@@ -165,7 +225,7 @@ export function useCourtAvailability({
           court_number: input.courtNumber,
           start_time: input.startTime,
           set: {
-            ...input.update,
+            status: input.update.status,
             updated_at: new Date().toISOString(),
           },
         },
@@ -176,8 +236,18 @@ export function useCourtAvailability({
         throw new Error('Failed to update availability')
       }
 
+      // Update local state with server response
+      setLocalAvailabilities((prev) =>
+        prev.map((a) =>
+          a.court_number === input.courtNumber && a.start_time === input.startTime
+            ? serverAvailability
+            : a
+        )
+      )
+
       return serverAvailability
     } catch (err) {
+      // Rollback optimistic update
       setLocalAvailabilities((prev) =>
         prev.map((a) =>
           a.court_number === input.courtNumber && a.start_time === input.startTime
@@ -185,7 +255,50 @@ export function useCourtAvailability({
             : a
         )
       )
+      console.error('Update error:', err)
       throw err instanceof Error ? err : new Error('Failed to update availability')
+    }
+  }
+
+  async function deleteAvailability(input: DeleteAvailabilityInput): Promise<void> {
+    if (!isAuthenticated || !user?.company_id) {
+      throw new Error('Authentication required')
+    }
+
+    const availabilityToDelete = localAvailabilities.find(
+      (a) => a.court_number === input.courtNumber && a.start_time === input.startTime
+    )
+
+    if (!availabilityToDelete) {
+      throw new Error('Availability not found')
+    }
+
+    // Prevent deleting past availabilities
+    if (dayjs(availabilityToDelete.start_time).isBefore(dayjs())) {
+      throw new Error('Cannot delete past availability')
+    }
+
+    // Optimistic update
+    setLocalAvailabilities((prev) =>
+      prev.filter(
+        (a) => !(a.court_number === input.courtNumber && a.start_time === input.startTime)
+      )
+    )
+
+    try {
+      await deleteAvailabilityMutation({
+        variables: {
+          company_id: user.company_id,
+          court_number: input.courtNumber,
+          start_time: input.startTime,
+        },
+      })
+    } catch (err) {
+      // Rollback optimistic update if deletion fails
+      if (availabilityToDelete) {
+        setLocalAvailabilities((prev) => [...prev, availabilityToDelete])
+      }
+      throw err instanceof Error ? err : new Error('Failed to delete availability')
     }
   }
 
@@ -195,5 +308,6 @@ export function useCourtAvailability({
     error: queryError ? new Error(queryError.message) : null,
     createAvailability,
     updateAvailability,
+    deleteAvailability,
   }
 }

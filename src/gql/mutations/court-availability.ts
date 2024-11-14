@@ -45,3 +45,24 @@ export const UPDATE_COURT_AVAILABILITY = gql`
     }
   }
 `
+
+export const DELETE_COURT_AVAILABILITY = gql`
+  ${COURT_AVAILABILITY_FIELDS}
+  mutation DeleteCourtAvailability(
+    $company_id: UUID!
+    $court_number: Int!
+    $start_time: Datetime!
+  ) {
+    deleteFromcourt_availabilitiesCollection(
+      filter: {
+        company_id: { eq: $company_id }
+        court_number: { eq: $court_number }
+        start_time: { eq: $start_time }
+      }
+    ) {
+      records {
+        ...CourtAvailabilityFields
+      }
+    }
+  }
+`

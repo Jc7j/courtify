@@ -18,7 +18,7 @@ export default function HomePage() {
             Get Started
           </Link>
           <Link
-            href="/login"
+            href="/signin"
             className="px-6 py-3 text-foreground-default bg-background-subtle rounded-lg border border-border-default hover:bg-background-muted transition-colors"
           >
             Sign In
