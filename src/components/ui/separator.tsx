@@ -39,7 +39,6 @@ const Separator = React.forwardRef<
     },
     ref
   ) => {
-    // If there's no label, render a simple separator
     if (!label) {
       return (
         <SeparatorPrimitive.Root
@@ -57,7 +56,6 @@ const Separator = React.forwardRef<
       )
     }
 
-    // If there's a label, render a separator with label
     return (
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

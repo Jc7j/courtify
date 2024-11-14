@@ -2,7 +2,7 @@ import type { CodegenConfig } from '@graphql-codegen/cli'
 import { addTypenameSelectionDocumentTransform } from '@graphql-codegen/client-preset'
 
 const config: CodegenConfig = {
-  schema: 'http://localhost:54321/graphql/v1', // Using the local endpoint, update if needed
+  schema: 'http://localhost:54321/graphql/v1',
   documents: 'src/**/*.tsx',
   overwrite: true,
   ignoreNoDocuments: true,
@@ -26,7 +26,7 @@ const config: CodegenConfig = {
     },
   },
   hooks: {
-    afterAllFileWrite: ['bun run prettier'], // optional
+    afterAllFileWrite: ['bun run prettier'],
   },
 }
 

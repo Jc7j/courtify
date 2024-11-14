@@ -35,7 +35,6 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Failed to get access token')
           }
 
-          // Get user data
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select(
@@ -58,7 +57,6 @@ export const authOptions: NextAuthOptions = {
             throw new Error('User not found')
           }
 
-          // Update last_login_at
           await supabase
             .from('users')
             .update({ last_login_at: new Date().toISOString() })

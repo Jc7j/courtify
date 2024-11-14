@@ -1,6 +1,5 @@
 import { DefaultSession } from 'next-auth'
 
-// Base user type that matches our database schema
 export interface BaseUser {
   id: string
   email: string
@@ -13,7 +12,6 @@ export interface BaseUser {
   updated_at: string
 }
 
-// Type for authorized user that includes auth-specific fields
 export interface AuthorizedUser extends BaseUser {
   supabaseAccessToken?: string
 }

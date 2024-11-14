@@ -66,7 +66,6 @@ export function useCourtAvailability({
   const { user, loading: userLoading, isAuthenticated } = useUser()
   const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
 
-  // Define query options for refetching
   const queryOptions = {
     variables: {
       company_id: user?.company_id,
@@ -77,7 +76,6 @@ export function useCourtAvailability({
     skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
   }
 
-  // Query with refetch capability
   const { loading: queryLoading, error: queryError } = useQuery<AvailabilitiesQueryData>(
     courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
     {

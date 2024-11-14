@@ -37,7 +37,6 @@ export default function CourtsPage() {
     router.push(`${ROUTES.DASHBOARD}/courts/${courtNumber}`)
   }
 
-  // Error state
   if (error) {
     return (
       <div className="p-8 space-y-8">

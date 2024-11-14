@@ -4,7 +4,6 @@ import { onError } from '@apollo/client/link/error'
 import { getSession } from 'next-auth/react'
 import { loadErrorMessages, loadDevMessages } from '@apollo/client/dev'
 
-// Enable detailed error messages in development
 if (process.env.NODE_ENV !== 'production') {
   loadDevMessages()
   loadErrorMessages()
@@ -16,7 +15,6 @@ const GRAPHQL_ENDPOINTS = {
   production: 'https://api.courtify.com/graphql/v1',
 } as const
 
-// Create a shared cache instance with type policies
 const cache = new InMemoryCache({
   typePolicies: {
     Query: {
@@ -101,7 +99,6 @@ export function clearApolloCache() {
   return apolloClient.clearStore()
 }
 
-// Helper for SSR with isolated cache
 export function createApolloClient() {
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',

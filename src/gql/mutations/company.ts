@@ -1,6 +1,5 @@
 import { gql } from '@apollo/client'
 
-// Company Fragments for reuse
 export const COMPANY_FIELDS = gql`
   fragment CompanyFields on companies {
     id

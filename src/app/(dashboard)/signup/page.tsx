@@ -5,10 +5,10 @@ import { CreateCompanyStep } from '@/components/onboarding/CreateCompanyStep'
 import { Logo, Progress } from '@/components/ui'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
 import { useUser } from '@/providers/UserProvider'
-import { useOnboarding } from '@/hooks/useOnboarding'
+import { OnboardingStep, useOnboarding } from '@/hooks/useOnboarding'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const STEPS = {
+const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
   signup: { number: 1, progress: 33 },
   'create-intro': { number: 2, progress: 66 },
   create: { number: 3, progress: 100 },
@@ -18,7 +18,6 @@ export default function SignUpPage() {
   const { user, loading } = useUser()
   const { step, handleStepChange } = useOnboarding()
 
-  // Show loading state while checking user status
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -43,7 +42,6 @@ export default function SignUpPage() {
     handleStepChange('create')
   }
 
-  // Show appropriate step
   function renderStep() {
     switch (step) {
       case 'create-intro':
@@ -55,7 +53,6 @@ export default function SignUpPage() {
     }
   }
 
-  // Conditional layout based on step
   if (step === 'signup') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
@@ -76,7 +73,6 @@ export default function SignUpPage() {
     )
   }
 
-  // Split screen layout for other steps
   return (
     <div className="flex min-h-screen">
       {/* Left side - Form */}

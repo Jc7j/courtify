@@ -1,6 +1,5 @@
 import { gql } from '@apollo/client'
 
-// Court Fragments for reuse
 export const COURT_FIELDS = gql`
   fragment CourtFields on courts {
     nodeId

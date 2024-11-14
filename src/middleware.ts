@@ -18,7 +18,6 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token }) => {
-        // Allow access to signup page without token
         return true
       },
     },

@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, Logo, success, error as toastError } from '@/components/ui'
-import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 
 const signInSchema = z.object({
@@ -18,7 +17,6 @@ type SignInFormData = z.infer<typeof signInSchema>
 
 export default function SignInPage() {
   const { signIn } = useAuth()
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const {
@@ -35,7 +33,6 @@ export default function SignInPage() {
     try {
       await signIn(data.email, data.password)
       success('Signed in successfully')
-      router.push(ROUTES.DASHBOARD)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sign in'
 

@@ -23,9 +23,9 @@ export function useAuth() {
         throw new Error(result.error)
       }
 
-      await updateSession()
+      const updatedSession = await updateSession()
 
-      if (session?.user?.company_id) {
+      if (updatedSession?.user?.company_id) {
         router.replace(ROUTES.DASHBOARD)
       } else {
         router.replace(`${ROUTES.AUTH.SIGNUP}?step=create-intro`)
@@ -38,7 +38,6 @@ export function useAuth() {
 
   async function signUp(email: string, password: string, name: string) {
     try {
-      // Check if email exists
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
@@ -49,7 +48,6 @@ export function useAuth() {
         throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
       }
 
-      // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -77,7 +75,6 @@ export function useAuth() {
 
       if (createError) throw createError
 
-      // Sign in and redirect to create company
       await signIn(email, password)
     } catch (error) {
       console.error('Error signing up:', error)
@@ -87,8 +84,8 @@ export function useAuth() {
 
   async function signOut() {
     try {
-      await nextAuthSignOut({ redirect: false })
       await clearApolloCache()
+      await nextAuthSignOut({ redirect: false })
       router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {
       console.error('Error signing out:', error)

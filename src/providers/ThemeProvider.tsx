@@ -16,7 +16,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
   const [systemTheme, setSystemTheme] = useState<Theme>('light')
 
-  // Handle system theme changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const updateSystemTheme = (e: MediaQueryListEvent | MediaQueryList) => {

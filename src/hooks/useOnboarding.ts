@@ -2,55 +2,29 @@
 
 import { useUser } from '@/providers/UserProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
 
 export type OnboardingStep = 'signup' | 'create-intro' | 'create'
 
-interface UseOnboardingReturn {
-  step: OnboardingStep
+interface OnboardingState {
   isOnboarding: boolean
-  loading: boolean
-  handleStepChange: (step: OnboardingStep) => void
+  step: OnboardingStep
   handleCompanyCreated: (companyId: string) => Promise<void>
+  handleStepChange: (step: OnboardingStep) => void
 }
 
-export function useOnboarding(): UseOnboardingReturn {
-  const { user, loading: userLoading, refetch: refetchUser, isAuthenticated } = useUser()
+export function useOnboarding(): OnboardingState {
+  const { user, refetch: refetchUser, isAuthenticated } = useUser()
   const { update: updateSession } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const urlStep = searchParams.get('step') as OnboardingStep | null
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('signup')
-  const [isRedirecting, setIsRedirecting] = useState(false)
 
-  // Handle URL sync and redirects
-  useEffect(() => {
-    if (userLoading || isRedirecting) return
+  const currentStep = (searchParams.get('step') as OnboardingStep) || 'signup'
 
-    // If user has company_id and there's a step parameter, redirect to dashboard
-    if (user?.company_id && urlStep) {
-      router.replace(ROUTES.DASHBOARD)
-      return
-    }
-
-    // If user is not authenticated and not on signup step, redirect to signup
-    if (!isAuthenticated && currentStep !== 'signup') {
-      router.replace(ROUTES.AUTH.SIGNUP)
-      return
-    }
-
-    // Otherwise, sync step with URL if it's valid
-    if (urlStep && (urlStep === 'create-intro' || urlStep === 'create')) {
-      setCurrentStep(urlStep)
-    }
-  }, [user?.company_id, urlStep, userLoading, isRedirecting, router, isAuthenticated, currentStep])
-
-  // Handle step changes with URL updates
   const handleStepChange = useCallback(
     (newStep: OnboardingStep) => {
-      setCurrentStep(newStep)
       if (newStep === 'signup') {
         router.replace(ROUTES.AUTH.SIGNUP)
       } else {
@@ -60,40 +34,39 @@ export function useOnboarding(): UseOnboardingReturn {
     [router]
   )
 
-  // Handle company creation success
   const handleCompanyCreated = useCallback(
     async (companyId: string) => {
       if (!isAuthenticated || !user) {
         throw new Error('User must be authenticated to create a company')
       }
 
-      setIsRedirecting(true)
       try {
-        await Promise.all([
-          refetchUser(),
-          updateSession({
-            user: {
-              ...user,
-              company_id: companyId,
-            },
-          }),
-        ])
+        const updatedSession = await updateSession({
+          user: {
+            ...user,
+            company_id: companyId,
+          },
+        })
+
+        if (!updatedSession?.user?.company_id) {
+          throw new Error('Failed to update user session')
+        }
+
+        await refetchUser()
 
         router.replace(ROUTES.DASHBOARD)
       } catch (err) {
-        setIsRedirecting(false)
-        console.error('Error updating session after company creation:', err)
-        throw err instanceof Error ? err : new Error('Failed to update session')
+        console.error('Error completing company creation:', err)
+        throw err instanceof Error ? err : new Error('Failed to complete company setup')
       }
     },
     [user, refetchUser, updateSession, router, isAuthenticated]
   )
 
   return {
-    step: currentStep,
     isOnboarding: isAuthenticated && !user?.company_id,
-    loading: userLoading || isRedirecting,
-    handleStepChange,
+    step: currentStep,
     handleCompanyCreated,
+    handleStepChange,
   }
 }

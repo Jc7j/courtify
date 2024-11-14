@@ -17,7 +17,6 @@ export default function CourtPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [newName, setNewName] = useState(court?.name || '')
 
-  // Loading state
   if (courtLoading || !court) {
     return (
       <div className="p-8">
