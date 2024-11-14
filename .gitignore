@@ -20,6 +20,8 @@
 # production
 /build
 
+.cursorrules
+
 # misc
 .DS_Store
 *.pem

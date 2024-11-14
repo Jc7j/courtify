@@ -104,16 +104,3 @@ This design system supports Courtify's goals of:
 - Accessible interface for all users
 
 ---
-
-### Technical Documentation
-
-#### 1. User Signup Flow
-- User initiates signup through `/signup` page
-- `useAuth` hook handles user creation in Supabase
-- NextAuth creates session and manages authentication state
-
-#### 2. Company Creation Flow
-- After signup, user is prompted to create company
-- `useCompany` hook manages company creation logic
-- GraphQL mutation `CREATE_COMPANY` executes with auth headers
-

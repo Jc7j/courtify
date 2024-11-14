@@ -12,7 +12,7 @@ import dayjs from 'dayjs'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
 import type { Courts } from '@/types/graphql'
 import { AvailabilityStatus } from '@/types/graphql'
-import { useIsMobile } from '@/hooks/use-mobile'
+import { useIsMobile } from '@/hooks/useMobile'
 
 interface CourtCalendarProps {
   court: Courts
