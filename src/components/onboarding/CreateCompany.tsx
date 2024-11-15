@@ -5,9 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
-import { Loader2 } from 'lucide-react'
 import { BaseUser } from '@/types/auth'
-import { useOnboarding } from '@/hooks/useOnboarding'
 
 const createCompanySchema = z.object({
   name: z
@@ -25,7 +23,6 @@ interface CreateCompanyProps {
 
 export function CreateCompany({ user, onBack }: CreateCompanyProps) {
   const { createCompany, creating } = useCompany()
-  const { handleCompanyCreated } = useOnboarding()
 
   const {
     register,
@@ -33,16 +30,19 @@ export function CreateCompany({ user, onBack }: CreateCompanyProps) {
     formState: { errors },
   } = useForm<CreateCompanyFormData>({
     resolver: zodResolver(createCompanySchema),
+    defaultValues: {
+      name: '',
+    },
   })
 
-  async function handleFormSubmit(data: CreateCompanyFormData) {
-    if (!user?.id) return
+  const onSubmit = async (data: CreateCompanyFormData) => {
+    console.log('Form submitted:', data)
 
     try {
-      const company = await createCompany(data.name)
+      await createCompany(data.name)
       success('Company created successfully!')
-      await handleCompanyCreated(company.id)
     } catch (err) {
+      console.error('Error creating company:', err)
       error(err instanceof Error ? err.message : 'Failed to create company')
     }
   }
@@ -56,17 +56,18 @@ export function CreateCompany({ user, onBack }: CreateCompanyProps) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
           <label htmlFor="name" className="text-sm font-medium">
             Company name
           </label>
           <Input
-            {...register('name')}
             id="name"
             placeholder="Enter your company name"
             className={errors.name ? 'border-destructive' : ''}
             disabled={creating}
+            {...register('name')}
+            aria-invalid={errors.name ? 'true' : 'false'}
           />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
@@ -84,14 +85,7 @@ export function CreateCompany({ user, onBack }: CreateCompanyProps) {
             </Button>
           )}
           <Button type="submit" className="flex-1" disabled={creating}>
-            {creating ? (
-              <>
-                <span className="mr-2">Creating</span>
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </>
-            ) : (
-              'Create Company'
-            )}
+            Create Company
           </Button>
         </div>
       </form>

@@ -11,7 +11,7 @@ export type OnboardingStep = 'signup' | 'create-intro' | 'create'
 interface OnboardingState {
   isOnboarding: boolean
   step: OnboardingStep
-  handleCompanyCreated: (companyId: string) => Promise<void>
+  handleCompanyCreated: () => Promise<void>
   handleStepChange: (step: OnboardingStep) => void
 }
 
@@ -34,34 +34,16 @@ export function useOnboarding(): OnboardingState {
     [router]
   )
 
-  const handleCompanyCreated = useCallback(
-    async (companyId: string) => {
-      if (!isAuthenticated || !user) {
-        throw new Error('User must be authenticated to create a company')
-      }
-
-      try {
-        const updatedSession = await updateSession({
-          user: {
-            ...user,
-            company_id: companyId,
-          },
-        })
-
-        if (!updatedSession?.user?.company_id) {
-          throw new Error('Failed to update user session')
-        }
-
-        await refetchUser()
-
-        router.replace(ROUTES.DASHBOARD)
-      } catch (err) {
-        console.error('Error completing company creation:', err)
-        throw err instanceof Error ? err : new Error('Failed to complete company setup')
-      }
-    },
-    [user, refetchUser, updateSession, router, isAuthenticated]
-  )
+  const handleCompanyCreated = useCallback(async () => {
+    try {
+      await refetchUser()
+      await updateSession()
+      router.replace(ROUTES.DASHBOARD)
+    } catch (err) {
+      console.error('Error completing company creation:', err)
+      throw err instanceof Error ? err : new Error('Failed to complete company setup')
+    }
+  }, [refetchUser, updateSession, router])
 
   return {
     isOnboarding: isAuthenticated && !user?.company_id,

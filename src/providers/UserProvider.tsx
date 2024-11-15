@@ -49,7 +49,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
 export function useUser() {
   const context = useContext(UserContext)
-
+  console.log('context', context)
   if (!context) {
     throw new Error('useUser must be used within UserProvider')
   }
