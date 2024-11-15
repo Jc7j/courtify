@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GET_COURT_AVAILABILITIES,
   GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
+  GET_COMPANY_COURTS_AVAILABILITIES,
 } from '@/gql/queries/court-availability'
 import {
   CREATE_COURT_AVAILABILITY,
@@ -56,6 +57,50 @@ interface DeleteAvailabilityInput {
 
 interface AvailabilitiesQueryData {
   court_availabilitiesCollection: CourtAvailabilityConnection
+}
+
+interface UseCompanyAvailabilitiesReturn {
+  availabilities: CourtAvailability[]
+  loading: boolean
+  error: Error | null
+}
+
+export function useCompanyAvailabilities(
+  startTime?: string,
+  endTime?: string
+): UseCompanyAvailabilitiesReturn {
+  const { user, loading: userLoading, isAuthenticated } = useUser()
+  const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
+
+  const queryOptions = {
+    variables: {
+      company_id: user?.company_id,
+      start_time: startTime,
+      end_time: endTime,
+    },
+    skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
+  }
+
+  const { loading: queryLoading, error: queryError } = useQuery<AvailabilitiesQueryData>(
+    GET_COMPANY_COURTS_AVAILABILITIES,
+    {
+      ...queryOptions,
+      fetchPolicy: 'cache-and-network',
+      onCompleted: (data) => {
+        const availabilities =
+          data?.court_availabilitiesCollection?.edges?.map(
+            (edge) => edge.node as CourtAvailability
+          ) || []
+        setLocalAvailabilities(availabilities)
+      },
+    }
+  )
+
+  return {
+    availabilities: localAvailabilities,
+    loading: userLoading || queryLoading,
+    error: queryError ? new Error(queryError.message) : null,
+  }
 }
 
 export function useCourtAvailability({

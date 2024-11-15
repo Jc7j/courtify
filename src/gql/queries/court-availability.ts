@@ -1,6 +1,30 @@
 import { gql } from '@apollo/client'
 import { COURT_AVAILABILITY_FIELDS } from '../mutations/court-availability'
 
+export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
+  ${COURT_AVAILABILITY_FIELDS}
+  query GetCourtAvailabilities(
+    $company_id: UUID!
+    $court_number: Int!
+    $start_time: Datetime!
+    $end_time: Datetime!
+  ) {
+    court_availabilitiesCollection(
+      filter: {
+        company_id: { eq: $company_id }
+        and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
+      }
+      orderBy: [{ start_time: AscNullsFirst }]
+    ) {
+      edges {
+        node {
+          ...CourtAvailabilityFields
+        }
+      }
+    }
+  }
+`
+
 export const GET_COURT_AVAILABILITIES = gql`
   ${COURT_AVAILABILITY_FIELDS}
   query GetCourtAvailabilities(
@@ -16,26 +40,6 @@ export const GET_COURT_AVAILABILITIES = gql`
         and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
       }
       orderBy: [{ start_time: AscNullsFirst }]
-    ) {
-      edges {
-        node {
-          ...CourtAvailabilityFields
-        }
-      }
-    }
-  }
-`
-
-export const GET_COURT_AVAILABILITY = gql`
-  ${COURT_AVAILABILITY_FIELDS}
-  query GetCourtAvailability($company_id: UUID!, $court_number: Int!, $start_time: Datetime!) {
-    court_availabilitiesCollection(
-      first: 1
-      filter: {
-        company_id: { eq: $company_id }
-        court_number: { eq: $court_number }
-        start_time: { eq: $start_time }
-      }
     ) {
       edges {
         node {

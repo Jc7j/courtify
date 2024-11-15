@@ -2,6 +2,7 @@
 
 import { useUser } from '@/providers/UserProvider'
 import { Skeleton } from '@/components/ui'
+import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
 
 export default function DashboardPage() {
   const { user, loading } = useUser()
@@ -11,6 +12,7 @@ export default function DashboardPage() {
       <div className="p-8 space-y-4">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-96" />
+        <Skeleton className="h-[600px] w-full mt-8" />
       </div>
     )
   }
@@ -23,6 +25,12 @@ export default function DashboardPage() {
           ? 'Welcome to your Courtify dashboard'
           : 'Please complete your company setup to get started'}
       </p>
+
+      {user?.company_id && (
+        <div className="mt-8">
+          <CompanyCourtCalendar />
+        </div>
+      )}
     </div>
   )
 }
