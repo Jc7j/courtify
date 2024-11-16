@@ -7,7 +7,6 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { toast } from 'sonner'
-import { useUser } from '@/providers/UserProvider'
 import dayjs from 'dayjs'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
 import type { CourtAvailability, Courts } from '@/types/graphql'
@@ -37,12 +36,9 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
       endTime: currentRange.end,
     })
 
-  const { user } = useUser()
   const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
 
   async function handleSelect(selectInfo: DateSelectArg) {
-    if (!user?.company_id) return
-
     const selectedStart = dayjs(selectInfo.startStr)
     const now = dayjs()
 
@@ -65,15 +61,6 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
   }
 
   async function handleEventClick(clickInfo: EventClickArg) {
-    console.log('Event clicked:', {
-      eventStart: clickInfo.event.startStr,
-      eventId: clickInfo.event.id,
-      availabilities: availabilities.map((a) => ({
-        court: a.court_number,
-        start: a.start_time,
-      })),
-    })
-
     const availability = availabilities.find(
       (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
     )

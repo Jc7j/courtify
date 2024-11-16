@@ -47,6 +47,9 @@ interface UpdateAvailabilityInput {
   startTime: string
   update: {
     status?: AvailabilityStatus
+    start_time?: string
+    end_time?: string
+    updated_at?: string
   }
 }
 
@@ -249,35 +252,6 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
-    const existingAvailability = localAvailabilities.find(
-      (a) => a.court_number === input.courtNumber && a.start_time === input.startTime
-    )
-
-    if (!existingAvailability) {
-      throw new Error('Availability not found')
-    }
-
-    // Allow updating if it's today or in the future
-    if (dayjs(existingAvailability.start_time).isBefore(dayjs().startOf('day'))) {
-      throw new Error('Cannot modify past availability')
-    }
-
-    // Create updated availability with all required fields
-    const updatedAvailability: CourtAvailability = {
-      ...existingAvailability,
-      status: input.update.status || existingAvailability.status,
-      updated_at: new Date().toISOString(),
-    }
-
-    // Optimistic update
-    setLocalAvailabilities((prev) =>
-      prev.map((a) =>
-        a.court_number === input.courtNumber && a.start_time === input.startTime
-          ? updatedAvailability
-          : a
-      )
-    )
-
     try {
       const { data } = await updateAvailabilityMutation({
         variables: {
@@ -285,36 +259,21 @@ export function useCourtAvailability({
           court_number: input.courtNumber,
           start_time: input.startTime,
           set: {
-            status: input.update.status,
-            updated_at: new Date().toISOString(),
+            ...input.update,
+            // Ensure times are in ISO format
+            start_time: dayjs(input.update.start_time).toISOString(),
+            end_time: dayjs(input.update.end_time).toISOString(),
           },
         },
       })
 
-      const serverAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
-      if (!serverAvailability) {
+      const updatedAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
+      if (!updatedAvailability) {
         throw new Error('Failed to update availability')
       }
 
-      // Update local state with server response
-      setLocalAvailabilities((prev) =>
-        prev.map((a) =>
-          a.court_number === input.courtNumber && a.start_time === input.startTime
-            ? serverAvailability
-            : a
-        )
-      )
-
-      return serverAvailability
+      return updatedAvailability
     } catch (err) {
-      // Rollback optimistic update
-      setLocalAvailabilities((prev) =>
-        prev.map((a) =>
-          a.court_number === input.courtNumber && a.start_time === input.startTime
-            ? existingAvailability
-            : a
-        )
-      )
       console.error('Update error:', err)
       throw err instanceof Error ? err : new Error('Failed to update availability')
     }

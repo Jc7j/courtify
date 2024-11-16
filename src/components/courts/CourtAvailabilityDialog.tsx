@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AvailabilityStatus, CourtAvailability } from '@/types/graphql'
 import {
   Dialog,
@@ -11,7 +11,9 @@ import {
   Button,
   success,
   error as ToastError,
+  Input,
 } from '@/components/ui'
+import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import { Calendar, Clock, Trash2 } from 'lucide-react'
 import cn from '@/lib/utils/cn'
@@ -23,6 +25,7 @@ interface CourtAvailabilityDialogProps {
   onStatusChange: (newStatus: AvailabilityStatus) => Promise<void>
   onDelete: () => Promise<void>
   loading?: boolean
+  readOnly?: boolean
 }
 
 export function CourtAvailabilityDialog({
@@ -32,13 +35,28 @@ export function CourtAvailabilityDialog({
   onStatusChange,
   onDelete,
   loading = false,
+  readOnly = false,
 }: CourtAvailabilityDialogProps) {
   const [isUpdating, setIsUpdating] = useState(false)
+  const [startTime, setStartTime] = useState(dayjs(availability.start_time).format('HH:mm'))
+  const [endTime, setEndTime] = useState(dayjs(availability.end_time).format('HH:mm'))
+  const [hasTimeChanges, setHasTimeChanges] = useState(false)
+
+  const { updateAvailability } = useCourtAvailability({
+    courtNumber: availability.court_number,
+    startTime: dayjs(availability.start_time).startOf('day').toISOString(),
+    endTime: dayjs(availability.start_time).endOf('day').toISOString(),
+  })
+
+  useEffect(() => {
+    setStartTime(dayjs(availability.start_time).format('HH:mm'))
+    setEndTime(dayjs(availability.end_time).format('HH:mm'))
+    setHasTimeChanges(false)
+  }, [availability])
 
   const handleStatusChange = async (newStatus: AvailabilityStatus) => {
     try {
       setIsUpdating(true)
-      console.log('Changing status to:', newStatus)
       await onStatusChange(newStatus)
       success(`Status updated to ${newStatus.toLowerCase()}`)
       onClose()
@@ -59,6 +77,60 @@ export function CourtAvailabilityDialog({
     }
   }
 
+  const handleTimeChange = async () => {
+    try {
+      setIsUpdating(true)
+
+      const originalDate = dayjs(availability.start_time).format('YYYY-MM-DD')
+
+      const newStartDateTime = dayjs(`${originalDate}T${startTime}`).toISOString()
+      const newEndDateTime = dayjs(`${originalDate}T${endTime}`).toISOString()
+
+      if (dayjs(newEndDateTime).isBefore(dayjs(newStartDateTime))) {
+        throw new Error('End time must be after start time')
+      }
+
+      console.log('Updating availability times:', {
+        original: {
+          start: availability.start_time,
+          end: availability.end_time,
+        },
+        new: {
+          start: newStartDateTime,
+          end: newEndDateTime,
+        },
+      })
+
+      await updateAvailability({
+        courtNumber: availability.court_number,
+        startTime: availability.start_time,
+        update: {
+          start_time: newStartDateTime,
+          end_time: newEndDateTime,
+          updated_at: new Date().toISOString(),
+        },
+      })
+
+      setHasTimeChanges(false)
+      success('Time updated successfully')
+      onClose()
+    } catch (error) {
+      console.error('Time update error:', error)
+      ToastError(error instanceof Error ? error.message : 'Failed to update time')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleTimeInputChange = (type: 'start' | 'end', value: string) => {
+    if (type === 'start') {
+      setStartTime(value)
+    } else {
+      setEndTime(value)
+    }
+    setHasTimeChanges(true)
+  }
+
   const isPast = availability.status === AvailabilityStatus.Past
   const isBooked = availability.status === AvailabilityStatus.Booked
   const isAvailable = availability.status === AvailabilityStatus.Available
@@ -71,7 +143,7 @@ export function CourtAvailabilityDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent loading={loading || isUpdating}>
+      <DialogContent loading={loading || isUpdating} onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             <div className="flex items-center gap-2 text-muted-foreground font-semibold">
@@ -84,10 +156,33 @@ export function CourtAvailabilityDialog({
         <div className="flex flex-col gap-2 py-4">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>
-              {dayjs(availability.start_time).format('h:mm A')} -{' '}
-              {dayjs(availability.end_time).format('h:mm A')}
-            </span>
+            <div className="flex items-center gap-2">
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => handleTimeInputChange('start', e.target.value)}
+                className="w-32"
+                disabled={readOnly || isPast}
+              />
+              <span>-</span>
+              <Input
+                type="time"
+                value={endTime}
+                onChange={(e) => handleTimeInputChange('end', e.target.value)}
+                className="w-32"
+                disabled={readOnly || isPast}
+              />
+              {hasTimeChanges && !readOnly && !isPast && (
+                <Button
+                  size="sm"
+                  onClick={handleTimeChange}
+                  disabled={isUpdating}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  Save
+                </Button>
+              )}
+            </div>
           </div>
           <div className="mt-2">
             <span className="font-medium">Status: </span>
@@ -98,7 +193,7 @@ export function CourtAvailabilityDialog({
         </div>
 
         <DialogFooter>
-          {!isPast && (
+          {!isPast && !readOnly && (
             <>
               {isAvailable && (
                 <Button
@@ -122,7 +217,7 @@ export function CourtAvailabilityDialog({
               )}
             </>
           )}
-          {!isPast && (
+          {!isPast && !readOnly && (
             <Button
               variant="destructive"
               onClick={handleDelete}

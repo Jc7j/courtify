@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Calendar, Clock, Badge } from 'lucide-react'
+import { Plus, Calendar, Clock } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -77,10 +77,8 @@ export default function CourtsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Court</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead>Operating Hours</TableHead>
               <TableHead>Last Updated</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -119,14 +117,8 @@ export default function CourtsPage() {
                   <TableCell>
                     <div className="font-medium flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {court.name}
-                        <span className="text-muted-foreground ml-1">#{court.court_number}</span>
-                      </span>
+                      <span>{court.name}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-green-50 text-green-700 border-green-200">Active</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -141,7 +133,7 @@ export default function CourtsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="w-1/2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors"
                     >
                       View Schedule
                     </Button>

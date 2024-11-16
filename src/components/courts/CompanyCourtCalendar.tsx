@@ -42,8 +42,11 @@ export function CompanyCourtCalendar() {
     courtNumber: court.court_number,
   }))
 
-  function handleDatesSet(arg: DatesSetArg) {
-    setSelectedDate(dayjs(arg.start))
+  function handleDatesSet({ start }: DatesSetArg) {
+    const newDate = dayjs(start)
+    if (!newDate.isSame(selectedDate, 'day')) {
+      setSelectedDate(newDate)
+    }
   }
 
   return (
@@ -84,6 +87,7 @@ export function CompanyCourtCalendar() {
         ref={calendarRef}
         plugins={[resourceTimeGridPlugin, interactionPlugin]}
         initialView="resourceTimeGridDay"
+        initialDate={selectedDate.toDate()}
         resources={resources}
         headerToolbar={{
           left: 'prev,next',
@@ -109,6 +113,8 @@ export function CompanyCourtCalendar() {
           start: availability.start_time,
           end: availability.end_time,
           backgroundColor: getAvailabilityColor(availability.status),
+          borderColor: 'transparent',
+          textColor: 'hsl(var(--background))',
         }))}
         slotLabelClassNames="text-muted-foreground text-xs sm:text-sm"
         resourceLabelClassNames="text-muted-foreground text-xs sm:text-sm font-medium"

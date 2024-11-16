@@ -253,6 +253,7 @@ CREATE TRIGGER update_court_availabilities_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Add trigger to validate time changes
+-- Update validate_availability_update trigger to handle time changes
 CREATE OR REPLACE FUNCTION validate_availability_update()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -264,6 +265,18 @@ BEGIN
     -- Validate time range
     IF NEW.start_time >= NEW.end_time THEN
         RAISE EXCEPTION 'Start time must be before end time';
+    END IF;
+
+    -- Check for overlapping slots
+    IF EXISTS (
+        SELECT 1 FROM court_availabilities
+        WHERE company_id = NEW.company_id
+        AND court_number = NEW.court_number
+        AND start_time < NEW.end_time
+        AND end_time > NEW.start_time
+        AND start_time != OLD.start_time  -- Exclude the current record
+    ) THEN
+        RAISE EXCEPTION 'Time slot overlaps with existing availability';
     END IF;
 
     -- Update status if needed

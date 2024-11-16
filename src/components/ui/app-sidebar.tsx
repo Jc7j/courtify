@@ -1,4 +1,4 @@
-import { BarChart2, Calendar, Home, ListChecks, Settings } from 'lucide-react'
+import { Calendar, Home, ListChecks, Settings } from 'lucide-react'
 
 import {
   Sidebar,
