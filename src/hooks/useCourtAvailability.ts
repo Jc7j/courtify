@@ -59,7 +59,20 @@ interface AvailabilitiesQueryData {
   court_availabilitiesCollection: CourtAvailabilityConnection
 }
 
+interface CompanyAvailabilitiesData {
+  courtsCollection: {
+    edges: Array<{
+      node: {
+        court_number: number
+        name: string
+      }
+    }>
+  }
+  court_availabilitiesCollection: CourtAvailabilityConnection
+}
+
 interface UseCompanyAvailabilitiesReturn {
+  courts: Array<{ court_number: number; name: string }>
   availabilities: CourtAvailability[]
   loading: boolean
   error: Error | null
@@ -71,6 +84,7 @@ export function useCompanyAvailabilities(
 ): UseCompanyAvailabilitiesReturn {
   const { user, loading: userLoading, isAuthenticated } = useUser()
   const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
+  const [courts, setCourts] = useState<Array<{ court_number: number; name: string }>>([])
 
   const queryOptions = {
     variables: {
@@ -79,30 +93,33 @@ export function useCompanyAvailabilities(
       end_time: endTime,
     },
     skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
+    fetchPolicy: 'network-only' as const,
   }
 
-  const { loading: queryLoading, error: queryError } = useQuery<AvailabilitiesQueryData>(
+  const { loading: queryLoading, error: queryError } = useQuery<CompanyAvailabilitiesData>(
     GET_COMPANY_COURTS_AVAILABILITIES,
     {
       ...queryOptions,
-      fetchPolicy: 'cache-and-network',
       onCompleted: (data) => {
         const availabilities =
           data?.court_availabilitiesCollection?.edges?.map(
             (edge) => edge.node as CourtAvailability
           ) || []
+        const courts = data?.courtsCollection?.edges?.map((edge) => edge.node) || []
+
         setLocalAvailabilities(availabilities)
+        setCourts(courts)
       },
     }
   )
 
   return {
+    courts,
     availabilities: localAvailabilities,
     loading: userLoading || queryLoading,
     error: queryError ? new Error(queryError.message) : null,
   }
 }
-
 export function useCourtAvailability({
   courtNumber,
   startTime,

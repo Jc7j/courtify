@@ -29,7 +29,6 @@ export interface CourtAvailability {
   status: AvailabilityStatus
   created_at: string
   updated_at: string
-  courts?: Courts
 }
 
 export enum AvailabilityStatus {

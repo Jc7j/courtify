@@ -195,17 +195,29 @@ CREATE POLICY "court_availabilities_select_anon" ON court_availabilities
     FOR SELECT TO anon
     USING (status = 'available');
 
--- Trigger to automatically update status to 'past'
+-- Update the existing trigger function for automatic past status
 CREATE OR REPLACE FUNCTION update_availability_status()
 RETURNS TRIGGER AS $$
 BEGIN
+    -- Check if the availability is in the past
     IF NEW.end_time < timezone('UTC', now()) THEN
-        NEW.status = 'past';
+        -- Set status to past if it's not already
+        IF NEW.status != 'past' THEN
+            NEW.status := 'past';
+        END IF;
+    ELSE
+        -- If it was past but the time has been updated to the future
+        -- and status hasn't been explicitly set, make it available
+        IF NEW.status = 'past' AND OLD.status IS NULL THEN
+            NEW.status := 'available';
+        END IF;
     END IF;
+    
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- Create the trigger for both INSERT and UPDATE
 CREATE TRIGGER check_availability_status
     BEFORE INSERT OR UPDATE ON court_availabilities
     FOR EACH ROW

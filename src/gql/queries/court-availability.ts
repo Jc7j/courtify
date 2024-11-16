@@ -3,18 +3,26 @@ import { COURT_AVAILABILITY_FIELDS } from '../mutations/court-availability'
 
 export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
   ${COURT_AVAILABILITY_FIELDS}
-  query GetCourtAvailabilities(
-    $company_id: UUID!
-    $court_number: Int!
-    $start_time: Datetime!
-    $end_time: Datetime!
-  ) {
+  query GetCompanyAvailabilities($company_id: UUID!, $start_time: Datetime!, $end_time: Datetime!) {
+    # Get all courts for the company
+    courtsCollection(
+      filter: { company_id: { eq: $company_id } }
+      orderBy: [{ court_number: AscNullsFirst }]
+    ) {
+      edges {
+        node {
+          court_number
+          name
+        }
+      }
+    }
+    # Get all availabilities that overlap with the given time range
     court_availabilitiesCollection(
       filter: {
         company_id: { eq: $company_id }
-        and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
+        and: [{ start_time: { gte: $start_time } }, { start_time: { lt: $end_time } }]
       }
-      orderBy: [{ start_time: AscNullsFirst }]
+      orderBy: [{ court_number: AscNullsFirst }, { start_time: AscNullsFirst }]
     ) {
       edges {
         node {
