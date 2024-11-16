@@ -31,8 +31,8 @@ export const authOptions: NextAuthOptions = {
             data: { session },
           } = await supabase.auth.getSession()
 
-          if (!session?.access_token) {
-            throw new Error('Failed to get access token')
+          if (!session?.access_token || !session?.refresh_token) {
+            throw new Error('Failed to get session tokens')
           }
 
           const { data: userData, error: userError } = await supabase
@@ -63,16 +63,9 @@ export const authOptions: NextAuthOptions = {
             .eq('id', userData.id)
 
           return {
-            id: userData.id,
-            email: userData.email,
-            name: userData.name,
-            company_id: userData.company_id,
-            active: userData.active,
-            email_verified_at: userData.email_verified_at,
-            last_login_at: userData.last_login_at,
-            created_at: userData.created_at,
-            updated_at: userData.updated_at,
+            ...userData,
             supabaseAccessToken: session.access_token,
+            supabaseRefreshToken: session.refresh_token,
           }
         } catch (error) {
           console.error('Authorization error:', error)
@@ -82,10 +75,11 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         const typedUser = user as AuthorizedUser
         token.supabaseAccessToken = typedUser.supabaseAccessToken
+        token.supabaseRefreshToken = typedUser.supabaseRefreshToken
         token.user = {
           id: typedUser.id,
           email: typedUser.email,
@@ -98,14 +92,41 @@ export const authOptions: NextAuthOptions = {
           updated_at: typedUser.updated_at,
         }
       }
+
+      if (trigger === 'update' && token.supabaseRefreshToken) {
+        try {
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.refreshSession({
+            refresh_token: token.supabaseRefreshToken as string,
+          })
+
+          if (error || !session) {
+            throw error || new Error('Failed to refresh session')
+          }
+
+          token.supabaseAccessToken = session.access_token
+          token.supabaseRefreshToken = session.refresh_token
+        } catch (error) {
+          console.error('Token refresh error:', error)
+          return { ...token, error: 'RefreshAccessTokenError' }
+        }
+      }
+
       return token
     },
     async session({ session, token }) {
       if (token) {
         session.supabaseAccessToken = token.supabaseAccessToken as string
+        session.supabaseRefreshToken = token.supabaseRefreshToken as string
         session.user = {
           ...session.user,
           ...(token.user || {}),
+        }
+
+        if (token.error === 'RefreshAccessTokenError') {
+          session.error = 'RefreshAccessTokenError'
         }
       }
       return session
@@ -116,8 +137,10 @@ export const authOptions: NextAuthOptions = {
     error: ROUTES.AUTH.SIGNIN,
   },
   events: {
-    async signOut() {
-      await supabase.auth.signOut()
+    async signOut({ token }) {
+      if (token?.supabaseAccessToken) {
+        await supabase.auth.signOut()
+      }
     },
   },
   session: {

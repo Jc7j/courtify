@@ -22,8 +22,6 @@ interface CourtAvailabilityDialogProps {
   availability: CourtAvailability
   isOpen: boolean
   onClose: () => void
-  onStatusChange: (newStatus: AvailabilityStatus) => Promise<void>
-  onDelete: () => Promise<void>
   loading?: boolean
   readOnly?: boolean
 }
@@ -32,8 +30,6 @@ export function CourtAvailabilityDialog({
   availability,
   isOpen,
   onClose,
-  onStatusChange,
-  onDelete,
   loading = false,
   readOnly = false,
 }: CourtAvailabilityDialogProps) {
@@ -42,7 +38,7 @@ export function CourtAvailabilityDialog({
   const [endTime, setEndTime] = useState(dayjs(availability.end_time).format('HH:mm'))
   const [hasTimeChanges, setHasTimeChanges] = useState(false)
 
-  const { updateAvailability } = useCourtAvailability({
+  const { updateAvailability, deleteAvailability } = useCourtAvailability({
     courtNumber: availability.court_number,
     startTime: dayjs(availability.start_time).startOf('day').toISOString(),
     endTime: dayjs(availability.start_time).endOf('day').toISOString(),
@@ -57,21 +53,15 @@ export function CourtAvailabilityDialog({
   const handleStatusChange = async (newStatus: AvailabilityStatus) => {
     try {
       setIsUpdating(true)
-      await onStatusChange(newStatus)
+      await updateAvailability({
+        courtNumber: availability.court_number,
+        startTime: availability.start_time,
+        update: { status: newStatus },
+      })
       success(`Status updated to ${newStatus.toLowerCase()}`)
       onClose()
     } catch (error) {
-      console.error('Status update error:', error)
       ToastError(error instanceof Error ? error.message : 'Failed to update status')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  const handleDelete = async () => {
-    try {
-      setIsUpdating(true)
-      await onDelete()
     } finally {
       setIsUpdating(false)
     }
@@ -80,9 +70,7 @@ export function CourtAvailabilityDialog({
   const handleTimeChange = async () => {
     try {
       setIsUpdating(true)
-
       const originalDate = dayjs(availability.start_time).format('YYYY-MM-DD')
-
       const newStartDateTime = dayjs(`${originalDate}T${startTime}`).toISOString()
       const newEndDateTime = dayjs(`${originalDate}T${endTime}`).toISOString()
 
@@ -90,33 +78,39 @@ export function CourtAvailabilityDialog({
         throw new Error('End time must be after start time')
       }
 
-      console.log('Updating availability times:', {
-        original: {
-          start: availability.start_time,
-          end: availability.end_time,
-        },
-        new: {
-          start: newStartDateTime,
-          end: newEndDateTime,
-        },
+      await updateAvailability({
+        courtNumber: availability.court_number,
+        startTime: availability.start_time,
+        update: { end_time: newEndDateTime },
       })
 
       await updateAvailability({
         courtNumber: availability.court_number,
         startTime: availability.start_time,
-        update: {
-          start_time: newStartDateTime,
-          end_time: newEndDateTime,
-          updated_at: new Date().toISOString(),
-        },
+        update: { start_time: newStartDateTime },
       })
 
       setHasTimeChanges(false)
       success('Time updated successfully')
       onClose()
     } catch (error) {
-      console.error('Time update error:', error)
       ToastError(error instanceof Error ? error.message : 'Failed to update time')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      setIsUpdating(true)
+      await deleteAvailability({
+        courtNumber: availability.court_number,
+        startTime: availability.start_time,
+      })
+      success('Availability deleted')
+      onClose()
+    } catch (error) {
+      ToastError(error instanceof Error ? error.message : 'Failed to delete availability')
     } finally {
       setIsUpdating(false)
     }
@@ -215,18 +209,16 @@ export function CourtAvailabilityDialog({
                   Mark as Available
                 </Button>
               )}
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isUpdating}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
             </>
-          )}
-          {!isPast && !readOnly && (
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isUpdating}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
           )}
         </DialogFooter>
       </DialogContent>

@@ -14,6 +14,7 @@ export interface BaseUser {
 
 export interface AuthorizedUser extends BaseUser {
   supabaseAccessToken?: string
+  supabaseRefreshToken?: string
 }
 
 declare module 'next-auth' {
@@ -23,10 +24,14 @@ declare module 'next-auth' {
       BaseUser & {
         supabaseAccessToken?: string
       }
+    supabaseRefreshToken?: string
+    error?: string
   }
 
   interface JWT {
     supabaseAccessToken?: string
     user?: BaseUser
+    supabaseRefreshToken?: string
+    error?: string
   }
 }

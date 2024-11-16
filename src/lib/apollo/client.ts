@@ -3,6 +3,7 @@ import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { getSession } from 'next-auth/react'
 import { loadErrorMessages, loadDevMessages } from '@apollo/client/dev'
+import { ROUTES } from '@/constants/routes'
 
 if (process.env.NODE_ENV !== 'production') {
   loadDevMessages()
@@ -53,16 +54,27 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 })
 
 const authLink = setContext(async (_, { headers }) => {
-  const session = await getSession()
+  try {
+    const session = await getSession()
 
-  return {
-    headers: {
-      ...headers,
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      authorization: session?.supabaseAccessToken ? `Bearer ${session.supabaseAccessToken}` : '',
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
+    if (session?.error === 'RefreshAccessTokenError') {
+      // Handle session refresh error
+      window.location.href = ROUTES.AUTH.SIGNIN
+      return { headers }
+    }
+
+    return {
+      headers: {
+        ...headers,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        authorization: session?.supabaseAccessToken ? `Bearer ${session.supabaseAccessToken}` : '',
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    }
+  } catch (error) {
+    console.error('Auth link error:', error)
+    return { headers }
   }
 })
 

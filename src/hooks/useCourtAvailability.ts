@@ -49,7 +49,6 @@ interface UpdateAvailabilityInput {
     status?: AvailabilityStatus
     start_time?: string
     end_time?: string
-    updated_at?: string
   }
 }
 
@@ -252,30 +251,43 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
+    // Find the availability to update
+    const existingAvailability = localAvailabilities.find(
+      (a) => a.court_number === input.courtNumber && a.start_time === input.startTime
+    )
+
+    if (!existingAvailability) {
+      throw new Error('Availability not found')
+    }
+
     try {
       const { data } = await updateAvailabilityMutation({
         variables: {
           company_id: user.company_id,
           court_number: input.courtNumber,
           start_time: input.startTime,
-          set: {
-            ...input.update,
-            // Ensure times are in ISO format
-            start_time: dayjs(input.update.start_time).toISOString(),
-            end_time: dayjs(input.update.end_time).toISOString(),
-          },
+          set: input.update,
         },
       })
 
-      const updatedAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
-      if (!updatedAvailability) {
+      const serverAvailability = data?.updatecourt_availabilitiesCollection?.records?.[0]
+      if (!serverAvailability) {
         throw new Error('Failed to update availability')
       }
 
-      return updatedAvailability
+      // Update local state with server response
+      setLocalAvailabilities((prev) =>
+        prev.map((a) =>
+          a.court_number === input.courtNumber && a.start_time === input.startTime
+            ? serverAvailability
+            : a
+        )
+      )
+
+      return serverAvailability
     } catch (err) {
-      console.error('Update error:', err)
-      throw err instanceof Error ? err : new Error('Failed to update availability')
+      console.error('Update failed:', err)
+      throw err
     }
   }
 

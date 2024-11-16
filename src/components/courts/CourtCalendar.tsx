@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { EventClickArg, DateSelectArg } from '@fullcalendar/core'
+import type { DateSelectArg, EventClickArg } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -22,19 +22,18 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const isMobile = useIsMobile()
 
-  const [currentRange, setCurrentRange] = useState(() => ({
+  const [currentRange] = useState(() => ({
     start: dayjs().startOf('week').toISOString(),
     end: isMobile
       ? dayjs().startOf('day').add(3, 'days').endOf('day').toISOString()
       : dayjs().endOf('week').toISOString(),
   }))
 
-  const { availabilities, createAvailability, updateAvailability, deleteAvailability } =
-    useCourtAvailability({
-      courtNumber: court.court_number,
-      startTime: currentRange.start,
-      endTime: currentRange.end,
-    })
+  const { availabilities, createAvailability } = useCourtAvailability({
+    courtNumber: court.court_number,
+    startTime: currentRange.start,
+    endTime: currentRange.end,
+  })
 
   const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
 
@@ -60,79 +59,19 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
     }
   }
 
-  async function handleEventClick(clickInfo: EventClickArg) {
+  function handleEventClick(clickInfo: EventClickArg) {
     const availability = availabilities.find(
       (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
     )
 
     if (availability) {
       setSelectedAvailability(availability)
-    } else {
-      console.error('No matching availability found')
-    }
-  }
-
-  async function handleStatusChange(newStatus: AvailabilityStatus) {
-    if (!selectedAvailability) return
-
-    try {
-      await updateAvailability({
-        courtNumber: court.court_number,
-        startTime: selectedAvailability.start_time,
-        update: { status: newStatus },
-      })
-      toast.success(`Status updated to ${newStatus.toLowerCase()}`)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update status')
-    }
-  }
-
-  async function handleDelete() {
-    if (!selectedAvailability) return
-
-    try {
-      await deleteAvailability({
-        courtNumber: court.court_number,
-        startTime: selectedAvailability.start_time,
-      })
-      setSelectedAvailability(null)
-      toast.success('Availability deleted')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete availability')
     }
   }
 
   return (
     <>
       <div className="mt-8 bg-background border rounded-lg p-2 sm:p-6 overflow-hidden">
-        <style jsx global>{`
-          .fc .fc-toolbar {
-            gap: 1rem;
-            padding: 0.5rem;
-          }
-          .fc .fc-toolbar-title {
-            font-size: 0.85rem;
-            line-height: 1.25rem;
-            font-weight: 500;
-            text-align: center;
-          }
-          @media (min-width: 640px) {
-            .fc .fc-toolbar-title {
-              font-size: 1rem;
-              line-height: 1.5rem;
-            }
-          }
-          .fc .fc-button {
-            font-size: 0.75rem;
-            line-height: 1rem;
-          }
-          @media (min-width: 640px) {
-            .fc .fc-button {
-              font-size: 0.875rem;
-              line-height: 1.25rem;
-            }
-          }
-        `}</style>
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, interactionPlugin]}
@@ -178,10 +117,6 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
               'cursor-pointer hover:opacity-90 transition-opacity',
               availability.status === AvailabilityStatus.Past ? 'opacity-50' : '',
             ],
-            extendedProps: {
-              status: availability.status,
-              courtNumber: availability.court_number,
-            },
           }))}
           select={handleSelect}
           eventClick={handleEventClick}
@@ -223,8 +158,6 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
           availability={selectedAvailability}
           isOpen={!!selectedAvailability}
           onClose={() => setSelectedAvailability(null)}
-          onStatusChange={handleStatusChange}
-          onDelete={handleDelete}
           loading={false}
         />
       )}
