@@ -45,9 +45,9 @@ export default function SignUpPage() {
   function renderStep() {
     switch (step) {
       case 'create-intro':
-        return <CreateCompanyStep user={user} onNext={handleCreateIntro} />
+        return <CreateCompanyStep userName={user?.name || ''} onNext={handleCreateIntro} />
       case 'create':
-        return <CreateCompany user={user} onBack={() => handleStepChange('create-intro')} />
+        return <CreateCompany onBack={() => handleStepChange('create-intro')} />
       default:
         return <SignUpForm onSuccess={handleSignupSuccess} />
     }

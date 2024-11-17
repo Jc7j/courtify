@@ -1,9 +1,9 @@
 'use client'
 
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation, useQuery, useApolloClient } from '@apollo/client'
 import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/gql/mutations/court'
 import { GET_COMPANY_COURTS, GET_COURT } from '@/gql/queries/court'
-import type { Courts, CourtsEdge, CourtsConnection } from '@/types/graphql'
+import type { Courts, CourtsEdge } from '@/types/graphql'
 import { useUser } from '@/providers/UserProvider'
 
 interface UseCourtReturn {
@@ -20,14 +20,18 @@ interface UseCourtReturn {
   updating: boolean
   deleting: boolean
   refetch: () => Promise<void>
-}
-
-interface CourtsQueryData {
-  courtsCollection: CourtsConnection
+  getCourtsFromCache: () => Courts[]
+  getCourtFromCache: (courtNumber: number) => Courts | null
 }
 
 export function useCourt(courtNumber?: number): UseCourtReturn {
   const { user, loading: userLoading, isAuthenticated } = useUser()
+  const client = useApolloClient()
+
+  const queryConfig = {
+    fetchPolicy: 'cache-first' as const,
+    nextFetchPolicy: 'cache-and-network' as const,
+  }
 
   const {
     data: courtData,
@@ -39,7 +43,7 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
       court_number: courtNumber,
     },
     skip: !isAuthenticated || !user?.company_id || !courtNumber,
-    fetchPolicy: 'cache-and-network',
+    ...queryConfig,
   })
 
   const {
@@ -50,28 +54,24 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
   } = useQuery(GET_COMPANY_COURTS, {
     variables: { company_id: user?.company_id },
     skip: !isAuthenticated || !user?.company_id,
-    fetchPolicy: 'cache-and-network',
+    ...queryConfig,
   })
 
   const [createCourtMutation, { loading: creating }] = useMutation(CREATE_COURT, {
     update(cache, { data }) {
       const newCourt = data?.insertIntocourtsCollection?.records?.[0]
       if (newCourt && user?.company_id) {
-        const existingData = cache.readQuery<CourtsQueryData>({
-          query: GET_COMPANY_COURTS,
-          variables: { company_id: user.company_id },
-        })
-
-        cache.writeQuery<CourtsQueryData>({
-          query: GET_COMPANY_COURTS,
-          variables: { company_id: user.company_id },
-          data: {
-            courtsCollection: {
-              edges: [
-                ...(existingData?.courtsCollection?.edges || []),
-                { node: newCourt, __typename: 'CourtsEdge' },
-              ],
-              __typename: 'CourtsConnection',
+        cache.modify({
+          fields: {
+            courtsCollection(existing = { edges: [] }) {
+              const newEdge = {
+                __typename: 'CourtsEdge',
+                node: newCourt,
+              }
+              return {
+                ...existing,
+                edges: [...existing.edges, newEdge],
+              }
             },
           },
         })
@@ -85,11 +85,12 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
       if (updatedCourt && user?.company_id) {
         cache.modify({
           fields: {
-            courtsCollection(existingCourts = { edges: [] }) {
+            courtsCollection(existing = { edges: [] }) {
               return {
-                ...existingCourts,
-                edges: existingCourts.edges.map((edge: CourtsEdge) =>
-                  edge.node.court_number === updatedCourt.court_number
+                ...existing,
+                edges: existing.edges.map((edge: CourtsEdge) =>
+                  edge.node.court_number === updatedCourt.court_number &&
+                  edge.node.company_id === updatedCourt.company_id
                     ? { ...edge, node: updatedCourt }
                     : edge
                 ),
@@ -107,11 +108,15 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
       if (deletedCourt && user?.company_id) {
         cache.modify({
           fields: {
-            courtsCollection(existingCourts = { edges: [] }) {
+            courtsCollection(existing = { edges: [] }) {
               return {
-                ...existingCourts,
-                edges: existingCourts.edges.filter(
-                  (edge: CourtsEdge) => edge.node.court_number !== deletedCourt.court_number
+                ...existing,
+                edges: existing.edges.filter(
+                  (edge: CourtsEdge) =>
+                    !(
+                      edge.node.court_number === deletedCourt.court_number &&
+                      edge.node.company_id === deletedCourt.company_id
+                    )
                 ),
               }
             },
@@ -212,6 +217,46 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
     }
   }
 
+  function getCourtsFromCache(): Courts[] {
+    if (!user?.company_id) return []
+
+    try {
+      const cachedData = client.readQuery({
+        query: GET_COMPANY_COURTS,
+        variables: { company_id: user.company_id },
+      })
+
+      if (cachedData?.courtsCollection?.edges) {
+        return cachedData.courtsCollection.edges.map((edge: { node: Courts }) => edge.node)
+      }
+
+      refetch()
+      return []
+    } catch (err) {
+      console.warn('Cache read error:', err)
+      return []
+    }
+  }
+
+  function getCourtFromCache(courtNumber: number): Courts | null {
+    if (!user?.company_id) return null
+
+    try {
+      const cachedData = client.readQuery({
+        query: GET_COURT,
+        variables: {
+          company_id: user.company_id,
+          court_number: courtNumber,
+        },
+      })
+
+      return cachedData?.courtsCollection?.edges?.[0]?.node || null
+    } catch (err) {
+      console.warn('Cache read error:', err)
+      return null
+    }
+  }
+
   return {
     court: courtData?.courtsCollection?.edges?.[0]?.node || null,
     courtLoading: userLoading || singleCourtLoading,
@@ -226,5 +271,7 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
     updating,
     deleting,
     refetch: refetch as unknown as () => Promise<void>,
+    getCourtsFromCache,
+    getCourtFromCache,
   }
 }

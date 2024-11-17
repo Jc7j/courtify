@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
-import { BaseUser } from '@/types/auth'
 
 const createCompanySchema = z.object({
   name: z
@@ -17,11 +16,10 @@ const createCompanySchema = z.object({
 type CreateCompanyFormData = z.infer<typeof createCompanySchema>
 
 interface CreateCompanyProps {
-  user: BaseUser | null
   onBack?: () => void
 }
 
-export function CreateCompany({ user, onBack }: CreateCompanyProps) {
+export function CreateCompany({ onBack }: CreateCompanyProps) {
   const { createCompany, creating } = useCompany()
 
   const {

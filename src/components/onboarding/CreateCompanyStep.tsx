@@ -3,16 +3,16 @@ import { Building2 } from 'lucide-react'
 import { BaseUser } from '@/types/auth'
 
 interface CreateCompanyStepProps {
-  user: BaseUser | null
+  userName: BaseUser['name']
   onNext: () => void
 }
 
-export function CreateCompanyStep({ user, onNext }: CreateCompanyStepProps) {
+export function CreateCompanyStep({ userName, onNext }: CreateCompanyStepProps) {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold text-foreground">
-          Welcome {user?.name}! Let&apos;s get started
+          Welcome {userName}! Let&apos;s get started
         </h1>
         <p className="text-base text-muted-foreground leading-relaxed">
           Create your company workspace to start managing your courts.

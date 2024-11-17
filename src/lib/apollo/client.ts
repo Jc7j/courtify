@@ -1,4 +1,4 @@
-import { ApolloClient, createHttpLink, from, InMemoryCache } from '@apollo/client'
+import { ApolloClient, createHttpLink, from, InMemoryCache, gql } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { getSession } from 'next-auth/react'
@@ -20,21 +20,48 @@ const cache = new InMemoryCache({
   typePolicies: {
     Query: {
       fields: {
-        courts: {
-          merge: false,
-        },
-        bookings: {
-          keyArgs: ['where'],
-          merge(existing, incoming) {
+        courtsCollection: {
+          merge(existing, incoming, { args }) {
+            // For single court queries, replace the existing data
+            if (args?.first === 1) {
+              return incoming
+            }
+
+            // For collection queries, merge the data
             return {
-              edges: [...(existing?.edges || []), ...(incoming?.edges || [])],
+              ...incoming,
+              edges: incoming.edges,
             }
           },
-        },
-        usersCollection: {
-          merge: false,
+          read(existing, { args }) {
+            if (!existing) return undefined
+
+            // For single court queries
+            if (args?.first === 1 && args?.filter) {
+              const court = existing.edges?.find(
+                (edge: any) =>
+                  edge.node.company_id === args.filter.company_id.eq &&
+                  edge.node.court_number === args.filter.court_number.eq
+              )
+              return court ? { edges: [court], __typename: 'CourtsConnection' } : undefined
+            }
+
+            // For company courts queries
+            if (args?.filter?.company_id) {
+              const companyId = args.filter.company_id.eq
+              const edges = existing.edges?.filter(
+                (edge: any) => edge.node.company_id === companyId
+              )
+              return edges?.length ? { edges, __typename: 'CourtsConnection' } : undefined
+            }
+
+            return existing
+          },
         },
       },
+    },
+    Courts: {
+      keyFields: ['company_id', 'court_number'], // Composite key for court records
     },
   },
 })
@@ -89,11 +116,13 @@ const httpLink = createHttpLink({
 
 const defaultOptions = {
   watchQuery: {
-    fetchPolicy: 'cache-and-network' as const,
+    fetchPolicy: 'cache-first' as const,
+    nextFetchPolicy: 'cache-and-network' as const,
     errorPolicy: 'ignore' as const,
   },
   query: {
-    fetchPolicy: 'network-only' as const,
+    fetchPolicy: 'cache-first' as const,
+    nextFetchPolicy: 'cache-and-network' as const,
     errorPolicy: 'all' as const,
   },
   mutate: {

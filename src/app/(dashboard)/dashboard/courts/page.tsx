@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Plus, Calendar, Clock } from 'lucide-react'
 import {
   Table,
@@ -17,16 +18,35 @@ import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
 
 dayjs.extend(relativeTime)
 
 export default function CourtsPage() {
   const router = useRouter()
-  const { courts, loading, error, createCourt, creating, refetch } = useCourt()
+  const { courts, loading, error, createCourt, creating, refetch, getCourtsFromCache } = useCourt()
+  const [localCourts, setLocalCourts] = useState(courts)
+
+  // Initial load from cache
+  useEffect(() => {
+    const cachedCourts = getCourtsFromCache()
+    if (cachedCourts.length > 0) {
+      setLocalCourts(cachedCourts)
+    }
+  }, [getCourtsFromCache])
+
+  // Update when network data arrives
+  useEffect(() => {
+    if (!loading && courts.length > 0) {
+      setLocalCourts(courts)
+    }
+  }, [courts, loading])
 
   async function handleCreateCourt(name: string) {
     try {
-      await createCourt(name)
+      const newCourt = await createCourt(name)
+      // Optimistically update local state
+      setLocalCourts((prev) => [...prev, newCourt])
       toastSuccess('Court created successfully')
     } catch (err) {
       toastError(err instanceof Error ? err.message : 'Failed to create court')
@@ -82,7 +102,7 @@ export default function CourtsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && courts.length === 0 ? (
+            {loading && localCourts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground h-32">
                   <div className="flex items-center justify-center">
@@ -90,7 +110,7 @@ export default function CourtsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : courts.length === 0 ? (
+            ) : localCourts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center h-32">
                   <div className="text-muted-foreground">
@@ -108,7 +128,7 @@ export default function CourtsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              courts.map((court) => (
+              localCourts.map((court) => (
                 <TableRow
                   key={court.court_number}
                   onClick={() => handleCourtClick(court.court_number)}
@@ -144,6 +164,7 @@ export default function CourtsPage() {
           </TableBody>
         </Table>
       </div>
+      <CompanyCourtCalendar />
     </div>
   )
 }

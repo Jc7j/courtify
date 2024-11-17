@@ -2,7 +2,6 @@
 
 import { useUser } from '@/providers/UserProvider'
 import { Skeleton } from '@/components/ui'
-import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
 
 export default function DashboardPage() {
   const { user, loading } = useUser()
@@ -25,12 +24,6 @@ export default function DashboardPage() {
           ? 'Welcome to your Courtify dashboard'
           : 'Please complete your company setup to get started'}
       </p>
-
-      {user?.company_id && (
-        <div className="mt-8">
-          <CompanyCourtCalendar />
-        </div>
-      )}
     </div>
   )
 }
