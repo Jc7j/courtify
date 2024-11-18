@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/sidebar'
 import { Button } from './button'
 import { UserMenu } from '@/components/ui/user-menu'
-import { Separator } from './separator'
 
 const items = [
   {
