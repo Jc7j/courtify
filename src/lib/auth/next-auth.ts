@@ -80,6 +80,7 @@ export const authOptions: NextAuthOptions = {
         const typedUser = user as AuthorizedUser
         token.supabaseAccessToken = typedUser.supabaseAccessToken
         token.supabaseRefreshToken = typedUser.supabaseRefreshToken
+
         token.user = {
           id: typedUser.id,
           email: typedUser.email,

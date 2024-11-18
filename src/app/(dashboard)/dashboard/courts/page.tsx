@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Plus, Calendar, Clock } from 'lucide-react'
 import {
   Table,
@@ -24,29 +23,11 @@ dayjs.extend(relativeTime)
 
 export default function CourtsPage() {
   const router = useRouter()
-  const { courts, loading, error, createCourt, creating, refetch, getCourtsFromCache } = useCourt()
-  const [localCourts, setLocalCourts] = useState(courts)
-
-  // Initial load from cache
-  useEffect(() => {
-    const cachedCourts = getCourtsFromCache()
-    if (cachedCourts.length > 0) {
-      setLocalCourts(cachedCourts)
-    }
-  }, [getCourtsFromCache])
-
-  // Update when network data arrives
-  useEffect(() => {
-    if (!loading && courts.length > 0) {
-      setLocalCourts(courts)
-    }
-  }, [courts, loading])
+  const { courts, loading, error, createCourt, creating, refetch } = useCourt()
 
   async function handleCreateCourt(name: string) {
     try {
-      const newCourt = await createCourt(name)
-      // Optimistically update local state
-      setLocalCourts((prev) => [...prev, newCourt])
+      await createCourt(name)
       toastSuccess('Court created successfully')
     } catch (err) {
       toastError(err instanceof Error ? err.message : 'Failed to create court')
@@ -102,7 +83,7 @@ export default function CourtsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading && localCourts.length === 0 ? (
+            {loading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground h-32">
                   <div className="flex items-center justify-center">
@@ -110,7 +91,7 @@ export default function CourtsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : localCourts.length === 0 ? (
+            ) : courts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center h-32">
                   <div className="text-muted-foreground">
@@ -128,7 +109,7 @@ export default function CourtsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              localCourts.map((court) => (
+              courts.map((court) => (
                 <TableRow
                   key={court.court_number}
                   onClick={() => handleCourtClick(court.court_number)}
