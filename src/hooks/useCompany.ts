@@ -4,7 +4,7 @@ import { useMutation } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
 import { useUser } from '@/providers/UserProvider'
 import { supabase } from '@/lib/supabase/client'
-import { generateSlug } from '@/lib/utils/string'
+import { generateSlug } from '@/lib/utils/generate-slug'
 import { useOnboarding } from './useOnboarding'
 import type { Company } from '@/types/graphql'
 
