@@ -1,4 +1,3 @@
--- Trigger functions and triggers
 CREATE OR REPLACE FUNCTION update_availability_status()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -54,7 +53,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers
 CREATE TRIGGER check_availability_status
     BEFORE INSERT OR UPDATE ON court_availabilities
     FOR EACH ROW

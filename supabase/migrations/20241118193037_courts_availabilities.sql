@@ -1,4 +1,3 @@
--- Court availabilities table, type, and policies
 CREATE TYPE availability_status AS ENUM ('available', 'booked', 'past');
 
 CREATE TABLE court_availabilities (
@@ -22,11 +21,9 @@ CREATE TABLE court_availabilities (
 
 ALTER TABLE court_availabilities ENABLE ROW LEVEL SECURITY;
 
--- Indexes
 CREATE INDEX idx_court_availabilities_lookup ON court_availabilities (company_id, court_number, start_time);
 CREATE INDEX idx_court_availabilities_status ON court_availabilities (status);
 
--- Add exclusion constraint
 ALTER TABLE court_availabilities
 ADD CONSTRAINT no_overlapping_slots 
 EXCLUDE USING gist (
@@ -35,7 +32,6 @@ EXCLUDE USING gist (
     tstzrange(start_time, end_time) WITH &&
 );
 
--- Court availabilities policies
 CREATE POLICY "court_availabilities_select_auth" ON court_availabilities
     FOR SELECT TO authenticated
     USING (

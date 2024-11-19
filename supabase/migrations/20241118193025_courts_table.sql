@@ -1,4 +1,3 @@
--- Courts table and policies
 CREATE TABLE courts (
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
     court_number INTEGER NOT NULL,
@@ -11,7 +10,6 @@ CREATE TABLE courts (
 
 ALTER TABLE courts ENABLE ROW LEVEL SECURITY;
 
--- Courts policies
 CREATE POLICY courts_select ON courts
     FOR SELECT TO authenticated
     USING (company_id = (

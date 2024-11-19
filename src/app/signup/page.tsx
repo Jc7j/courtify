@@ -78,11 +78,9 @@ export default function SignUpPage() {
       {/* Left side - Form */}
       <div className="w-full lg:w-1/2 min-h-screen bg-background flex flex-col">
         <div className="flex-1 px-8 py-12">
-          {/* Logo */}
           <div className="mb-12">
             <Logo size="lg" href="/" clickable />
           </div>
-          {/* Dynamic content based on step */}
           {renderStep()}
         </div>
 

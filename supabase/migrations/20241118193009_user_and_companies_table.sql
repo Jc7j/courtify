@@ -1,4 +1,3 @@
--- Companies table and policies
 CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -9,7 +8,6 @@ CREATE TABLE companies (
 
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 
--- Users table and policies
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
@@ -24,7 +22,6 @@ CREATE TABLE users (
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- Users policies
 CREATE POLICY users_select_own ON users
     FOR SELECT TO authenticated
     USING (auth.uid() = id);
@@ -37,7 +34,6 @@ CREATE POLICY users_insert_public ON users
     FOR INSERT
     WITH CHECK (true);
 
--- Companies policies
 CREATE POLICY "companies_insert" ON companies
     FOR INSERT TO authenticated
     WITH CHECK (true);
@@ -61,3 +57,7 @@ CREATE POLICY companies_delete ON companies
         FROM users 
         WHERE users.id = auth.uid()
     ));
+
+CREATE POLICY "companies_select_public" ON companies
+    FOR SELECT TO anon
+    USING (true);

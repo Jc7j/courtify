@@ -1,7 +1,8 @@
 'use client'
 
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
+import { GET_COMPANY_BY_SLUG } from '@/gql/queries/company'
 import { useUser } from '@/providers/UserProvider'
 import { supabase } from '@/lib/supabase/client'
 import { generateSlug } from '@/lib/utils/generate-slug'
@@ -9,14 +10,31 @@ import { useOnboarding } from './useOnboarding'
 import type { Company } from '@/types/graphql'
 
 interface UseCompanyReturn {
-  creating: boolean
+  company: Company | null
+  loading: boolean
   error: Error | null
+  creating: boolean
   createCompany: (name: string) => Promise<void>
 }
 
-export function useCompany(): UseCompanyReturn {
+interface UseCompanyProps {
+  slug?: string
+}
+
+export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const { user } = useUser()
   const { handleCompanyCreated } = useOnboarding()
+
+  // Query for company data
+  const {
+    data: companyData,
+    loading: queryLoading,
+    error: queryError,
+  } = useQuery(GET_COMPANY_BY_SLUG, {
+    variables: { slug },
+    skip: !slug,
+    fetchPolicy: 'cache-first',
+  })
 
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
     CREATE_COMPANY,
@@ -91,10 +109,18 @@ export function useCompany(): UseCompanyReturn {
       throw err instanceof Error ? err : new Error('Failed to create company')
     }
   }
+  console.log('companyData', companyData)
+  const company = companyData?.companiesCollection?.edges?.[0]?.node || null
 
   return {
+    company,
+    loading: queryLoading,
+    error: queryError
+      ? new Error(queryError.message)
+      : createError
+        ? new Error(createError.message)
+        : null,
     creating,
-    error: createError ? new Error(createError.message) : null,
     createCompany,
   }
 }

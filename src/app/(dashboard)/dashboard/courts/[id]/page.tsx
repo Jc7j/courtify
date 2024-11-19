@@ -115,7 +115,6 @@ export default function CourtPage() {
         </Button>
       </div>
 
-      {/* Calendar Section with Loading State */}
       {courtLoading ? (
         <div className="mt-8 bg-background border rounded-lg p-6">
           <div className="animate-pulse space-y-4">
