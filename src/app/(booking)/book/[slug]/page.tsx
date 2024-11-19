@@ -2,9 +2,8 @@
 
 import { notFound } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@/components/ui'
 import { use } from 'react'
-import { Logo } from '@/components/ui'
 
 interface BookingPageProps {
   params: Promise<{

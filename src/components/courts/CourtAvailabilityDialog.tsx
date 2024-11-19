@@ -50,22 +50,22 @@ export function CourtAvailabilityDialog({
     setHasTimeChanges(false)
   }, [availability])
 
-  const handleStatusChange = async (newStatus: AvailabilityStatus) => {
-    try {
-      setIsUpdating(true)
-      await updateAvailability({
-        courtNumber: availability.court_number,
-        startTime: availability.start_time,
-        update: { status: newStatus },
-      })
-      success(`Status updated to ${newStatus.toLowerCase()}`)
-      onClose()
-    } catch (error) {
-      ToastError(error instanceof Error ? error.message : 'Failed to update status')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
+  // const handleStatusChange = async (newStatus: AvailabilityStatus) => {
+  //   try {
+  //     setIsUpdating(true)
+  //     await updateAvailability({
+  //       courtNumber: availability.court_number,
+  //       startTime: availability.start_time,
+  //       update: { status: newStatus },
+  //     })
+  //     success(`Status updated to ${newStatus.toLowerCase()}`)
+  //     onClose()
+  //   } catch (error) {
+  //     ToastError(error instanceof Error ? error.message : 'Failed to update status')
+  //   } finally {
+  //     setIsUpdating(false)
+  //   }
+  // }
 
   const handleTimeChange = async () => {
     try {
@@ -126,8 +126,8 @@ export function CourtAvailabilityDialog({
   }
 
   const isPast = availability.status === AvailabilityStatus.Past
-  const isBooked = availability.status === AvailabilityStatus.Booked
-  const isAvailable = availability.status === AvailabilityStatus.Available
+  // const isBooked = availability.status === AvailabilityStatus.Booked
+  // const isAvailable = availability.status === AvailabilityStatus.Available
 
   const statusStyles = {
     [AvailabilityStatus.Available]: 'text-green-600 dark:text-green-400',
@@ -189,7 +189,7 @@ export function CourtAvailabilityDialog({
         <DialogFooter>
           {!isPast && !readOnly && (
             <>
-              {isAvailable && (
+              {/* {isAvailable && (
                 <Button
                   variant="default"
                   onClick={() => handleStatusChange(AvailabilityStatus.Booked)}
@@ -208,7 +208,7 @@ export function CourtAvailabilityDialog({
                 >
                   Mark as Available
                 </Button>
-              )}
+              )} */}
               <Button
                 variant="destructive"
                 onClick={handleDelete}
