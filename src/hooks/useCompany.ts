@@ -14,9 +14,13 @@ interface UseCompanyReturn {
   loading: boolean
   error: Error | null
   creating: boolean
-  createCompany: (name: string) => Promise<void>
+  createCompany: (
+    name: string,
+    address: string,
+    sports: string,
+    businessinfo: string
+  ) => Promise<void>
 }
-
 interface UseCompanyProps {
   slug?: string
 }
@@ -64,7 +68,12 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     }
   )
 
-  async function createCompany(name: string): Promise<void> {
+  async function createCompany(    
+    name: string,
+    address: string,
+    sports: string,
+    businessinfo: string
+  ): Promise<void> {
     if (!user?.id) {
       throw new Error('Authentication required')
     }
@@ -76,6 +85,9 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
           objects: [
             {
               name,
+              address,
+              sports,
+              businessinfo,
               slug: generateSlug(name),
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),

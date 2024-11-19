@@ -5,12 +5,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Checkbox } from '@/components/ui/checkbox'
+
 
 const createCompanySchema = z.object({
   name: z
     .string()
     .min(2, 'Company name must be at least 2 characters')
     .max(50, 'Company name must be less than 50 characters'),
+  sports: z.string(),
+  address: z.string(),
+  businessinfo: z.string(),
 })
 
 type CreateCompanyFormData = z.infer<typeof createCompanySchema>
@@ -30,6 +37,9 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
     resolver: zodResolver(createCompanySchema),
     defaultValues: {
       name: '',
+      address: '',
+      sports: 'volleyball',
+      businessinfo: 'businessinfo',
     },
   })
 
@@ -37,7 +47,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
     console.log('Form submitted:', data)
 
     try {
-      await createCompany(data.name)
+      await createCompany(data.name, data.address, data.sports, data.businessinfo)
       success('Company created successfully!')
     } catch (err) {
       console.error('Error creating company:', err)
@@ -69,7 +79,51 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
           />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
-
+        {/* Sports */}
+        <div className="space-y-2">
+          <label htmlFor="address" className="text-sm font-medium">
+            Sports category
+          </label>
+          <RadioGroup defaultValue="sports" {...register('sports')}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="volleyball" id="volleyball" />
+              <Label htmlFor="volleyball">Volleyball</Label>
+            </div>
+          </RadioGroup>
+        </div>
+        {/* Address */}
+        <div className="space-y-2">
+          <label htmlFor="address" className="text-sm font-medium">
+            Address
+          </label>
+          <Input
+            id="address"
+            placeholder="Enter Address"
+            className={errors.address ? 'border-destructive' : ''}
+            disabled={creating}
+            {...register('address')}
+            aria-invalid={errors.address ? 'true' : 'false'}
+          />
+          {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
+        </div>
+        {/* Company info import from google maps api */}
+        <div className="space-y-2">
+          <div className="items-top flex space-x-2">
+            <Checkbox id="businessinfo" {...register('businessinfo')} />
+            <div className="grid gap-1.5 leading-none">
+              <label
+                htmlFor="businessinfo"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Would you like to import business information from google?
+              </label>
+              <p className="text-sm text-muted-foreground">
+                You agree to our Terms of Service and Privacy Policy.
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* back and create buttons */}
         <div className="flex gap-3 pt-4">
           {onBack && (
             <Button

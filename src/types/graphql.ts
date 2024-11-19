@@ -7,6 +7,9 @@ export interface Node {
 export interface Company {
   id: string
   name: string
+  address: string
+  sports: string
+  businessinfo: string
   slug: string
   created_at: string
   updated_at: string
