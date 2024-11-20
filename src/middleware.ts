@@ -1,29 +1,34 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
-import { AuthorizedUser } from './types/auth'
 import { ROUTES } from './constants/routes'
 
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token
-    const user = token?.user as AuthorizedUser | undefined
     const isOnDashboard = req.nextUrl.pathname.startsWith('/dashboard')
+    const isOnSignInPAge = req.nextUrl.pathname.startsWith('/signin')
 
-    if (isOnDashboard) {
-      if (!user) {
-        return NextResponse.redirect(new URL(ROUTES.AUTH.SIGNUP, req.url))
-      }
+    // If user is on dashboard but not authenticated, redirect to signin
+    if (isOnDashboard && !token) {
+      return NextResponse.redirect(new URL(ROUTES.AUTH.SIGNIN, req.url))
     }
+
+    // If user is authenticated but tries to access auth pages, redirect to dashboard
+    if (isOnSignInPAge && token) {
+      return NextResponse.redirect(new URL(ROUTES.DASHBOARD, req.url))
+    }
+
+    return NextResponse.next()
   },
   {
     callbacks: {
-      authorized: ({ token }) => {
-        return true
+      authorized: () => {
+        return true // Let the middleware function handle the auth logic
       },
     },
   }
 )
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*', '/signin', '/signup'],
 }

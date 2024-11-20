@@ -7,12 +7,15 @@ import interactionPlugin from '@fullcalendar/interaction'
 import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import { Skeleton } from '@/components/ui'
-import type { DatesSetArg } from '@fullcalendar/core'
+import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
+import { CourtAvailability } from '@/types/graphql'
+import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
 
 export function CompanyCourtCalendar() {
   const calendarRef = useRef<FullCalendar>(null)
   const [selectedDate, setSelectedDate] = useState(dayjs())
+  const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
 
   const { courts, availabilities, loading } = useCompanyAvailabilities(
     selectedDate.startOf('day').toISOString(),
@@ -46,6 +49,16 @@ export function CompanyCourtCalendar() {
     const newDate = dayjs(start)
     if (!newDate.isSame(selectedDate, 'day')) {
       setSelectedDate(newDate)
+    }
+  }
+
+  function handleEventClick(clickInfo: EventClickArg) {
+    const availability = availabilities.find(
+      (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
+    )
+
+    if (availability) {
+      setSelectedAvailability(availability)
     }
   }
 
@@ -121,7 +134,16 @@ export function CompanyCourtCalendar() {
         allDayClassNames="hidden"
         nowIndicatorClassNames="bg-primary"
         slotLaneClassNames="border-border"
+        eventClick={handleEventClick}
       />
+      {selectedAvailability && (
+        <CourtAvailabilityDialog
+          availability={selectedAvailability}
+          isOpen={!!selectedAvailability}
+          onClose={() => setSelectedAvailability(null)}
+          loading={false}
+        />
+      )}
     </div>
   )
 }
