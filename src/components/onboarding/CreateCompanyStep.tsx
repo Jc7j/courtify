@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui'
+import { User } from '@/types/graphql'
 import { Building2 } from 'lucide-react'
-import { BaseUser } from '@/types/auth'
 
 interface CreateCompanyStepProps {
-  userName: BaseUser['name']
+  userName: User['name']
   onNext: () => void
 }
 

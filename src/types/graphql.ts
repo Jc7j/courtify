@@ -4,6 +4,17 @@ export interface Node {
   nodeId: string
 }
 
+export interface User {
+  id: string
+  email: string
+  name: string
+  company_id?: string | null
+  active: boolean
+  email_verified_at?: string | null
+  last_login_at?: string | null
+  created_at: string
+  updated_at: string
+}
 export interface Company {
   id: string
   name: string

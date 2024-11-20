@@ -5,26 +5,33 @@ import { ROUTES } from './constants/routes'
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token
-    const isOnDashboard = req.nextUrl.pathname.startsWith('/dashboard')
-    const isOnSignInPAge = req.nextUrl.pathname.startsWith('/signin')
+    const pathname = req.nextUrl.pathname
 
-    // If user is on dashboard but not authenticated, redirect to signin
-    if (isOnDashboard && !token) {
-      return NextResponse.redirect(new URL(ROUTES.AUTH.SIGNIN, req.url))
+    // Handle auth routes
+    if (pathname.startsWith('/signin')) {
+      if (token) {
+        // If user is authenticated, redirect to dashboard
+        return NextResponse.redirect(new URL(ROUTES.DASHBOARD, req.url))
+      }
+      return NextResponse.next()
     }
 
-    // If user is authenticated but tries to access auth pages, redirect to dashboard
-    if (isOnSignInPAge && token) {
-      return NextResponse.redirect(new URL(ROUTES.DASHBOARD, req.url))
+    // Handle protected routes
+    if (pathname.startsWith('/dashboard')) {
+      if (!token) {
+        // Store the original URL as the callback
+        const signInUrl = new URL(ROUTES.AUTH.SIGNIN, req.url)
+        signInUrl.searchParams.set('callbackUrl', req.url)
+        return NextResponse.redirect(signInUrl)
+      }
+      return NextResponse.next()
     }
 
     return NextResponse.next()
   },
   {
     callbacks: {
-      authorized: () => {
-        return true // Let the middleware function handle the auth logic
-      },
+      authorized: () => true, // Let the middleware function handle the auth logic
     },
   }
 )

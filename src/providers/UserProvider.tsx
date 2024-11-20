@@ -1,47 +1,31 @@
 'use client'
-import { createContext, useContext, useMemo } from 'react'
-import { useQuery } from '@apollo/client'
+
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
-import { GET_USER } from '@/gql/queries/user'
-import type { BaseUser } from '@/types/auth'
+import type { Session } from 'next-auth'
 
 interface UserContextType {
-  user: BaseUser | null
+  user: Session['user'] | null
   loading: boolean
-  error: Error | null
-  refetch: () => Promise<void>
   isAuthenticated: boolean
+  refetch: () => Promise<void>
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status: authStatus } = useSession()
-  const isAuthLoading = authStatus === 'loading'
-
-  const {
-    data,
-    loading: queryLoading,
-    error,
-    refetch,
-  } = useQuery(GET_USER, {
-    variables: { id: session?.user?.id },
-    skip: !session?.user?.id,
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
-  })
+export function UserProvider({ children }: { children: ReactNode }) {
+  const { data: session, status, update } = useSession()
 
   const value = useMemo(
     () => ({
-      user: data?.usersCollection?.edges?.[0]?.node || null,
-      loading: isAuthLoading || queryLoading,
-      error: error ? new Error(error.message) : null,
+      user: session?.user || null,
+      loading: status === 'loading',
+      isAuthenticated: status === 'authenticated' && !!session?.user,
       refetch: async () => {
-        await refetch()
+        await update()
       },
-      isAuthenticated: !!session?.user,
     }),
-    [data?.usersCollection?.edges, isAuthLoading, queryLoading, error, refetch, session?.user]
+    [session?.user, status, update]
   )
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>

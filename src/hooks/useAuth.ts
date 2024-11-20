@@ -1,16 +1,15 @@
 'use client'
 
 import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { ROUTES } from '@/constants/routes'
 import { supabase } from '@/lib/supabase/client'
 import { getAuthErrorMessage, AUTH_ERRORS } from '@/lib/utils/auth-errors'
 import { clearApolloCache } from '@/lib/apollo/client'
+import { useRouter } from 'next/navigation'
+import { ROUTES } from '@/constants/routes'
 
 export function useAuth() {
-  const { data: session, status, update: updateSession } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
-
   async function signIn(email: string, password: string) {
     try {
       const result = await nextAuthSignIn('credentials', {
@@ -22,16 +21,10 @@ export function useAuth() {
       if (result?.error) {
         throw new Error(result.error)
       }
-
-      const updatedSession = await updateSession()
-
-      if (updatedSession?.user?.company_id) {
+      if (result?.status === 200) {
         router.replace(ROUTES.DASHBOARD)
-      } else {
-        router.replace(`${ROUTES.AUTH.SIGNUP}?step=create-intro`)
       }
     } catch (error) {
-      console.error('Error signing in:', error)
       throw new Error(getAuthErrorMessage(error))
     }
   }
@@ -52,9 +45,7 @@ export function useAuth() {
         email,
         password,
         options: {
-          data: {
-            name,
-          },
+          data: { name },
         },
       })
 
@@ -65,8 +56,6 @@ export function useAuth() {
         email,
         name,
         active: true,
-        email_verified_at: null,
-        last_login_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -75,9 +64,8 @@ export function useAuth() {
 
       if (createError) throw createError
 
-      await signIn(email, password)
+      return signIn(email, password)
     } catch (error) {
-      console.error('Error signing up:', error)
       throw new Error(getAuthErrorMessage(error))
     }
   }
@@ -85,10 +73,8 @@ export function useAuth() {
   async function signOut() {
     try {
       await clearApolloCache()
-      await nextAuthSignOut({ redirect: false })
-      router.replace(ROUTES.AUTH.SIGNIN)
+      return nextAuthSignOut({ redirect: false })
     } catch (error) {
-      console.error('Error signing out:', error)
       throw new Error(getAuthErrorMessage(error))
     }
   }
@@ -96,9 +82,9 @@ export function useAuth() {
   return {
     user: session?.user,
     loading: status === 'loading',
+    isAuthenticated: status === 'authenticated',
     signIn,
     signUp,
     signOut,
-    isAuthenticated: !!session?.user,
   }
 }
