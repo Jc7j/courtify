@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
 import { Skeleton } from '@/components/ui'
 import { use } from 'react'
+import { BookingForm } from '@/components/booking/BookingForm'
 
 interface BookingPageProps {
   params: Promise<{
@@ -54,19 +55,9 @@ export default function BookingPage({ params }: BookingPageProps) {
       {/* Right side - Booking Form */}
       <div className="w-full lg:w-1/2 min-h-screen bg-background flex flex-col">
         <div className="flex-1 px-8 py-12">
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold">Book a Court</h1>
-              <p className="text-muted-foreground mt-2">at {company.name}</p>
-            </div>
-
-            <div className="rounded-lg border bg-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Select a Court & Time</h2>
-            </div>
-          </div>
+          <BookingForm company={company} />
         </div>
 
-        {/* Footer */}
         <div className="px-8 py-6 text-sm text-muted-foreground border-t">
           <p>© {new Date().getFullYear()} Powered by Courtify. All rights reserved.</p>
         </div>

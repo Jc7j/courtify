@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client'
 import { generateSlug } from '@/lib/utils/generate-slug'
 import { useOnboarding } from './useOnboarding'
 import type { Company } from '@/types/graphql'
+import { useMemo } from 'react'
 
 interface UseCompanyReturn {
   company: Company | null
@@ -25,7 +26,6 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const { user } = useUser()
   const { handleCompanyCreated } = useOnboarding()
 
-  // Query for company data
   const {
     data: companyData,
     loading: queryLoading,
@@ -34,6 +34,8 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     variables: { slug },
     skip: !slug,
     fetchPolicy: 'cache-first',
+    nextFetchPolicy: 'cache-only',
+    notifyOnNetworkStatusChange: false,
   })
 
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
@@ -109,8 +111,12 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
       throw err instanceof Error ? err : new Error('Failed to create company')
     }
   }
-  console.log('companyData', companyData)
-  const company = companyData?.companiesCollection?.edges?.[0]?.node || null
+
+  const company = useMemo(() => {
+    return companyData?.companiesCollection?.edges?.[0]?.node || null
+  }, [companyData])
+
+  console.log('company', company)
 
   return {
     company,
