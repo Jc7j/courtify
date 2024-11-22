@@ -46,7 +46,7 @@ const items = [
   },
   {
     title: 'Settings',
-    url: '#',
+    url: ROUTES.DASHBOARD.SETTINGS,
     icon: Settings,
     exact: true,
   },

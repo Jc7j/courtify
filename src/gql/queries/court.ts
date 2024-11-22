@@ -1,5 +1,15 @@
 import { gql } from '@apollo/client'
-import { COURT_FIELDS } from '../mutations/court'
+
+export const COURT_FIELDS = gql`
+  fragment CourtFields on courts {
+    nodeId
+    company_id
+    court_number
+    name
+    created_at
+    updated_at
+  }
+`
 
 export const GET_COMPANY_COURTS = gql`
   ${COURT_FIELDS}

@@ -59,9 +59,6 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {company?.name}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Welcome back, {user?.name}. Here&apos;s what&apos;s happening with your courts.
-            </p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <p className="text-sm text-muted-foreground">Guest booking link</p>
@@ -90,7 +87,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="p-6 rounded-lg border bg-card">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
+            <p className="text-sm font-medium text-muted-foreground">Lifetime Total Bookings</p>
             <p className="text-2xl font-semibold">0</p>
           </div>
         </div>

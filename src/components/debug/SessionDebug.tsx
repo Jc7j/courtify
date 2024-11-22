@@ -11,6 +11,7 @@ export function SessionDebug() {
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [lastNetworkRequest, setLastNetworkRequest] = useState<string>('')
   const [supabaseSession, setSupabaseSession] = useState<SupabaseSession | null>(null)
+  const [sessionError, setSessionError] = useState<string>('')
   const supabase = useSupabase()
 
   useEffect(() => {
@@ -40,14 +41,48 @@ export function SessionDebug() {
     }
   }, [])
 
-  // Get Supabase session
+  // Get and sync Supabase session
   useEffect(() => {
-    async function getSupabaseSession() {
-      const { data } = await supabase.auth.getSession()
-      setSupabaseSession(data.session)
+    async function syncSupabaseSession() {
+      try {
+        // If we have a NextAuth session with Supabase tokens
+        if (session?.supabaseAccessToken) {
+          // Set the Supabase session
+          const { data, error } = await supabase.auth.setSession({
+            access_token: session.supabaseAccessToken,
+            refresh_token: session.supabaseRefreshToken!,
+          })
+
+          if (error) {
+            setSessionError(`Supabase setSession error: ${error.message}`)
+            return
+          }
+
+          // Get the current session after setting it
+          const {
+            data: { session: currentSession },
+            error: getSessionError,
+          } = await supabase.auth.getSession()
+
+          if (getSessionError) {
+            setSessionError(`Get session error: ${getSessionError.message}`)
+            return
+          }
+
+          setSupabaseSession(currentSession)
+          setSessionError('')
+        } else {
+          setSessionError('No Supabase tokens in NextAuth session')
+        }
+      } catch (error) {
+        setSessionError(
+          `Session sync error: ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
     }
-    getSupabaseSession()
-  }, [supabase])
+
+    syncSupabaseSession()
+  }, [session, supabase.auth])
 
   if (process.env.NODE_ENV !== 'development') return null
 
@@ -75,6 +110,7 @@ export function SessionDebug() {
         <div>Has session: {supabaseSession ? 'Yes' : 'No'}</div>
         <div>Access token: {supabaseSession?.access_token?.slice(0, 20)}...</div>
         <div>Expires at: {formatExpiryDate(supabaseSession?.expires_at)}</div>
+        <div className="text-red-400">Sync error: {sessionError || 'None'}</div>
       </div>
 
       <div className="font-bold border-b pb-1 pt-2">Apollo Debug</div>

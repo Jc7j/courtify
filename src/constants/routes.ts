@@ -10,6 +10,7 @@ export const ROUTES = {
     ACCOUNT: '/dashboard/account',
     BOOKINGS: '/dashboard/bookings',
     COURTS: '/dashboard/courts',
+    SETTINGS: '/dashboard/settings',
   },
   UNAUTHORIZED: '/unauthorized',
 } as const
