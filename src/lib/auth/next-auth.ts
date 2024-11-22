@@ -4,6 +4,7 @@ import { supabase } from '../supabase/client'
 import { ROUTES } from '@/constants/routes'
 import type { AuthorizedUser } from '@/types/auth'
 import { apolloClient } from '../apollo/client'
+import { refreshToken } from './token-manager'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -57,43 +58,36 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
+        const typedUser = user as AuthorizedUser
         return {
           ...token,
           user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            company_id: user.company_id,
+            id: typedUser.id,
+            email: typedUser.email,
+            name: typedUser.name,
+            company_id: typedUser.company_id,
           },
-          supabaseAccessToken: user.supabaseAccessToken,
-          supabaseRefreshToken: user.supabaseRefreshToken,
+          supabaseAccessToken: typedUser.supabaseAccessToken,
+          supabaseRefreshToken: typedUser.supabaseRefreshToken,
         }
       }
 
       if (trigger === 'update' || isTokenExpired(token.supabaseAccessToken)) {
-        try {
-          const {
-            data: { session },
-            error,
-          } = await supabase.auth.refreshSession({
-            refresh_token: token.supabaseRefreshToken,
-          })
+        if (!token.supabaseRefreshToken) {
+          return { ...token, error: 'RefreshTokenMissing' }
+        }
 
-          if (error || !session) {
-            console.error('Token refresh error:', error)
-            return { ...token, error: 'RefreshAccessTokenError' }
-          }
+        const result = await refreshToken(token.supabaseRefreshToken)
 
-          console.log('Token refreshed successfully')
-          return {
-            ...token,
-            supabaseAccessToken: session.access_token,
-            supabaseRefreshToken: session.refresh_token,
-            error: undefined,
-          }
-        } catch (error) {
-          console.error('Token refresh error:', error)
-          return { ...token, error: 'RefreshAccessTokenError' }
+        if (result.error || !result.access_token || !result.refresh_token) {
+          return { ...token, error: result.error ?? 'RefreshAccessTokenError' }
+        }
+
+        return {
+          ...token,
+          supabaseAccessToken: result.access_token,
+          supabaseRefreshToken: result.refresh_token,
+          error: undefined,
         }
       }
 
@@ -102,6 +96,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       session.user = token.user
       session.supabaseAccessToken = token.supabaseAccessToken
+      session.supabaseRefreshToken = token.supabaseRefreshToken
       session.error = token.error
       return session
     },
@@ -118,13 +113,20 @@ export const authOptions: NextAuthOptions = {
   },
 }
 
-function isTokenExpired(token: string): boolean {
+function isTokenExpired(token: string | undefined): boolean {
   if (!token) return true
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    const expiry = payload.exp * 1000
+    const [, base64Payload] = token.split('.')
+    if (!base64Payload) return true
+
+    const payload = JSON.parse(atob(base64Payload))
+    if (!payload.exp) return true
+
+    const expiry = payload.exp * 1000 // Convert to milliseconds
+    // Add a 1-minute buffer for token refresh
     return Date.now() >= expiry - 60000
-  } catch {
+  } catch (error) {
+    console.error('Error checking token expiry:', error)
     return true
   }
 }

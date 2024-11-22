@@ -2,9 +2,9 @@
 
 import { ApolloProvider as BaseApolloProvider } from '@apollo/client'
 import { apolloClient } from '@/lib/apollo/client'
-import { useMemo } from 'react'
+import { useMemo, ReactNode } from 'react'
 
-export function ApolloProvider({ children }: { children: React.ReactNode }) {
+export function ApolloProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => {
     apolloClient.setLink(apolloClient.link)
     return apolloClient

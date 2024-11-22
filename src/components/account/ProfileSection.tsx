@@ -9,9 +9,12 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  error as toastError,
+  success as toastSuccess,
 } from '@/components/ui'
 import { Check } from 'lucide-react'
 import type { BaseUser } from '@/types/auth'
+import { useUserOperations } from '@/hooks/useUserOperations'
 
 interface ProfileForm {
   name: string
@@ -23,26 +26,60 @@ interface ProfileSectionProps {
 }
 
 export function ProfileSection({ user }: ProfileSectionProps) {
-  const [form, setForm] = useState<ProfileForm>({
-    name: '',
-    email: '',
-  })
+  const [form, setForm] = useState<ProfileForm>(() => ({
+    name: user?.name || '',
+    email: user?.email || '',
+  }))
+  const [isDirty, setIsDirty] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const { updateProfile } = useUserOperations()
 
+  // Update form when user data changes
   useEffect(() => {
     if (user) {
       setForm({
         name: user.name || '',
         email: user.email || '',
       })
+      setIsDirty(false)
     }
   }, [user])
 
-  const hasChanges = () => {
-    return form.name !== user?.name || form.email !== user?.email
+  const handleChange = (field: keyof ProfileForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    if (!isDirty && value !== (user?.[field] || '')) {
+      setIsDirty(true)
+    }
+  }
+
+  const handleCancel = () => {
+    if (user) {
+      setForm({
+        name: user.name || '',
+        email: user.email || '',
+      })
+      setIsDirty(false)
+    }
   }
 
   const handleSave = async () => {
-    // TODO: Implement save functionality
+    if (!user?.email || !isDirty) return
+
+    try {
+      setIsLoading(true)
+      await updateProfile({
+        currentEmail: user.email,
+        ...(form.name !== user.name && { name: form.name }),
+        ...(form.email !== user.email && { email: form.email }),
+      })
+      setIsDirty(false)
+      toastSuccess('Profile updated successfully')
+    } catch (error) {
+      handleCancel() // Reset form on error
+      toastError(error instanceof Error ? error.message : 'Failed to update profile')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -52,10 +89,17 @@ export function ProfileSection({ user }: ProfileSectionProps) {
           <CardTitle>Profile Information</CardTitle>
           <CardDescription>Update your account profile information</CardDescription>
         </div>
-        <Button onClick={handleSave} disabled={!hasChanges()} size="sm">
-          <Check className="h-4 w-4 mr-2" />
-          Save Changes
-        </Button>
+        <div className="flex gap-2">
+          {isDirty && (
+            <Button onClick={handleCancel} variant="outline" size="sm" disabled={isLoading}>
+              Cancel
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={!isDirty || isLoading} size="sm">
+            <Check className="h-4 w-4 mr-2" />
+            {isLoading ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6 max-w-md">
@@ -63,18 +107,19 @@ export function ProfileSection({ user }: ProfileSectionProps) {
             <label className="text-sm font-medium">Name</label>
             <Input
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => handleChange('name', e.target.value)}
               placeholder="Enter your name"
+              disabled={isLoading}
             />
           </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium">Email Address</label>
             <Input
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => handleChange('email', e.target.value)}
               placeholder="Enter your email"
+              disabled={isLoading}
             />
           </div>
         </div>

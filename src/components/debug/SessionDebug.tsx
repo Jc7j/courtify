@@ -4,12 +4,13 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { apolloClient } from '@/lib/apollo/client'
 import { useSupabase } from '@/providers/SupabaseProvider'
+import type { Session as SupabaseSession } from '@supabase/supabase-js'
 
 export function SessionDebug() {
   const { data: session, status } = useSession()
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [lastNetworkRequest, setLastNetworkRequest] = useState<string>('')
-  const [supabaseSession, setSupabaseSession] = useState<any>(null)
+  const [supabaseSession, setSupabaseSession] = useState<SupabaseSession | null>(null)
   const supabase = useSupabase()
 
   useEffect(() => {
@@ -26,14 +27,16 @@ export function SessionDebug() {
 
   // Monitor Apollo network requests
   useEffect(() => {
-    const unsubscribe = apolloClient.link.setOnError((error) => {
+    const cleanup = apolloClient.link.setOnError((error) => {
       setLastNetworkRequest(
         `Error: ${error.operation.operationName} - ${error.message} (${error.statusCode})`
       )
     })
 
     return () => {
-      if (unsubscribe) unsubscribe()
+      if (typeof cleanup === 'function') {
+        cleanup()
+      }
     }
   }, [])
 
@@ -49,6 +52,11 @@ export function SessionDebug() {
   if (process.env.NODE_ENV !== 'development') return null
 
   const cacheSize = JSON.stringify(apolloClient.cache.extract()).length
+
+  const formatExpiryDate = (expiresAt: number | undefined | null) => {
+    if (!expiresAt) return 'Not set'
+    return new Date(expiresAt * 1000).toLocaleString()
+  }
 
   return (
     <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded-lg text-sm space-y-2 max-w-md overflow-auto max-h-[80vh]">
@@ -66,7 +74,7 @@ export function SessionDebug() {
       <div className="space-y-1">
         <div>Has session: {supabaseSession ? 'Yes' : 'No'}</div>
         <div>Access token: {supabaseSession?.access_token?.slice(0, 20)}...</div>
-        <div>Expires at: {new Date(supabaseSession?.expires_at ?? 0).toLocaleString()}</div>
+        <div>Expires at: {formatExpiryDate(supabaseSession?.expires_at)}</div>
       </div>
 
       <div className="font-bold border-b pb-1 pt-2">Apollo Debug</div>

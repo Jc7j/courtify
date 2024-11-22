@@ -1,4 +1,4 @@
-import { ApolloClient, createHttpLink, from, InMemoryCache } from '@apollo/client'
+import { ApolloClient, createHttpLink, from, InMemoryCache, Observable } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { getSession, signOut } from 'next-auth/react'
@@ -7,18 +7,50 @@ import { ROUTES } from '@/constants/routes'
 // Basic cache without merge functions
 const cache = new InMemoryCache()
 
+// Move isRefreshing flag outside of Observable to be shared across requests
+let isRefreshing = false
+
 // Handle auth errors
-const errorLink = onError(({ graphQLErrors }) => {
+const errorLink = onError(({ graphQLErrors, operation, forward }) => {
   if (graphQLErrors) {
     for (const err of graphQLErrors) {
       if (err.message.includes('JWT expired')) {
-        // Try to refresh the session first
-        getSession().then((session) => {
-          if (!session || session.error) {
-            // If refresh failed, sign out
-            signOut({ redirect: false }).then(() => {
-              window.location.href = ROUTES.AUTH.SIGNIN
-            })
+        return new Observable((observer) => {
+          // Check global isRefreshing flag
+          if (!isRefreshing) {
+            isRefreshing = true
+            getSession()
+              .then((session) => {
+                if (!session || session.error) {
+                  signOut({ redirect: false }).then(() => {
+                    window.location.href = ROUTES.AUTH.SIGNIN
+                  })
+                  observer.complete()
+                  return
+                }
+
+                // Retry the operation with new token
+                forward(operation).subscribe({
+                  next: observer.next.bind(observer),
+                  error: observer.error.bind(observer),
+                  complete: observer.complete.bind(observer),
+                })
+              })
+              .catch((error) => {
+                observer.error(error)
+              })
+              .finally(() => {
+                isRefreshing = false
+              })
+          } else {
+            // If already refreshing, wait briefly and retry the operation
+            setTimeout(() => {
+              forward(operation).subscribe({
+                next: observer.next.bind(observer),
+                error: observer.error.bind(observer),
+                complete: observer.complete.bind(observer),
+              })
+            }, 1000)
           }
         })
       }
@@ -29,7 +61,6 @@ const errorLink = onError(({ graphQLErrors }) => {
 // Add auth headers with fresh token check
 const authLink = setContext(async (_, { headers }) => {
   try {
-    // Always get a fresh session
     const session = await getSession()
 
     if (!session?.supabaseAccessToken) {
