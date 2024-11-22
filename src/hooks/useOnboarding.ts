@@ -38,7 +38,7 @@ export function useOnboarding(): OnboardingState {
     try {
       await refetchUser()
       await updateSession()
-      router.replace(ROUTES.DASHBOARD)
+      router.replace(ROUTES.DASHBOARD.HOME)
     } catch (err) {
       console.error('Error completing company creation:', err)
       throw err instanceof Error ? err : new Error('Failed to complete company setup')

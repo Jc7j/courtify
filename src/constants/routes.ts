@@ -3,9 +3,11 @@ export const ROUTES = {
   AUTH: {
     SIGNIN: '/signin',
     SIGNUP: '/signup',
-    ERROR: '/error',
     VERIFY: '/verify-request',
   },
-  DASHBOARD: '/dashboard',
+  DASHBOARD: {
+    HOME: '/dashboard',
+    ACCOUNT: '/dashboard/account',
+  },
   UNAUTHORIZED: '/unauthorized',
 } as const

@@ -10,8 +10,7 @@ export default withAuth(
     // Handle auth routes
     if (pathname.startsWith('/signin')) {
       if (token) {
-        // If user is authenticated, redirect to dashboard
-        return NextResponse.redirect(new URL(ROUTES.DASHBOARD, req.url))
+        return NextResponse.redirect(new URL(ROUTES.DASHBOARD.HOME, req.url))
       }
       return NextResponse.next()
     }

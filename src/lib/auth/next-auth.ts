@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase } from '../supabase/client'
 import { ROUTES } from '@/constants/routes'
 import type { AuthorizedUser } from '@/types/auth'
+import { apolloClient } from '../apollo/client'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -54,40 +55,76 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
-        token.user = {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          company_id: user.company_id,
+        return {
+          ...token,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            company_id: user.company_id,
+          },
+          supabaseAccessToken: user.supabaseAccessToken,
+          supabaseRefreshToken: user.supabaseRefreshToken,
         }
-        token.supabaseAccessToken = user.supabaseAccessToken
-        token.supabaseRefreshToken = user.supabaseRefreshToken
+      }
+
+      if (trigger === 'update' || isTokenExpired(token.supabaseAccessToken)) {
+        try {
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.refreshSession({
+            refresh_token: token.supabaseRefreshToken,
+          })
+
+          if (error || !session) {
+            console.error('Token refresh error:', error)
+            return { ...token, error: 'RefreshAccessTokenError' }
+          }
+
+          console.log('Token refreshed successfully')
+          return {
+            ...token,
+            supabaseAccessToken: session.access_token,
+            supabaseRefreshToken: session.refresh_token,
+            error: undefined,
+          }
+        } catch (error) {
+          console.error('Token refresh error:', error)
+          return { ...token, error: 'RefreshAccessTokenError' }
+        }
       }
 
       return token
     },
     async session({ session, token }) {
-      session.user = {
-        id: token.user.id,
-        email: token.user.email,
-        name: token.user.name,
-        company_id: token.user.company_id,
-      }
+      session.user = token.user
       session.supabaseAccessToken = token.supabaseAccessToken
-      session.supabaseRefreshToken = token.supabaseRefreshToken
-
+      session.error = token.error
       return session
+    },
+  },
+  events: {
+    async signOut() {
+      await supabase.auth.signOut()
+      await apolloClient.clearStore()
     },
   },
   pages: {
     signIn: ROUTES.AUTH.SIGNIN,
     error: ROUTES.AUTH.SIGNIN,
   },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  debug: process.env.NODE_ENV === 'development',
+}
+
+function isTokenExpired(token: string): boolean {
+  if (!token) return true
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const expiry = payload.exp * 1000
+    return Date.now() >= expiry - 60000
+  } catch {
+    return true
+  }
 }

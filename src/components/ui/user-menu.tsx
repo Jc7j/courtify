@@ -21,10 +21,12 @@ import { useUser } from '@/providers/UserProvider'
 import { signOut } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
 import cn from '@/lib/utils/cn'
+import { useRouter } from 'next/navigation'
 
 export function UserMenu() {
   const { user } = useUser()
   const { isMobile } = useSidebar()
+  const router = useRouter()
 
   if (!user) return null
 
@@ -92,7 +94,10 @@ export function UserMenu() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="gap-3">
+              <DropdownMenuItem
+                className="gap-3"
+                onClick={() => router.push(ROUTES.DASHBOARD.ACCOUNT)}
+              >
                 <Settings className="h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>

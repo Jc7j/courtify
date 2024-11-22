@@ -22,7 +22,7 @@ export function useAuth() {
         throw new Error(result.error)
       }
       if (result?.status === 200) {
-        router.replace(ROUTES.DASHBOARD)
+        router.replace(ROUTES.DASHBOARD.HOME)
       }
     } catch (error) {
       throw new Error(getAuthErrorMessage(error))

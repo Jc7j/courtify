@@ -35,7 +35,7 @@ export default function CourtsPage() {
   }
 
   function handleCourtClick(courtNumber: number) {
-    router.push(`${ROUTES.DASHBOARD}/courts/${courtNumber}`)
+    router.push(`${ROUTES.DASHBOARD.HOME}/courts/${courtNumber}`)
   }
 
   if (error) {

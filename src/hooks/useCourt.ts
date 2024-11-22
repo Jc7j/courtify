@@ -35,6 +35,7 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
       court_number: courtNumber,
     },
     skip: !isAuthenticated || !user?.company_id || !courtNumber,
+    fetchPolicy: 'network-only',
   })
 
   const {
@@ -45,85 +46,12 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
   } = useQuery(GET_COMPANY_COURTS, {
     variables: { company_id: user?.company_id },
     skip: !isAuthenticated || !user?.company_id,
+    fetchPolicy: 'network-only',
   })
 
-  const [createCourtMutation, { loading: creating }] = useMutation(CREATE_COURT, {
-    update(cache, { data }) {
-      const newCourt = data?.insertIntocourtsCollection?.records?.[0]
-      if (newCourt && user?.company_id) {
-        cache.modify({
-          fields: {
-            courtsCollection(existing = { edges: [] }) {
-              const newEdge = {
-                __typename: 'CourtsEdge',
-                node: newCourt,
-              }
-              return {
-                ...existing,
-                edges: [...existing.edges, newEdge],
-              }
-            },
-          },
-        })
-      }
-    },
-  })
-
-  const [updateCourtMutation, { loading: updating }] = useMutation(UPDATE_COURT, {
-    update(cache, { data }) {
-      const updatedCourt = data?.updatecourtsCollection?.records?.[0]
-      if (updatedCourt && user?.company_id) {
-        cache.modify({
-          fields: {
-            courtsCollection(existing = { edges: [] }) {
-              return {
-                ...existing,
-                edges: existing.edges.map((edge: Courts) =>
-                  edge.court_number === updatedCourt.court_number &&
-                  edge.company_id === updatedCourt.company_id
-                    ? { ...edge, node: updatedCourt }
-                    : edge
-                ),
-              }
-            },
-          },
-        })
-      }
-    },
-  })
-
-  const [deleteCourtMutation, { loading: deleting }] = useMutation(DELETE_COURT, {
-    update(cache, { data }) {
-      const deletedCourt = data?.deleteFromcourtsCollection?.records?.[0]
-      if (deletedCourt && user?.company_id) {
-        cache.modify({
-          fields: {
-            courtsCollection(existing = { edges: [] }) {
-              return {
-                ...existing,
-                edges: existing.edges.filter(
-                  (edge: Courts) =>
-                    !(
-                      edge.court_number === deletedCourt.court_number &&
-                      edge.company_id === deletedCourt.company_id
-                    )
-                ),
-              }
-            },
-          },
-        })
-      }
-    },
-  })
-
-  function getNextCourtNumber(): number {
-    if (!courtsData?.courtsCollection?.edges) return 1
-
-    const existingCourts = courtsData.courtsCollection.edges.map(
-      (edge: { node: Courts }) => edge.node
-    )
-    return Math.max(0, ...existingCourts.map((c: Courts) => c.court_number)) + 1
-  }
+  const [createCourtMutation, { loading: creating }] = useMutation(CREATE_COURT)
+  const [updateCourtMutation, { loading: updating }] = useMutation(UPDATE_COURT)
+  const [deleteCourtMutation, { loading: deleting }] = useMutation(DELETE_COURT)
 
   async function createCourt(name: string): Promise<Courts> {
     if (!isAuthenticated || !user?.company_id) {
@@ -148,9 +76,9 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
         throw new Error('Failed to create court')
       }
 
+      await refetch()
       return newCourt
     } catch (err) {
-      console.error('Error in createCourt:', err)
       throw err instanceof Error ? err : new Error('Failed to create court')
     }
   }
@@ -176,9 +104,9 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
         throw new Error('Failed to update court')
       }
 
+      await refetch()
       return data.updatecourtsCollection.records[0]
     } catch (err) {
-      console.error('Error in updateCourt:', err)
       throw err instanceof Error ? err : new Error('Failed to update court')
     }
   }
@@ -200,11 +128,19 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
         throw new Error('Failed to delete court')
       }
 
+      await refetch()
       return data.deleteFromcourtsCollection.records[0]
     } catch (err) {
-      console.error('Error in deleteCourt:', err)
       throw err instanceof Error ? err : new Error('Failed to delete court')
     }
+  }
+
+  function getNextCourtNumber(): number {
+    if (!courtsData?.courtsCollection?.edges) return 1
+    const existingCourts = courtsData.courtsCollection.edges.map(
+      (edge: { node: Courts }) => edge.node
+    )
+    return Math.max(0, ...existingCourts.map((c: Courts) => c.court_number)) + 1
   }
 
   return {
