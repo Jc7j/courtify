@@ -22,3 +22,16 @@ export const GET_COMPANY_BY_SLUG = gql`
     }
   }
 `
+
+export const GET_COMPANY_BY_ID = gql`
+  ${COMPANY_FIELDS}
+  query GetCompanyById($id: UUID!) {
+    companiesCollection(filter: { id: { eq: $id } }) {
+      edges {
+        node {
+          ...CompanyFields
+        }
+      }
+    }
+  }
+`

@@ -1,14 +1,13 @@
 'use client'
 
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation, useQuery, gql } from '@apollo/client'
 import { CREATE_COMPANY } from '@/gql/mutations/company'
-import { GET_COMPANY_BY_SLUG } from '@/gql/queries/company'
+import { GET_COMPANY_BY_SLUG, GET_COMPANY_BY_ID } from '@/gql/queries/company'
 import { useUser } from '@/providers/UserProvider'
 import { supabase } from '@/lib/supabase/client'
 import { generateSlug } from '@/lib/utils/generate-slug'
 import { useOnboarding } from './useOnboarding'
 import type { Company } from '@/types/graphql'
-import { useMemo } from 'react'
 
 interface UseCompanyReturn {
   company: Company | null
@@ -26,16 +25,20 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const { user } = useUser()
   const { handleCompanyCreated } = useOnboarding()
 
+  // Query by slug if provided, otherwise query by user's company_id
+  const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
+  const variables = slug ? { slug } : { id: user?.company_id }
+  const skipQuery = slug ? !slug : !user?.company_id
+
   const {
     data: companyData,
     loading: queryLoading,
     error: queryError,
-  } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug },
-    skip: !slug,
+  } = useQuery(queryToUse, {
+    variables,
+    skip: skipQuery,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-only',
-    notifyOnNetworkStatusChange: false,
   })
 
   const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
@@ -46,17 +49,20 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
         if (newCompany && user?.id) {
           cache.modify({
             fields: {
-              usersCollection(existingUsers = { edges: [] }) {
+              companiesCollection(existingCompanies = { edges: [] }) {
+                const newCompanyRef = cache.writeFragment({
+                  data: newCompany,
+                  fragment: gql`
+                    fragment NewCompany on companies {
+                      id
+                      name
+                      slug
+                    }
+                  `,
+                })
                 return {
-                  ...existingUsers,
-                  edges: existingUsers.edges.map((edge: { node: { id: string } }) =>
-                    edge.node.id === user.id
-                      ? {
-                          ...edge,
-                          node: { ...edge.node, company_id: newCompany.id },
-                        }
-                      : edge
-                  ),
+                  ...existingCompanies,
+                  edges: [...existingCompanies.edges, { node: newCompanyRef }],
                 }
               },
             },
@@ -66,57 +72,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     }
   )
 
-  async function createCompany(name: string): Promise<void> {
-    if (!user?.id) {
-      throw new Error('Authentication required')
-    }
-
-    try {
-      // 1. Create company
-      const { data } = await createCompanyMutation({
-        variables: {
-          objects: [
-            {
-              name,
-              slug: generateSlug(name),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ],
-        },
-      })
-
-      const newCompany = data?.insertIntocompaniesCollection?.records?.[0] as Company
-      if (!newCompany?.id) {
-        throw new Error('Failed to create company')
-      }
-
-      // 2. Update user's company_id
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          company_id: newCompany.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id)
-
-      if (updateError) {
-        throw new Error('Failed to update user company')
-      }
-
-      // 3. Handle session update and navigation
-      await handleCompanyCreated()
-    } catch (err) {
-      console.error('Error in createCompany:', err)
-      throw err instanceof Error ? err : new Error('Failed to create company')
-    }
-  }
-
-  const company = useMemo(() => {
-    return companyData?.companiesCollection?.edges?.[0]?.node || null
-  }, [companyData])
-
-  console.log('company', company)
+  const company = companyData?.companiesCollection?.edges?.[0]?.node || null
 
   return {
     company,
@@ -127,6 +83,39 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
         ? new Error(createError.message)
         : null,
     creating,
-    createCompany,
+    createCompany: async (name: string) => {
+      if (!user?.id) throw new Error('Authentication required')
+
+      try {
+        const { data } = await createCompanyMutation({
+          variables: {
+            objects: [
+              {
+                name,
+                slug: generateSlug(name),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            ],
+          },
+        })
+
+        const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
+        if (!newCompany?.id) throw new Error('Failed to create company')
+
+        await supabase
+          .from('users')
+          .update({
+            company_id: newCompany.id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', user.id)
+
+        await handleCompanyCreated()
+      } catch (err) {
+        console.error('Error in createCompany:', err)
+        throw err instanceof Error ? err : new Error('Failed to create company')
+      }
+    },
   }
 }

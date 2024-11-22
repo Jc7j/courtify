@@ -4,23 +4,29 @@ import { useRef, useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import { Skeleton } from '@/components/ui'
 import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
-import { CourtAvailability } from '@/types/graphql'
+import { CourtAvailability, Courts } from '@/types/graphql'
 import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
 
-export function CompanyCourtCalendar() {
+interface CompanyCourtCalendarProps {
+  courts: Courts[]
+  availabilities: CourtAvailability[]
+  loading: boolean
+  onDateChange: (startDate: string, endDate: string) => void
+}
+
+export function CompanyCourtCalendar({
+  courts,
+  availabilities,
+  loading,
+  onDateChange,
+}: CompanyCourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
-
-  const { courts, availabilities, loading } = useCompanyAvailabilities(
-    selectedDate.startOf('day').toISOString(),
-    selectedDate.endOf('day').toISOString()
-  )
 
   if (loading) {
     return (
@@ -45,10 +51,11 @@ export function CompanyCourtCalendar() {
     courtNumber: court.court_number,
   }))
 
-  function handleDatesSet({ start }: DatesSetArg) {
+  function handleDatesSet({ start, end }: DatesSetArg) {
     const newDate = dayjs(start)
     if (!newDate.isSame(selectedDate, 'day')) {
       setSelectedDate(newDate)
+      onDateChange(start.toISOString(), end.toISOString())
     }
   }
 

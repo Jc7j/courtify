@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useCourt } from '@/hooks/useCourt'
 import { toast } from 'sonner'
 import { CourtCalendar } from '@/components/courts/CourtCalendar'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 
 export default function CourtPage() {
   const params = useParams()
@@ -16,6 +17,7 @@ export default function CourtPage() {
     useCourt(courtNumber)
   const [isEditing, setIsEditing] = useState(false)
   const [newName, setNewName] = useState(court?.name || '')
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   if (courtLoading || !court) {
     return (
@@ -41,8 +43,6 @@ export default function CourtPage() {
   }
 
   async function handleDelete() {
-    if (!window.confirm('Are you sure you want to delete this court?')) return
-
     try {
       await deleteCourt(courtNumber)
       toast.success('Court deleted successfully')
@@ -104,9 +104,9 @@ export default function CourtPage() {
         </div>
 
         <Button
-          variant="destructive"
+          variant="outline-destructive"
           size="sm"
-          onClick={handleDelete}
+          onClick={() => setShowDeleteDialog(true)}
           disabled={deleting}
           className="ml-auto"
         >
@@ -129,6 +129,17 @@ export default function CourtPage() {
       ) : (
         court && <CourtCalendar court={court} />
       )}
+
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Court"
+        description="Are you sure you want to delete this court? This action cannot be undone."
+        actionLabel="Delete"
+        onConfirm={handleDelete}
+        loading={deleting}
+        variant="destructive"
+      />
     </div>
   )
 }

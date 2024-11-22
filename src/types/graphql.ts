@@ -15,6 +15,7 @@ export interface User {
   created_at: string
   updated_at: string
 }
+
 export interface Company {
   id: string
   name: string
@@ -48,6 +49,44 @@ export enum AvailabilityStatus {
   Past = 'past',
 }
 
+export enum BookingStatus {
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+  Cancelled = 'cancelled',
+  Completed = 'completed',
+  NoShow = 'no_show',
+}
+
+export enum PaymentStatus {
+  Pending = 'pending',
+  Paid = 'paid',
+  Refunded = 'refunded',
+  Failed = 'failed',
+}
+
+export interface Booking {
+  id: string
+  company_id: string
+  court_number: number
+  start_time: string
+  customer_email: string
+  customer_name: string
+  customer_phone?: string | null
+  booking_status: BookingStatus
+  payment_status: PaymentStatus
+  stripe_customer_id?: string | null
+  stripe_payment_intent_id?: string | null
+  stripe_session_id?: string | null
+  amount_total: number
+  amount_paid?: number | null
+  currency: string
+  booking_info?: Record<string, unknown> | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+  cancelled_at?: string | null
+}
+
 export interface CourtsEdge {
   node: Courts
   __typename: 'CourtsEdge'
@@ -76,4 +115,14 @@ export interface CompaniesEdge {
 export interface CompaniesConnection {
   edges: CompaniesEdge[]
   __typename: 'CompaniesConnection'
+}
+
+export interface BookingEdge {
+  node: Booking
+  __typename: 'BookingEdge'
+}
+
+export interface BookingConnection {
+  edges: BookingEdge[]
+  __typename: 'BookingConnection'
 }

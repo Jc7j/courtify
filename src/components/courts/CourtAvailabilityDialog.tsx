@@ -24,6 +24,7 @@ interface CourtAvailabilityDialogProps {
   onClose: () => void
   loading?: boolean
   readOnly?: boolean
+  isNew?: boolean
 }
 
 export function CourtAvailabilityDialog({
@@ -32,13 +33,14 @@ export function CourtAvailabilityDialog({
   onClose,
   loading = false,
   readOnly = false,
+  isNew = false,
 }: CourtAvailabilityDialogProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [startTime, setStartTime] = useState(dayjs(availability.start_time).format('HH:mm'))
   const [endTime, setEndTime] = useState(dayjs(availability.end_time).format('HH:mm'))
   const [hasTimeChanges, setHasTimeChanges] = useState(false)
 
-  const { updateAvailability, deleteAvailability } = useCourtAvailability({
+  const { updateAvailability, deleteAvailability, createAvailability } = useCourtAvailability({
     courtNumber: availability.court_number,
     startTime: dayjs(availability.start_time).startOf('day').toISOString(),
     endTime: dayjs(availability.start_time).endOf('day').toISOString(),
@@ -135,6 +137,32 @@ export function CourtAvailabilityDialog({
     [AvailabilityStatus.Past]: 'text-neutral-500 dark:text-neutral-400',
   }
 
+  const handleCreate = async () => {
+    try {
+      setIsUpdating(true)
+      const originalDate = dayjs(availability.start_time).format('YYYY-MM-DD')
+      const newStartDateTime = dayjs(`${originalDate}T${startTime}`).toISOString()
+      const newEndDateTime = dayjs(`${originalDate}T${endTime}`).toISOString()
+
+      if (dayjs(newEndDateTime).isBefore(dayjs(newStartDateTime))) {
+        throw new Error('End time must be after start time')
+      }
+
+      await createAvailability({
+        courtNumber: availability.court_number,
+        startTime: newStartDateTime,
+        endTime: newEndDateTime,
+      })
+
+      success('Court time created successfully')
+      onClose()
+    } catch (error) {
+      ToastError(error instanceof Error ? error.message : 'Failed to create court time')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent loading={loading || isUpdating} onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -189,35 +217,26 @@ export function CourtAvailabilityDialog({
         <DialogFooter>
           {!isPast && !readOnly && (
             <>
-              {/* {isAvailable && (
+              {isNew ? (
                 <Button
                   variant="default"
-                  onClick={() => handleStatusChange(AvailabilityStatus.Booked)}
+                  onClick={handleCreate}
                   disabled={isUpdating}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="gap-2"
                 >
-                  Mark as Booked
+                  Save
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={isUpdating}
+                  className="gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
                 </Button>
               )}
-              {isBooked && (
-                <Button
-                  variant="default"
-                  onClick={() => handleStatusChange(AvailabilityStatus.Available)}
-                  disabled={isUpdating}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Mark as Available
-                </Button>
-              )} */}
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={isUpdating}
-                className="gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
             </>
           )}
         </DialogFooter>
