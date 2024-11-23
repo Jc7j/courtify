@@ -10,13 +10,14 @@ import { CourtAvailabilityList } from './CourtAvailabilityList'
 
 interface BookingFormProps {
   company: Company
+  selectedTimeKey?: string
+  onTimeSelect: (key: string) => void
 }
 
-export function BookingForm({ company }: BookingFormProps) {
+export function BookingForm({ company, selectedTimeKey, onTimeSelect }: BookingFormProps) {
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
-  const [selectedKey, setSelectedKey] = useState<string>()
 
   const {
     company: companyData,
@@ -30,11 +31,7 @@ export function BookingForm({ company }: BookingFormProps) {
   )
 
   const handleWeekChange = useCallback((date: Date) => setWeekStartDate(date), [])
-
-  const handleDateSelect = useCallback((date: Date) => {
-    setSelectedDate(date)
-    setSelectedKey(undefined)
-  }, [])
+  const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), [])
 
   if (error) {
     return (
@@ -71,8 +68,8 @@ export function BookingForm({ company }: BookingFormProps) {
           selectedDate={selectedDate}
           availabilities={availabilities}
           loading={loading}
-          selectedKey={selectedKey}
-          onSelect={setSelectedKey}
+          selectedKey={selectedTimeKey}
+          onSelect={onTimeSelect}
         />
       </Card>
     </div>
