@@ -34,6 +34,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          amount_paid: number | null
+          amount_total: number
+          booking_info: Json | null
+          booking_status: Database["public"]["Enums"]["booking_status"]
+          cancelled_at: string | null
+          company_id: string
+          court_number: number
+          created_at: string
+          currency: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          notes: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          start_time: string
+          stripe_customer_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          amount_total: number
+          booking_info?: Json | null
+          booking_status?: Database["public"]["Enums"]["booking_status"]
+          cancelled_at?: string | null
+          company_id: string
+          court_number: number
+          created_at?: string
+          currency?: string
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          start_time: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          amount_total?: number
+          booking_info?: Json | null
+          booking_status?: Database["public"]["Enums"]["booking_status"]
+          cancelled_at?: string | null
+          company_id?: string
+          court_number?: number
+          created_at?: string
+          currency?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          start_time?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_company_id_court_number_start_time_fkey"
+            columns: ["company_id", "court_number", "start_time"]
+            isOneToOne: false
+            referencedRelation: "court_availabilities"
+            referencedColumns: ["company_id", "court_number", "start_time"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -184,10 +261,356 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      gbt_bit_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_bool_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_bool_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_bpchar_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_bytea_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_cash_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_cash_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_date_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_date_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_enum_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_enum_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_float4_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_float4_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_float8_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_float8_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_inet_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_int2_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_int2_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_int4_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_int4_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_int8_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_int8_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_intv_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_intv_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_intv_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_macad_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_macad_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_macad8_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_macad8_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_numeric_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_oid_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_oid_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_text_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_time_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_time_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_timetz_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_ts_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_ts_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_tstz_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_uuid_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_uuid_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_var_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbt_var_fetch: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey_var_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey_var_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey16_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey16_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey2_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey2_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey32_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey32_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey4_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey4_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey8_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gbtreekey8_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      update_past_availabilities: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       availability_status: "available" | "booked" | "past"
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "cancelled"
+        | "completed"
+        | "no_show"
+      payment_status: "pending" | "paid" | "refunded" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never

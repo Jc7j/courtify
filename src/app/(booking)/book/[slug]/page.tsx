@@ -38,11 +38,11 @@ export default function BookingPage({ params }: BookingPageProps) {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Info */}
-      <div className="hidden lg:flex flex-1 bg-secondary items-center justify-center p-12">
+      <div className="hidden lg:flex lg:flex-1 bg-secondary items-center justify-center p-12 sticky top-0 h-screen">
         <div className="max-w-lg space-y-6">
           <div className="space-y-4">
             <h2 className="text-2xl font-semibold text-secondary-foreground text-center">
-              Book Your Court at {company.name}
+              Rent Your Court at {company.name}
             </h2>
             <p className="text-secondary-foreground/80 text-center text-base leading-relaxed">
               Select your preferred court and time slot. Our easy booking system ensures a seamless
@@ -54,7 +54,7 @@ export default function BookingPage({ params }: BookingPageProps) {
 
       {/* Right side - Booking Form */}
       <div className="w-full lg:w-1/2 min-h-screen bg-background flex flex-col">
-        <div className="flex-1 px-8 py-12">
+        <div className="flex-1 px-8 py-12 overflow-y-auto">
           <BookingForm company={company} />
         </div>
 
