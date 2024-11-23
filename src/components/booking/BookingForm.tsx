@@ -1,23 +1,19 @@
 'use client'
 
-import { useState, useCallback } from 'react'
 import { WeeklyCalendar } from './WeeklyCalendar'
 import { usePublicCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import type { Company } from '@/types/graphql'
 import dayjs from 'dayjs'
 import { Card } from '@/components/ui'
 import { CourtAvailabilityList } from './CourtAvailabilityList'
+import { useBookingStore } from '@/stores/useBookingStore'
 
 interface BookingFormProps {
   company: Company
-  selectedTimeKey?: string
-  onTimeSelect: (key: string) => void
 }
 
-export function BookingForm({ company, selectedTimeKey, onTimeSelect }: BookingFormProps) {
-  const today = dayjs().startOf('day').toDate()
-  const [selectedDate, setSelectedDate] = useState(today)
-  const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
+export function BookingForm({ company }: BookingFormProps) {
+  const { selectedDate, weekStartDate, setSelectedDate, setWeekStartDate } = useBookingStore()
 
   const {
     company: companyData,
@@ -29,9 +25,6 @@ export function BookingForm({ company, selectedTimeKey, onTimeSelect }: BookingF
     dayjs(weekStartDate).startOf('day').toISOString(),
     dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
   )
-
-  const handleWeekChange = useCallback((date: Date) => setWeekStartDate(date), [])
-  const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), [])
 
   if (error) {
     return (
@@ -55,8 +48,8 @@ export function BookingForm({ company, selectedTimeKey, onTimeSelect }: BookingF
         <WeeklyCalendar
           startDate={weekStartDate}
           selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          onWeekChange={handleWeekChange}
+          onDateSelect={setSelectedDate}
+          onWeekChange={setWeekStartDate}
         />
       </Card>
 
@@ -68,8 +61,6 @@ export function BookingForm({ company, selectedTimeKey, onTimeSelect }: BookingF
           selectedDate={selectedDate}
           availabilities={availabilities}
           loading={loading}
-          selectedKey={selectedTimeKey}
-          onSelect={onTimeSelect}
         />
       </Card>
     </div>

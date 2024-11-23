@@ -106,6 +106,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             id="password"
             className={errors.password ? 'border-destructive' : ''}
             disabled={isLoading}
+            formatPhoneNumber
             autoComplete="new-password"
           />
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}

@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { memo, useMemo } from 'react'
+import { useBookingStore } from '@/stores/useBookingStore'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -30,16 +31,16 @@ const AvailabilitySlot = memo(function AvailabilitySlot({
     <div
       onClick={onClick}
       className={cn(
-        'p-4 rounded-md border transition-colors cursor-pointer',
-        'hover:bg-accent hover:border-accent',
-        selected && 'border-primary bg-primary/5 hover:bg-primary/5 hover:border-primary'
+        'w-full p-4 rounded-md border transition-colors cursor-pointer text-left',
+        'border-input hover:border-accent hover:bg-accent/5',
+        selected && 'border-primary bg-primary/5 hover:border-primary hover:bg-primary/5'
       )}
     >
       <div className="flex justify-between items-center">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <Clock className={cn('h-4 w-4', selected ? 'text-primary' : 'text-muted-foreground')} />
-            <span className={cn('font-medium', selected && 'text-primary')}>
+            <span className={cn('font-medium', selected ? 'text-primary' : 'text-foreground')}>
               {dayjs(startTime).utc().local().format('h:mm A')} -{' '}
               {dayjs(endTime).utc().local().format('h:mm A')}
             </span>
@@ -62,54 +63,91 @@ interface CourtAvailabilityListProps {
   selectedDate: Date
   availabilities: CourtAvailability[]
   loading: boolean
-  selectedKey?: string
-  onSelect: (key: string) => void
 }
 
 function CourtAvailabilityListComponent({
   selectedDate,
   availabilities,
   loading,
-  selectedKey,
-  onSelect,
 }: CourtAvailabilityListProps) {
+  const { selectedAvailability, setSelectedAvailability } = useBookingStore()
+
+  const selectedKey = selectedAvailability
+    ? `${selectedAvailability.start_time}-${selectedAvailability.court_number}`
+    : undefined
+
   const { morningSlots, afternoonSlots } = useMemo(() => {
     const now = dayjs().utc()
     const selectedDateUtc = dayjs(selectedDate).utc().startOf('day')
 
-    // Filter and group availabilities
-    const groupedSlots = availabilities
-      .filter((availability) => {
-        const availabilityStart = dayjs(availability.start_time).utc()
-        return availabilityStart.isSame(selectedDateUtc, 'day') && availabilityStart.isAfter(now)
-      })
-      .reduce(
-        (groups, availability) => {
-          const key = `${availability.start_time}-${availability.end_time}`
-          if (!groups[key]) {
-            groups[key] = {
-              startTime: availability.start_time,
-              endTime: availability.end_time,
-              courtCount: 1,
-            }
-          } else {
-            groups[key].courtCount++
-          }
-          return groups
-        },
-        {} as Record<string, { startTime: string; endTime: string; courtCount: number }>
-      )
+    const filteredAvailabilities = availabilities.filter((availability) => {
+      const availabilityStart = dayjs(availability.start_time).utc()
+      return availabilityStart.isSame(selectedDateUtc, 'day') && availabilityStart.isAfter(now)
+    })
 
-    // Sort and split into morning/afternoon
-    const slots = Object.entries(groupedSlots).sort(([, a], [, b]) =>
+    const slots = filteredAvailabilities.reduce(
+      (groups, availability) => {
+        const key = `${availability.start_time}-${availability.end_time}`
+        if (!groups[key]) {
+          groups[key] = {
+            startTime: availability.start_time,
+            endTime: availability.end_time,
+            courtCount: 1,
+            firstAvailability: availability,
+          }
+        } else {
+          groups[key].courtCount++
+        }
+        return groups
+      },
+      {} as Record<
+        string,
+        {
+          startTime: string
+          endTime: string
+          courtCount: number
+          firstAvailability: CourtAvailability
+        }
+      >
+    )
+
+    const sortedSlots = Object.entries(slots).sort(([, a], [, b]) =>
       dayjs(a.startTime).diff(dayjs(b.startTime))
     )
 
     return {
-      morningSlots: slots.filter(([, slot]) => dayjs(slot.startTime).utc().local().hour() < 12),
-      afternoonSlots: slots.filter(([, slot]) => dayjs(slot.startTime).utc().local().hour() >= 12),
+      morningSlots: sortedSlots.filter(
+        ([, slot]) => dayjs(slot.startTime).utc().local().hour() < 12
+      ),
+      afternoonSlots: sortedSlots.filter(
+        ([, slot]) => dayjs(slot.startTime).utc().local().hour() >= 12
+      ),
     }
   }, [availabilities, selectedDate])
+
+  const renderTimeGroup = (title: string, slots: typeof morningSlots) => {
+    if (slots.length === 0) return null
+
+    return (
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        {slots.map(([key, slot]) => {
+          const slotKey = `${slot.firstAvailability.start_time}-${slot.firstAvailability.court_number}`
+
+          return (
+            <AvailabilitySlot
+              key={key}
+              startTime={slot.startTime}
+              endTime={slot.endTime}
+              courtCount={slot.courtCount}
+              selected={slotKey === selectedKey}
+              onClick={() => setSelectedAvailability(slot.firstAvailability)}
+            />
+          )
+        })}
+      </div>
+    )
+  }
 
   if (loading) {
     return (
@@ -130,27 +168,10 @@ function CourtAvailabilityListComponent({
     return <div className="text-center text-muted-foreground py-8">{message}</div>
   }
 
-  const TimeGroup = ({ title, slots }: { title: string; slots: typeof morningSlots }) => {
-    if (slots.length === 0) return null
-    return (
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-        {slots.map(([key, slot]) => (
-          <AvailabilitySlot
-            key={key}
-            {...slot}
-            selected={key === selectedKey}
-            onClick={() => onSelect(key)}
-          />
-        ))}
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-8">
-      <TimeGroup title="Morning" slots={morningSlots} />
-      <TimeGroup title="Afternoon" slots={afternoonSlots} />
+      {renderTimeGroup('Morning', morningSlots)}
+      {renderTimeGroup('Afternoon', afternoonSlots)}
     </div>
   )
 }
