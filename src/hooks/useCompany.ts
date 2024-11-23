@@ -32,7 +32,6 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const { user } = useUser()
   const { handleCompanyCreated } = useOnboarding()
 
-  // Query by slug if provided, otherwise query by user's company_id
   const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
   const variables = slug ? { slug } : { id: user?.company_id }
   const skipQuery = slug ? !slug : !user?.company_id
@@ -44,85 +43,75 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   } = useQuery(queryToUse, {
     variables,
     skip: skipQuery,
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-only',
   })
 
-  const [createCompanyMutation, { loading: creating, error: createError }] = useMutation(
-    CREATE_COMPANY,
-    {
-      update(cache, { data }) {
-        const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
-        if (newCompany && user?.id) {
-          cache.modify({
-            fields: {
-              companiesCollection(existingCompanies = { edges: [] }) {
-                const newCompanyRef = cache.writeFragment({
-                  data: newCompany,
-                  fragment: gql`
-                    fragment NewCompany on companies {
-                      id
-                      name
-                      slug
-                    }
-                  `,
-                })
-                return {
-                  ...existingCompanies,
-                  edges: [...existingCompanies.edges, { node: newCompanyRef }],
-                }
-              },
+  const [createCompanyMutation, { loading: creating }] = useMutation(CREATE_COMPANY, {
+    update(cache, { data }) {
+      const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
+      if (newCompany && user?.id) {
+        cache.modify({
+          fields: {
+            companiesCollection(existingCompanies = { edges: [] }) {
+              const newCompanyRef = cache.writeFragment({
+                data: newCompany,
+                fragment: gql`
+                  fragment NewCompany on companies {
+                    id
+                    name
+                    slug
+                  }
+                `,
+              })
+              return {
+                ...existingCompanies,
+                edges: [...existingCompanies.edges, { node: newCompanyRef }],
+              }
             },
-          })
-        }
-      },
-    }
-  )
+          },
+        })
+      }
+    },
+  })
 
-  const [updateCompanyMutation, { loading: updating, error: updateError }] = useMutation(
-    UPDATE_COMPANY,
-    {
-      update(cache, { data }) {
-        const updatedCompany = data?.updatecompaniesCollection?.records?.[0]
-        if (updatedCompany) {
-          cache.modify({
-            fields: {
-              companiesCollection(existingCompanies = { edges: [] }) {
-                return {
-                  ...existingCompanies,
-                  edges: existingCompanies.edges.map((edge: any) => {
-                    if (edge.node.id === updatedCompany.id) {
-                      return { ...edge, node: updatedCompany }
-                    }
-                    return edge
-                  }),
-                }
-              },
+  const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
+
+  const createCompany = async (name: string) => {
+    try {
+      const slug = generateSlug(name)
+      const result = await createCompanyMutation({
+        variables: {
+          objects: [
+            {
+              name,
+              slug,
             },
-          })
-        }
-      },
-    }
-  )
+          ],
+        },
+      })
 
-  const company = companyData?.companiesCollection?.edges?.[0]?.node || null
+      const company = result.data?.insertIntocompaniesCollection?.records?.[0]
+      if (company && user?.id) {
+        await supabase.from('users').update({ company_id: company.id }).eq('id', user.id)
+        handleCompanyCreated()
+      }
+    } catch (err) {
+      console.error('Error in createCompany:', err)
+      throw err instanceof Error ? err : new Error('Failed to create company')
+    }
+  }
 
   const updateCompany = async (data: UpdateCompanyInput) => {
     if (!user?.company_id) throw new Error('No company found')
 
     try {
-      const { data: result } = await updateCompanyMutation({
+      const result = await updateCompanyMutation({
         variables: {
           id: user.company_id,
-          set: {
-            name: data.name,
-            slug: data.slug,
-            updated_at: new Date().toISOString(),
-          },
+          set: data,
         },
       })
 
-      if (!result?.updatecompaniesCollection?.records?.[0]) {
+      if (!result.data?.updatecompaniesCollection?.records?.[0]) {
         throw new Error('Failed to update company')
       }
     } catch (err) {
@@ -132,51 +121,12 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   }
 
   return {
-    company,
+    company: companyData?.companiesCollection?.edges[0]?.node ?? null,
     loading: queryLoading,
-    error: queryError
-      ? new Error(queryError.message)
-      : createError
-        ? new Error(createError.message)
-        : updateError
-          ? new Error(updateError.message)
-          : null,
+    error: queryError ?? null,
     creating,
     updating,
-    createCompany: async (name: string) => {
-      if (!user?.id) throw new Error('Authentication required')
-
-      try {
-        const { data } = await createCompanyMutation({
-          variables: {
-            objects: [
-              {
-                name,
-                slug: generateSlug(name),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              },
-            ],
-          },
-        })
-
-        const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
-        if (!newCompany?.id) throw new Error('Failed to create company')
-
-        await supabase
-          .from('users')
-          .update({
-            company_id: newCompany.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', user.id)
-
-        await handleCompanyCreated()
-      } catch (err) {
-        console.error('Error in createCompany:', err)
-        throw err instanceof Error ? err : new Error('Failed to create company')
-      }
-    },
+    createCompany,
     updateCompany,
   }
 }

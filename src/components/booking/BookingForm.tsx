@@ -1,30 +1,29 @@
 'use client'
 
 import { WeeklyCalendar } from './WeeklyCalendar'
-import { usePublicCompanyAvailabilities } from '@/hooks/useCourtAvailability'
+import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import type { Company } from '@/types/graphql'
 import dayjs from 'dayjs'
 import { Card } from '@/components/ui'
 import { CourtAvailabilityList } from './CourtAvailabilityList'
-import { useBookingStore } from '@/stores/useBookingStore'
+import { useState, useCallback } from 'react'
 
 interface BookingFormProps {
   company: Company
 }
 
 export function BookingForm({ company }: BookingFormProps) {
-  const { selectedDate, weekStartDate, setSelectedDate, setWeekStartDate } = useBookingStore()
+  const today = dayjs().startOf('day').toDate()
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
 
-  const {
-    company: companyData,
-    availabilities,
-    loading,
-    error,
-  } = usePublicCompanyAvailabilities(
-    company.slug,
+  const { courts, availabilities, loading, error } = useCompanyAvailabilities(
     dayjs(weekStartDate).startOf('day').toISOString(),
     dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
   )
+
+  const handleWeekChange = useCallback((date: Date) => setWeekStartDate(date), [])
+  const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), [])
 
   if (error) {
     return (
@@ -37,7 +36,7 @@ export function BookingForm({ company }: BookingFormProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">{companyData?.name || company.name}</h1>
+        <h1 className="text-3xl font-bold">{company.name}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Select a date to view available court times
         </p>
@@ -48,8 +47,8 @@ export function BookingForm({ company }: BookingFormProps) {
         <WeeklyCalendar
           startDate={weekStartDate}
           selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-          onWeekChange={setWeekStartDate}
+          onDateSelect={handleDateSelect}
+          onWeekChange={handleWeekChange}
         />
       </Card>
 

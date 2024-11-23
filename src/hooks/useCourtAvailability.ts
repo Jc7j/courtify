@@ -5,7 +5,6 @@ import {
   GET_COURT_AVAILABILITIES,
   GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
   GET_COMPANY_COURTS_AVAILABILITIES,
-  GET_PUBLIC_COMPANY_AVAILABILITIES,
 } from '@/gql/queries/court-availability'
 import {
   CREATE_COURT_AVAILABILITY,
@@ -17,8 +16,6 @@ import type {
   CourtAvailability,
   CourtAvailabilityConnection,
   AvailabilityStatus,
-  Company,
-  Courts,
 } from '@/types/graphql'
 import { useState } from 'react'
 import dayjs from 'dayjs'
@@ -81,38 +78,6 @@ interface UseCompanyAvailabilitiesReturn {
   availabilities: CourtAvailability[]
   loading: boolean
   error: Error | null
-}
-
-interface UsePublicCompanyAvailabilitiesReturn {
-  company: Company | null
-  courts: Courts[]
-  availabilities: CourtAvailability[]
-  loading: boolean
-  error: Error | null
-}
-
-interface PublicCompanyData {
-  companiesCollection: {
-    edges: Array<{
-      node: {
-        id: string
-        name: string
-        courtsCollection: {
-          edges: Array<{
-            node: {
-              court_number: number
-              name: string
-            }
-          }>
-        }
-        court_availabilitiesCollection: {
-          edges: Array<{
-            node: CourtAvailability
-          }>
-        }
-      }
-    }>
-  }
 }
 
 export function useCompanyAvailabilities(
@@ -377,42 +342,5 @@ export function useCourtAvailability({
     createAvailability,
     updateAvailability,
     deleteAvailability,
-  }
-}
-
-export function usePublicCompanyAvailabilities(
-  slug: string,
-  startTime: string,
-  endTime: string
-): UsePublicCompanyAvailabilitiesReturn {
-  const { data, loading, error } = useQuery<PublicCompanyData>(GET_PUBLIC_COMPANY_AVAILABILITIES, {
-    variables: {
-      slug,
-      start_time: startTime,
-      end_time: endTime,
-    },
-    fetchPolicy: 'network-only',
-    nextFetchPolicy: 'cache-first',
-  })
-
-  const companyData = data?.companiesCollection?.edges?.[0]?.node
-  const courts = companyData?.courtsCollection?.edges?.map((edge) => edge.node) || []
-  const availabilities =
-    companyData?.court_availabilitiesCollection?.edges?.map((edge) => edge.node) || []
-
-  return {
-    company: companyData
-      ? {
-          id: companyData.id,
-          name: companyData.name,
-          slug,
-          created_at: '',
-          updated_at: '',
-        }
-      : null,
-    courts,
-    availabilities,
-    loading,
-    error: error ? new Error(error.message) : null,
   }
 }

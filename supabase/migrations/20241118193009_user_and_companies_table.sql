@@ -58,6 +58,6 @@ CREATE POLICY companies_delete ON companies
         WHERE users.id = auth.uid()
     ));
 
-CREATE POLICY "companies_select_public" ON companies
-    FOR SELECT TO anon
-    USING (true);
+CREATE POLICY "Public can view companies"
+  ON companies FOR SELECT
+  USING (true);
