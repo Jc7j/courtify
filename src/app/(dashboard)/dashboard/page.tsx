@@ -59,30 +59,6 @@ function DashboardContent({
           </div>
         </div>
       </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="p-6 rounded-lg border bg-card">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Company ID</p>
-            <p className="text-2xl font-semibold">{company.id}</p>
-          </div>
-        </div>
-        <div className="p-6 rounded-lg border bg-card">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Created At</p>
-            <p className="text-2xl font-semibold">
-              {new Date(company.created_at).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        <div className="p-6 rounded-lg border bg-card">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Slug</p>
-            <p className="text-2xl font-semibold">{company.slug}</p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

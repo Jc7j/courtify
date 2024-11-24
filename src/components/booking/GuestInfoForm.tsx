@@ -91,9 +91,6 @@ export function GuestInfoForm({ defaultValues, onSubmit, loading }: GuestInfoFor
                 {dayjs(selectedAvailability.end_time).format('h:mm A')}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span>Court {selectedAvailability.court_number}</span>
-            </div>
           </div>
         </div>
       )}

@@ -2,25 +2,6 @@
 
 import { AppSidebar, SidebarProvider } from '@/components/ui'
 import { ReactNode, Suspense } from 'react'
-import { useUserStore } from '@/stores/useUserStore'
-import { useCompany } from '@/hooks/useCompany'
-import { redirect } from 'next/navigation'
-import { ROUTES } from '@/constants/routes'
-
-function CompanyGuard({ children }: { children: ReactNode }) {
-  const { isLoading: userLoading } = useUserStore()
-  const { company, loading: companyLoading } = useCompany()
-
-  if (userLoading || companyLoading) {
-    return null // Layout will show loading state
-  }
-
-  // if (!company) {
-  //   redirect(ROUTES.AUTH.SIGNUP)
-  // }
-
-  return <>{children}</>
-}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -29,9 +10,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <AppSidebar />
 
         <main className="flex-1 overflow-y-auto">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <CompanyGuard>{children}</CompanyGuard>
-          </Suspense>
+          <Suspense fallback={<DashboardSkeleton />}>{children}</Suspense>
         </main>
       </div>
     </SidebarProvider>

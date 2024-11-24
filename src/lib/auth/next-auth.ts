@@ -1,7 +1,24 @@
-import { type NextAuthOptions } from 'next-auth'
+import { type NextAuthOptions, Session } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { supabase } from '@/lib/supabase/client'
 import { refreshToken } from './token-manager'
+import type { JWT } from 'next-auth/jwt'
+import type { BaseUser } from '@/types/auth'
+
+interface CustomToken extends JWT {
+  user: BaseUser
+  supabaseAccessToken: string
+  supabaseRefreshToken: string
+  exp?: number
+  error?: string
+}
+
+interface CustomSession extends Session {
+  user: BaseUser
+  supabaseAccessToken: string
+  supabaseRefreshToken?: string
+  error?: string
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -37,50 +54,62 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }): Promise<CustomToken> {
+      // Initial sign in
       if (user) {
-        token.user = user
-        token.supabaseAccessToken = user.supabaseAccessToken
-        token.supabaseRefreshToken = user.supabaseRefreshToken
-        return token
+        return {
+          ...token,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            company_id: user.company_id,
+          },
+          supabaseAccessToken: user.supabaseAccessToken,
+          supabaseRefreshToken: user.supabaseRefreshToken,
+        }
       }
 
+      // Token refresh logic
       if (token.supabaseRefreshToken) {
-        const result = await refreshToken(token.supabaseRefreshToken as string)
+        // Check if token needs refresh (do it a bit before expiry)
+        const tokenExpiry = token.exp as number
+        const shouldRefresh = Math.floor(Date.now() / 1000) > (tokenExpiry ?? 0) - 60
 
-        if (result.error) {
-          token.error = result.error
-          return token
-        }
+        if (shouldRefresh || trigger === 'update') {
+          try {
+            const result = await refreshToken(token.supabaseRefreshToken)
 
-        if (result.access_token) {
-          token.supabaseAccessToken = result.access_token
-          token.supabaseRefreshToken = result.refresh_token ?? ''
+            if (result.error) {
+              console.error('Token refresh error:', result.error)
+              return { ...token, error: 'RefreshAccessTokenError' }
+            }
 
-          const { data: userData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', token.user.id)
-            .single()
-
-          if (userData) {
-            token.user = userData
+            // Update token with new values
+            return {
+              ...token,
+              supabaseAccessToken: result.access_token!,
+              supabaseRefreshToken: result.refresh_token!,
+              exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now
+              error: undefined,
+            }
+          } catch (error) {
+            console.error('Token refresh failed:', error)
+            return { ...token, error: 'RefreshAccessTokenError' }
           }
         }
       }
 
-      return token
+      return token as CustomToken
     },
-    async session({ session, token }) {
-      if (token.error) {
-        session.error = token.error
+    async session({ session, token }): Promise<CustomSession> {
+      return {
+        ...session,
+        user: token.user,
+        supabaseAccessToken: token.supabaseAccessToken,
+        supabaseRefreshToken: token.supabaseRefreshToken,
+        error: token.error,
       }
-
-      session.user = token.user
-      session.supabaseAccessToken = token.supabaseAccessToken
-      session.supabaseRefreshToken = token.supabaseRefreshToken
-
-      return session
     },
   },
   events: {

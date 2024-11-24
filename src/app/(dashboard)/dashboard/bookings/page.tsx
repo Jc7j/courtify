@@ -44,10 +44,10 @@ export default function BookingsPage() {
             <CalendarDays className="h-4 w-4" />
             <span>Calendar View</span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="space-x-2">
+          {/* <TabsTrigger value="history" className="space-x-2">
             <Clock className="h-4 w-4" />
             <span>Booking History</span>
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
