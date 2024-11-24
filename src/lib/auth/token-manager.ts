@@ -4,23 +4,26 @@ interface RefreshResult {
   access_token: string | null
   refresh_token: string | null
   error?: string
+  expires_at?: number
 }
 
 let refreshPromise: Promise<RefreshResult> | null = null
+let lastRefreshTime = 0
+const REFRESH_COOLDOWN = 1000 // Minimum time between refreshes
 
 export async function refreshToken(currentRefreshToken: string): Promise<RefreshResult> {
   if (!currentRefreshToken) {
     return { access_token: null, refresh_token: null, error: 'No refresh token provided' }
   }
 
-  // If there's already a refresh in progress, wait for it
-  if (refreshPromise) {
+  const now = Date.now()
+  if (now - lastRefreshTime < REFRESH_COOLDOWN && refreshPromise) {
     return refreshPromise
   }
 
+  lastRefreshTime = now
   refreshPromise = (async () => {
     try {
-      // Try to refresh the session using Supabase
       const { data, error } = await supabase.auth.refreshSession({
         refresh_token: currentRefreshToken,
       })
@@ -35,7 +38,6 @@ export async function refreshToken(currentRefreshToken: string): Promise<Refresh
         }
       }
 
-      // Set the new session in Supabase
       await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -44,6 +46,7 @@ export async function refreshToken(currentRefreshToken: string): Promise<Refresh
       return {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
       }
     } catch (error) {
       console.error('Unexpected refresh error:', error)
@@ -56,14 +59,14 @@ export async function refreshToken(currentRefreshToken: string): Promise<Refresh
     } finally {
       setTimeout(() => {
         refreshPromise = null
-      }, 1000)
+      }, REFRESH_COOLDOWN)
     }
   })()
 
   return refreshPromise
 }
 
-// Add a helper function to clear the token cache
 export function clearTokenCache() {
   refreshPromise = null
+  lastRefreshTime = 0
 }

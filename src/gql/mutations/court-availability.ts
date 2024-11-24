@@ -1,16 +1,6 @@
 import { gql } from '@apollo/client'
 
-export const COURT_AVAILABILITY_FIELDS = gql`
-  fragment CourtAvailabilityFields on court_availabilities {
-    company_id
-    court_number
-    start_time
-    end_time
-    status
-    created_at
-    updated_at
-  }
-`
+import { COURT_AVAILABILITY_FIELDS } from '../queries/court-availability'
 
 export const CREATE_COURT_AVAILABILITY = gql`
   ${COURT_AVAILABILITY_FIELDS}

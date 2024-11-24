@@ -4,9 +4,8 @@ import { SignUpForm } from '@/components/auth/SignUpForm'
 import { CreateCompanyStep } from '@/components/onboarding/CreateCompanyStep'
 import { Logo, Progress } from '@/components/ui'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
-import { useUser } from '@/providers/UserProvider'
+import { useUserStore } from '@/stores/useUserStore'
 import { OnboardingStep, useOnboarding } from '@/hooks/useOnboarding'
-import { Skeleton } from '@/components/ui/skeleton'
 
 const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
   signup: { number: 1, progress: 33 },
@@ -15,24 +14,8 @@ const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
 } as const
 
 export default function SignUpPage() {
-  const { user, loading } = useUser()
+  const { user } = useUserStore()
   const { step, handleStepChange } = useOnboarding()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="space-y-4 w-full max-w-md p-4">
-          <Skeleton className="h-8 w-32 mx-auto" />
-          <Skeleton className="h-4 w-48 mx-auto" />
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   function handleSignupSuccess() {
     handleStepChange('create-intro')

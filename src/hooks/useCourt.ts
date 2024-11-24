@@ -3,8 +3,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/gql/mutations/court'
 import { GET_COMPANY_COURTS, GET_COURT } from '@/gql/queries/court'
+import { useUserStore } from '@/stores/useUserStore'
 import type { Courts } from '@/types/graphql'
-import { useUser } from '@/providers/UserProvider'
 
 interface UseCourtReturn {
   court: Courts | null
@@ -23,7 +23,7 @@ interface UseCourtReturn {
 }
 
 export function useCourt(courtNumber?: number): UseCourtReturn {
-  const { user, loading: userLoading, isAuthenticated } = useUser()
+  const { user, isAuthenticated, isLoading } = useUserStore()
 
   const {
     data: courtData,
@@ -145,10 +145,10 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
 
   return {
     court: courtData?.courtsCollection?.edges?.[0]?.node || null,
-    courtLoading: userLoading || singleCourtLoading,
+    courtLoading: isLoading || singleCourtLoading,
     courtError: singleCourtError ? new Error(singleCourtError.message) : null,
     courts: courtsData?.courtsCollection?.edges?.map((edge: { node: Courts }) => edge.node) || [],
-    loading: userLoading || courtsLoading,
+    loading: isLoading || courtsLoading,
     error: courtsError ? new Error(courtsError.message) : null,
     createCourt,
     updateCourt,

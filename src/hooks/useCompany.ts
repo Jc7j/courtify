@@ -3,10 +3,10 @@
 import { useMutation, useQuery, gql } from '@apollo/client'
 import { CREATE_COMPANY, UPDATE_COMPANY } from '@/gql/mutations/company'
 import { GET_COMPANY_BY_SLUG, GET_COMPANY_BY_ID } from '@/gql/queries/company'
-import { useUser } from '@/providers/UserProvider'
 import { supabase } from '@/lib/supabase/client'
 import { generateSlug } from '@/lib/utils/generate-slug'
 import { useOnboarding } from './useOnboarding'
+import { useUserStore } from '@/stores/useUserStore'
 import type { Company } from '@/types/graphql'
 
 interface UseCompanyReturn {
@@ -29,7 +29,7 @@ interface UpdateCompanyInput {
 }
 
 export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
-  const { user } = useUser()
+  const { user } = useUserStore()
   const { handleCompanyCreated } = useOnboarding()
 
   const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
@@ -90,10 +90,21 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
       })
 
       const company = result.data?.insertIntocompaniesCollection?.records?.[0]
-      if (company && user?.id) {
-        await supabase.from('users').update({ company_id: company.id }).eq('id', user.id)
-        handleCompanyCreated()
+      if (!company || !user?.id) {
+        throw new Error('Failed to create company')
       }
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ company_id: company.id })
+        .eq('id', user.id)
+
+      if (updateError) throw updateError
+      useUserStore.getState().updateUser({ company_id: company.id })
+
+      await handleCompanyCreated()
+      console.log('user from company', useUserStore.getState().user)
+      return company
     } catch (err) {
       console.error('Error in createCompany:', err)
       throw err instanceof Error ? err : new Error('Failed to create company')

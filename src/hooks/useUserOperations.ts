@@ -1,7 +1,7 @@
 import { useSupabase } from '@/providers/SupabaseProvider'
-import { useUser } from '@/providers/UserProvider'
 import { useSession } from 'next-auth/react'
-import type { BaseUser } from '@/types/auth'
+import { useUserStore } from '@/stores/useUserStore'
+import type { Session } from 'next-auth'
 
 interface UpdateUserInput {
   name?: string
@@ -12,21 +12,17 @@ interface UpdateUserInput {
 export function useUserOperations() {
   const supabase = useSupabase()
   const { update } = useSession()
-  const { refetch } = useUser()
+  const { setSession } = useUserStore()
 
-  const updateProfile = async (input: UpdateUserInput): Promise<BaseUser> => {
+  const updateProfile = async (input: UpdateUserInput): Promise<Session['user']> => {
     const { name, email, currentEmail } = input
 
     try {
-      // If updating email, update auth first
       if (email && email !== currentEmail) {
         const { error: updateAuthError } = await supabase.auth.updateUser({ email })
-        if (updateAuthError) {
-          throw new Error(updateAuthError.message)
-        }
+        if (updateAuthError) throw updateAuthError
       }
 
-      // Update user profile in database
       const { data: userData, error: updateError } = await supabase
         .from('users')
         .update({
@@ -42,18 +38,22 @@ export function useUserOperations() {
         throw new Error(updateError?.message || 'Failed to update profile')
       }
 
-      // Sync NextAuth session and UserProvider
-      await update()
-      await refetch()
+      const newSession = await update()
+      if (!newSession) {
+        throw new Error('Failed to update session')
+      }
 
-      return userData
+      setSession(newSession)
+
+      if (!newSession.user) {
+        throw new Error('Session update did not return user data')
+      }
+
+      return newSession.user
     } catch (error) {
-      // Re-throw error to be handled by the component
       throw error instanceof Error ? error : new Error('An unexpected error occurred')
     }
   }
 
-  return {
-    updateProfile,
-  }
+  return { updateProfile }
 }

@@ -17,14 +17,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { useUser } from '@/providers/UserProvider'
+import { useUserStore } from '@/stores/useUserStore'
 import { signOut } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
 import cn from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
 
 export function UserMenu() {
-  const { user } = useUser()
+  const { user } = useUserStore()
   const { isMobile } = useSidebar()
   const router = useRouter()
 

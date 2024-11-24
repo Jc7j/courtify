@@ -6,6 +6,7 @@ import { ROUTES } from '@/constants/routes'
 import type { Operation } from '@apollo/client/core'
 import type { Observer } from 'zen-observable-ts'
 import { clearTokenCache } from '@/lib/auth/token-manager'
+import { useUserStore } from '@/stores/useUserStore'
 
 const cache = new InMemoryCache()
 
@@ -31,26 +32,25 @@ const errorLink = onError(({ graphQLErrors, operation, forward }) => {
       getSession()
         .then(async (session) => {
           if (!session || session.error) {
-            // Clear token cache before signing out
             clearTokenCache()
+            useUserStore.getState().reset()
             await signOut({ redirect: false })
             window.location.href = ROUTES.AUTH.SIGNIN
             observer.complete()
             return
           }
 
-          // Retry the failed operation
-          forward(operation).subscribe(observer)
+          useUserStore.getState().setSession(session)
 
-          // Retry all pending operations
+          forward(operation).subscribe(observer)
           pendingOperations.forEach(({ operation, observer }) => {
             forward(operation).subscribe(observer)
           })
         })
         .catch(async (error) => {
           console.error('Session refresh error:', error)
-          // Clear token cache and sign out on error
           clearTokenCache()
+          useUserStore.getState().reset()
           await signOut({ redirect: false })
           window.location.href = ROUTES.AUTH.SIGNIN
           observer.error(error)
@@ -64,20 +64,15 @@ const errorLink = onError(({ graphQLErrors, operation, forward }) => {
 })
 
 const authLink = setContext(async (_, { headers }) => {
-  try {
-    const session = await getSession()
-    return session?.supabaseAccessToken
-      ? {
-          headers: {
-            ...headers,
-            authorization: `Bearer ${session.supabaseAccessToken}`,
-          },
-        }
-      : { headers }
-  } catch (error) {
-    console.error('Auth link error:', error)
-    return { headers }
-  }
+  const session = useUserStore.getState().session
+  return session?.supabaseAccessToken
+    ? {
+        headers: {
+          ...headers,
+          authorization: `Bearer ${session.supabaseAccessToken}`,
+        },
+      }
+    : { headers }
 })
 
 const httpLink = createHttpLink({

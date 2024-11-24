@@ -1,15 +1,17 @@
 'use client'
 
-import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from 'next-auth/react'
 import { supabase } from '@/lib/supabase/client'
 import { getAuthErrorMessage, AUTH_ERRORS } from '@/lib/utils/auth-errors'
 import { clearApolloCache } from '@/lib/apollo/client'
 import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
+import { useUserStore } from '@/stores/useUserStore'
 
 export function useAuth() {
-  const { data: session, status } = useSession()
   const router = useRouter()
+  const { reset } = useUserStore()
+
   async function signIn(email: string, password: string) {
     try {
       const result = await nextAuthSignIn('credentials', {
@@ -18,12 +20,8 @@ export function useAuth() {
         redirect: false,
       })
 
-      if (result?.error) {
-        throw new Error(result.error)
-      }
-      if (result?.status === 200) {
-        router.replace(ROUTES.DASHBOARD.HOME)
-      }
+      if (result?.error) throw new Error(result.error)
+      if (result?.ok) router.replace(ROUTES.DASHBOARD.HOME)
     } catch (error) {
       throw new Error(getAuthErrorMessage(error))
     }
@@ -37,30 +35,26 @@ export function useAuth() {
         .eq('email', email)
         .single()
 
-      if (existingUser) {
-        throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
-      }
+      if (existingUser) throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { name },
-        },
+        options: { data: { name } },
       })
 
       if (authError) throw authError
 
-      const newUser = {
-        id: authData.user?.id,
-        email,
-        name,
-        active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
-      const { error: createError } = await supabase.from('users').insert([newUser])
+      const { error: createError } = await supabase.from('users').insert([
+        {
+          id: authData.user?.id,
+          email,
+          name,
+          active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
 
       if (createError) throw createError
 
@@ -73,18 +67,12 @@ export function useAuth() {
   async function signOut() {
     try {
       await clearApolloCache()
+      reset()
       return nextAuthSignOut({ redirect: false })
     } catch (error) {
       throw new Error(getAuthErrorMessage(error))
     }
   }
 
-  return {
-    user: session?.user,
-    loading: status === 'loading',
-    isAuthenticated: status === 'authenticated',
-    signIn,
-    signUp,
-    signOut,
-  }
+  return { signIn, signUp, signOut }
 }

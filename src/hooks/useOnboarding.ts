@@ -1,10 +1,10 @@
 'use client'
 
-import { useUser } from '@/providers/UserProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
+import { useUserStore } from '@/stores/useUserStore'
 
 export type OnboardingStep = 'signup' | 'create-intro' | 'create'
 
@@ -16,7 +16,7 @@ interface OnboardingState {
 }
 
 export function useOnboarding(): OnboardingState {
-  const { user, refetch: refetchUser, isAuthenticated } = useUser()
+  const { user, isAuthenticated } = useUserStore()
   const { update: updateSession } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,14 +36,21 @@ export function useOnboarding(): OnboardingState {
 
   const handleCompanyCreated = useCallback(async () => {
     try {
-      await refetchUser()
-      await updateSession()
+      // Force a session refresh to get fresh user data
+      const newSession = await updateSession({ force: true })
+      if (!newSession) {
+        throw new Error('Failed to update session')
+      }
+
+      // Update store with new session
+      useUserStore.getState().setSession(newSession)
+
       router.replace(ROUTES.DASHBOARD.HOME)
     } catch (err) {
       console.error('Error completing company creation:', err)
       throw err instanceof Error ? err : new Error('Failed to complete company setup')
     }
-  }, [refetchUser, updateSession, router])
+  }, [updateSession, router])
 
   return {
     isOnboarding: isAuthenticated && !user?.company_id,

@@ -3,64 +3,40 @@
 import { createContext, useContext, useEffect, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useSession } from 'next-auth/react'
+import { useUserStore } from '@/stores/useUserStore'
 
 const SupabaseContext = createContext(supabase)
 
 export function SupabaseProvider({ children }: { children: ReactNode }) {
-  const { data: session, update } = useSession()
+  const { data: session } = useSession()
+  const { setSession } = useUserStore()
 
   // Sync Supabase session with NextAuth session
   useEffect(() => {
-    async function syncSession() {
-      if (session?.supabaseAccessToken && session?.supabaseRefreshToken) {
-        try {
-          const { error } = await supabase.auth.setSession({
-            access_token: session.supabaseAccessToken,
-            refresh_token: session.supabaseRefreshToken,
-          })
-
-          if (error) {
-            console.error('Error syncing Supabase session:', error)
-            // Trigger NextAuth session update on error
-            await update()
-          }
-        } catch (error) {
-          console.error('Unexpected error syncing session:', error)
-          await update()
-        }
-      }
+    if (session?.supabaseAccessToken && session?.supabaseRefreshToken) {
+      supabase.auth.setSession({
+        access_token: session.supabaseAccessToken,
+        refresh_token: session.supabaseRefreshToken,
+      })
     }
-
-    syncSession()
-  }, [session?.supabaseAccessToken, session?.supabaseRefreshToken, update])
+  }, [session?.supabaseAccessToken, session?.supabaseRefreshToken])
 
   // Listen for Supabase auth changes
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_OUT') {
-        await update()
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        await update({
-          supabaseAccessToken: session.access_token,
-          supabaseRefreshToken: session.refresh_token,
-        })
+        setSession(null)
       }
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [update])
+  }, [setSession])
 
   return <SupabaseContext.Provider value={supabase}>{children}</SupabaseContext.Provider>
 }
 
-export const useSupabase = () => {
-  const context = useContext(SupabaseContext)
-  if (!context) {
-    throw new Error('useSupabase must be used within SupabaseProvider')
-  }
-  return context
-}
+export const useSupabase = () => useContext(SupabaseContext)

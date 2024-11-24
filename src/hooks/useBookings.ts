@@ -2,8 +2,9 @@
 
 import { useQuery } from '@apollo/client'
 import { GET_COMPLETED_BOOKINGS } from '@/gql/queries/booking'
-import { useUser } from '@/providers/UserProvider'
-import { Booking } from '@/types/graphql'
+import { useUserStore } from '@/stores/useUserStore'
+import type { Booking } from '@/types/graphql'
+
 interface UseBookingsReturn {
   completedBookings: Booking[]
   loading: boolean
@@ -12,11 +13,11 @@ interface UseBookingsReturn {
 }
 
 export function useBookings(): UseBookingsReturn {
-  const { user } = useUser()
+  const { user, isLoading } = useUserStore()
 
   const {
     data,
-    loading,
+    loading: queryLoading,
     error,
     refetch: refetchQuery,
   } = useQuery(GET_COMPLETED_BOOKINGS, {
@@ -38,7 +39,7 @@ export function useBookings(): UseBookingsReturn {
 
   return {
     completedBookings,
-    loading,
+    loading: isLoading || queryLoading,
     error: error ? new Error(error.message) : null,
     refetch,
   }
