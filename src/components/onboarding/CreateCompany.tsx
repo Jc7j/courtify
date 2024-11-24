@@ -81,7 +81,13 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             {...register('name')}
             aria-invalid={errors.name ? 'true' : 'false'}
           />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name ? (
+            <p className="text-sm text-destructive">{errors.name.message}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t worry, you can change this later in settings.
+            </p>
+          )}
         </div>
 
         <div className="flex gap-3 pt-4">
@@ -97,7 +103,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             </Button>
           )}
           <Button type="submit" className="flex-1" disabled={creating}>
-            {creating ? 'Creating...' : 'Create Company'}
+            Next
           </Button>
         </div>
       </form>

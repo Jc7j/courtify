@@ -6,16 +6,23 @@ import { Logo, Progress } from '@/components/ui'
 import { CreateCompany } from '@/components/onboarding/CreateCompany'
 import { useUserStore } from '@/stores/useUserStore'
 import { OnboardingStep, useOnboarding } from '@/hooks/useOnboarding'
+import { StripeSetup } from '@/components/onboarding/StripeSetup'
+import { InviteTeam } from '@/components/onboarding/InviteTeam'
+import { useRouter } from 'next/navigation'
+import { ROUTES } from '@/constants/routes'
 
 const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
-  signup: { number: 1, progress: 33 },
-  'create-intro': { number: 2, progress: 66 },
-  create: { number: 3, progress: 100 },
+  signup: { number: 1, progress: 20 },
+  'create-intro': { number: 2, progress: 40 },
+  create: { number: 3, progress: 60 },
+  'stripe-info': { number: 4, progress: 80 },
+  'invite-team': { number: 5, progress: 100 },
 } as const
 
 export default function SignUpPage() {
   const { user } = useUserStore()
   const { step, handleStepChange } = useOnboarding()
+  const router = useRouter()
 
   function handleSignupSuccess() {
     handleStepChange('create-intro')
@@ -31,6 +38,20 @@ export default function SignUpPage() {
         return <CreateCompanyStep userName={user?.name || ''} onNext={handleCreateIntro} />
       case 'create':
         return <CreateCompany onBack={() => handleStepChange('create-intro')} />
+      case 'stripe-info':
+        return (
+          <StripeSetup
+            onBack={() => handleStepChange('create')}
+            onSkip={() => handleStepChange('invite-team')}
+          />
+        )
+      case 'invite-team':
+        return (
+          <InviteTeam
+            onBack={() => handleStepChange('stripe-info')}
+            onComplete={() => router.replace(ROUTES.DASHBOARD.HOME)}
+          />
+        )
       default:
         return <SignUpForm onSuccess={handleSignupSuccess} />
     }
@@ -70,7 +91,7 @@ export default function SignUpPage() {
         <div className="mb-8 space-y-2 px-8">
           <Progress value={STEPS[step].progress} className="h-1" />
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Step {STEPS[step].number} of 3</span>
+            <span>Step {STEPS[step].number} of 4</span>
             <span>{STEPS[step].progress}% completed</span>
           </div>
         </div>
