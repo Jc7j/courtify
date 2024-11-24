@@ -14,7 +14,7 @@ function DashboardContent({
   company: NonNullable<ReturnType<typeof useCompany>['company']>
 }) {
   const { user } = useUserStore()
-  console.log('user', user)
+
   const [copied, setCopied] = useState(false)
 
   const handleCopySlug = async () => {
@@ -88,7 +88,15 @@ function DashboardContent({
 }
 
 export default function DashboardPage() {
-  const { company, error } = useCompany()
+  const { company, loading, error } = useCompany()
+
+  if (loading) {
+    return (
+      <div className="p-8 animate-fade-in">
+        <p>Loading company data...</p>
+      </div>
+    )
+  }
 
   if (error) {
     return (
@@ -98,6 +106,13 @@ export default function DashboardPage() {
     )
   }
 
-  // Company is guaranteed to exist due to CompanyGuard
-  return <DashboardContent company={company!} />
+  if (!company) {
+    return (
+      <div className="p-8 rounded-lg bg-destructive/10 text-destructive animate-fade-in">
+        <p className="font-medium">No company data found</p>
+      </div>
+    )
+  }
+
+  return <DashboardContent company={company} />
 }

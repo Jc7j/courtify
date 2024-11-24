@@ -36,14 +36,30 @@ export function useOnboarding(): OnboardingState {
 
   const handleCompanyCreated = useCallback(async () => {
     try {
-      // Force a session refresh to get fresh user data
-      const newSession = await updateSession({ force: true })
-      if (!newSession) {
-        throw new Error('Failed to update session')
+      const currentUser = useUserStore.getState().user
+      if (!currentUser?.company_id) {
+        throw new Error('Company ID not found after database update')
       }
 
-      // Update store with new session
+      const newSession = await updateSession()
+      if (!newSession) {
+        throw new Error('Failed to get new session')
+      }
+
+      if (!newSession.user?.company_id) {
+        // If missing, merge it from our store
+        newSession.user = {
+          ...newSession.user,
+          company_id: currentUser.company_id,
+        }
+      }
+
       useUserStore.getState().setSession(newSession)
+
+      const updatedUser = useUserStore.getState().user
+      if (!updatedUser?.company_id) {
+        throw new Error('Store update verification failed')
+      }
 
       router.replace(ROUTES.DASHBOARD.HOME)
     } catch (err) {

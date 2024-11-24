@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, gql } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { CREATE_COMPANY, UPDATE_COMPANY } from '@/gql/mutations/company'
 import { GET_COMPANY_BY_SLUG, GET_COMPANY_BY_ID } from '@/gql/queries/company'
 import { supabase } from '@/lib/supabase/client'
@@ -8,6 +8,7 @@ import { generateSlug } from '@/lib/utils/generate-slug'
 import { useOnboarding } from './useOnboarding'
 import { useUserStore } from '@/stores/useUserStore'
 import type { Company } from '@/types/graphql'
+import { useEffect } from 'react'
 
 interface UseCompanyReturn {
   company: Company | null
@@ -29,46 +30,38 @@ interface UpdateCompanyInput {
 }
 
 export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
-  const { user } = useUserStore()
+  const { user, isLoading: userLoading } = useUserStore()
   const { handleCompanyCreated } = useOnboarding()
 
   const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
   const variables = slug ? { slug } : { id: user?.company_id }
-  const skipQuery = slug ? !slug : !user?.company_id
+
+  const skipQuery = slug ? !slug : !user?.company_id || userLoading
 
   const {
     data: companyData,
     loading: queryLoading,
     error: queryError,
+    refetch,
   } = useQuery(queryToUse, {
     variables,
     skip: skipQuery,
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
   })
+
+  useEffect(() => {
+    if (!skipQuery && user?.company_id) {
+      refetch()
+    }
+  }, [user?.company_id, skipQuery, refetch])
 
   const [createCompanyMutation, { loading: creating }] = useMutation(CREATE_COMPANY, {
     update(cache, { data }) {
       const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
       if (newCompany && user?.id) {
-        cache.modify({
-          fields: {
-            companiesCollection(existingCompanies = { edges: [] }) {
-              const newCompanyRef = cache.writeFragment({
-                data: newCompany,
-                fragment: gql`
-                  fragment NewCompany on companies {
-                    id
-                    name
-                    slug
-                  }
-                `,
-              })
-              return {
-                ...existingCompanies,
-                edges: [...existingCompanies.edges, { node: newCompanyRef }],
-              }
-            },
-          },
-        })
+        cache.evict({ fieldName: 'companiesCollection' })
+        cache.gc()
       }
     },
   })
@@ -80,12 +73,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
         variables: {
-          objects: [
-            {
-              name,
-              slug,
-            },
-          ],
+          objects: [{ name, slug }],
         },
       })
 
@@ -100,10 +88,13 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
         .eq('id', user.id)
 
       if (updateError) throw updateError
+
       useUserStore.getState().updateUser({ company_id: company.id })
 
       await handleCompanyCreated()
-      console.log('user from company', useUserStore.getState().user)
+
+      await refetch()
+
       return company
     } catch (err) {
       console.error('Error in createCompany:', err)
@@ -133,7 +124,8 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   return {
     company: companyData?.companiesCollection?.edges[0]?.node ?? null,
-    loading: queryLoading,
+    // More accurate loading state
+    loading: userLoading || queryLoading || !user?.company_id,
     error: queryError ?? null,
     creating,
     updating,

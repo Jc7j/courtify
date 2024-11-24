@@ -9,11 +9,19 @@ interface RefreshResult {
 
 let refreshPromise: Promise<RefreshResult> | null = null
 let lastRefreshTime = 0
-const REFRESH_COOLDOWN = 1000 // Minimum time between refreshes
+const REFRESH_COOLDOWN = 1000 // 1 second cooldown
+const MAX_RETRIES = 3
 
-export async function refreshToken(currentRefreshToken: string): Promise<RefreshResult> {
+export async function refreshToken(
+  currentRefreshToken: string,
+  retryCount = 0
+): Promise<RefreshResult> {
   if (!currentRefreshToken) {
-    return { access_token: null, refresh_token: null, error: 'No refresh token provided' }
+    return {
+      access_token: null,
+      refresh_token: null,
+      error: 'No refresh token provided',
+    }
   }
 
   const now = Date.now()
@@ -28,16 +36,21 @@ export async function refreshToken(currentRefreshToken: string): Promise<Refresh
         refresh_token: currentRefreshToken,
       })
 
-      if (error || !data.session) {
-        console.error('Token refresh error:', error)
-        await supabase.auth.signOut()
-        return {
-          access_token: null,
-          refresh_token: null,
-          error: error?.message ?? 'Session refresh failed',
+      if (error) {
+        // Retry on network errors
+        if (error.message.includes('network') && retryCount < MAX_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)))
+          return refreshToken(currentRefreshToken, retryCount + 1)
         }
+
+        throw error
       }
 
+      if (!data.session) {
+        throw new Error('No session returned from refresh')
+      }
+
+      // Update Supabase session
       await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -49,8 +62,9 @@ export async function refreshToken(currentRefreshToken: string): Promise<Refresh
         expires_at: data.session.expires_at,
       }
     } catch (error) {
-      console.error('Unexpected refresh error:', error)
+      console.error('Token refresh error:', error)
       await supabase.auth.signOut()
+
       return {
         access_token: null,
         refresh_token: null,

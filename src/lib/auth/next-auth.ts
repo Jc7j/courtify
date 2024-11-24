@@ -45,19 +45,18 @@ export const authOptions: NextAuthOptions = {
         return token
       }
 
-      const tokenExpirationTime = token.exp as number
-      const currentTime = Math.floor(Date.now() / 1000)
-      const timeUntilExpiry = tokenExpirationTime - currentTime
+      if (token.supabaseRefreshToken) {
+        const result = await refreshToken(token.supabaseRefreshToken as string)
 
-      if (timeUntilExpiry < 300 && token.supabaseRefreshToken) {
-        const refreshResult = await refreshToken(token.supabaseRefreshToken)
-
-        if (refreshResult.error) {
-          token.error = refreshResult.error
+        if (result.error) {
+          token.error = result.error
           return token
         }
 
-        if (refreshResult.access_token && refreshResult.refresh_token) {
+        if (result.access_token) {
+          token.supabaseAccessToken = result.access_token
+          token.supabaseRefreshToken = result.refresh_token ?? ''
+
           const { data: userData } = await supabase
             .from('users')
             .select('*')
@@ -67,20 +66,20 @@ export const authOptions: NextAuthOptions = {
           if (userData) {
             token.user = userData
           }
-
-          token.supabaseAccessToken = refreshResult.access_token
-          token.supabaseRefreshToken = refreshResult.refresh_token
-          delete token.error
         }
       }
 
       return token
     },
     async session({ session, token }) {
+      if (token.error) {
+        session.error = token.error
+      }
+
       session.user = token.user
       session.supabaseAccessToken = token.supabaseAccessToken
       session.supabaseRefreshToken = token.supabaseRefreshToken
-      session.error = token.error
+
       return session
     },
   },
