@@ -1,12 +1,12 @@
 'use client'
 
-import { useUser } from '@/providers/UserProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
+import { useUserStore } from '@/stores/useUserStore'
 
-export type OnboardingStep = 'signup' | 'create-intro' | 'create'
+export type OnboardingStep = 'signup' | 'create-intro' | 'create' | 'stripe-info' | 'invite-team'
 
 interface OnboardingState {
   isOnboarding: boolean
@@ -16,7 +16,7 @@ interface OnboardingState {
 }
 
 export function useOnboarding(): OnboardingState {
-  const { user, refetch: refetchUser, isAuthenticated } = useUser()
+  const { user, isAuthenticated } = useUserStore()
   const { update: updateSession } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,14 +36,37 @@ export function useOnboarding(): OnboardingState {
 
   const handleCompanyCreated = useCallback(async () => {
     try {
-      await refetchUser()
-      await updateSession()
-      router.replace(ROUTES.DASHBOARD)
+      const currentUser = useUserStore.getState().user
+      if (!currentUser?.company_id) {
+        throw new Error('Company ID not found after database update')
+      }
+
+      const newSession = await updateSession()
+      if (!newSession) {
+        throw new Error('Failed to get new session')
+      }
+
+      if (!newSession.user?.company_id) {
+        // If missing, merge it from our store
+        newSession.user = {
+          ...newSession.user,
+          company_id: currentUser.company_id,
+        }
+      }
+
+      useUserStore.getState().setSession(newSession)
+
+      const updatedUser = useUserStore.getState().user
+      if (!updatedUser?.company_id) {
+        throw new Error('Store update verification failed')
+      }
+
+      handleStepChange('stripe-info')
     } catch (err) {
       console.error('Error completing company creation:', err)
       throw err instanceof Error ? err : new Error('Failed to complete company setup')
     }
-  }, [refetchUser, updateSession, router])
+  }, [updateSession, handleStepChange])
 
   return {
     isOnboarding: isAuthenticated && !user?.company_id,

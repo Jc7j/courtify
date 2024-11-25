@@ -1,7 +1,8 @@
 import { Metadata } from 'next'
+import { ReactNode } from 'react'
 
 interface BookingLayoutProps {
-  children: React.ReactNode
+  children: ReactNode
   params: {
     slug: string
   }

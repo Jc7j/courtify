@@ -1,10 +1,17 @@
 import { gql } from '@apollo/client'
-import { COURT_AVAILABILITY_FIELDS } from '../mutations/court-availability'
+
+export const COURT_AVAILABILITY_FIELDS = gql`
+  fragment CourtAvailabilityFields on court_availabilities {
+    start_time
+    end_time
+    court_number
+    status
+  }
+`
 
 export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
   ${COURT_AVAILABILITY_FIELDS}
   query GetCompanyAvailabilities($company_id: UUID!, $start_time: Datetime!, $end_time: Datetime!) {
-    # Get all courts for the company
     courtsCollection(
       filter: { company_id: { eq: $company_id } }
       orderBy: [{ court_number: AscNullsFirst }]
@@ -16,11 +23,10 @@ export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
         }
       }
     }
-    # Get all availabilities that overlap with the given time range
     court_availabilitiesCollection(
       filter: {
         company_id: { eq: $company_id }
-        and: [{ start_time: { gte: $start_time } }, { start_time: { lt: $end_time } }]
+        and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
       }
       orderBy: [{ court_number: AscNullsFirst }, { start_time: AscNullsFirst }]
     ) {

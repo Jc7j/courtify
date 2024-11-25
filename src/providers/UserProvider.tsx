@@ -1,56 +1,32 @@
 'use client'
-import { createContext, useContext, useMemo } from 'react'
-import { useQuery } from '@apollo/client'
+
+import { ReactNode, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { GET_USER } from '@/gql/queries/user'
-import type { BaseUser } from '@/types/auth'
+import { useUserStore } from '@/stores/useUserStore'
 
-interface UserContextType {
-  user: BaseUser | null
-  loading: boolean
-  error: Error | null
-  refetch: () => Promise<void>
-  isAuthenticated: boolean
-}
+export function UserProvider({ children }: { children: ReactNode }) {
+  const { data: session, status, update } = useSession()
+  const { setSession, setIsLoading, reset, user } = useUserStore()
 
-const UserContext = createContext<UserContextType | undefined>(undefined)
+  useEffect(() => {
+    if (status === 'loading') {
+      setIsLoading(true)
+    } else if (status === 'authenticated' && session) {
+      if (!user?.company_id && session.user?.company_id) {
+        setSession(session)
+      } else if (JSON.stringify(user) !== JSON.stringify(session.user)) {
+        setSession(session)
+      }
+    } else {
+      reset()
+    }
+  }, [session, status, setSession, setIsLoading, reset, user])
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status: authStatus } = useSession()
-  const isAuthLoading = authStatus === 'loading'
+  useEffect(() => {
+    if (user?.company_id && !session?.user?.company_id) {
+      update()
+    }
+  }, [user?.company_id, session?.user?.company_id, update])
 
-  const {
-    data,
-    loading: queryLoading,
-    error,
-    refetch,
-  } = useQuery(GET_USER, {
-    variables: { id: session?.user?.id },
-    skip: !session?.user?.id,
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
-  })
-
-  const value = useMemo(
-    () => ({
-      user: data?.usersCollection?.edges?.[0]?.node || null,
-      loading: isAuthLoading || queryLoading,
-      error: error ? new Error(error.message) : null,
-      refetch: async () => {
-        await refetch()
-      },
-      isAuthenticated: !!session?.user,
-    }),
-    [data?.usersCollection?.edges, isAuthLoading, queryLoading, error, refetch, session?.user]
-  )
-
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>
-}
-
-export function useUser() {
-  const context = useContext(UserContext)
-  if (!context) {
-    throw new Error('useUser must be used within UserProvider')
-  }
-  return context
+  return <>{children}</>
 }

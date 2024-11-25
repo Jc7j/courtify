@@ -5,10 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
+import { useUserStore } from '@/stores/useUserStore'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
-
 
 const createCompanySchema = z.object({
   name: z
@@ -44,14 +44,27 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
   })
 
   const onSubmit = async (data: CreateCompanyFormData) => {
-    console.log('Form submitted:', data)
-
     try {
       await createCompany(data.name, data.address, data.sports, data.businessinfo)
+
+      const updatedUser = useUserStore.getState().user
+      if (!updatedUser?.company_id) {
+        throw new Error('Company created but user state not updated')
+      }
+
       success('Company created successfully!')
     } catch (err) {
       console.error('Error creating company:', err)
-      error(err instanceof Error ? err.message : 'Failed to create company')
+
+      if (err instanceof Error) {
+        if (err.message.includes('user state not updated')) {
+          error('Company created but failed to update session. Please try refreshing.')
+        } else {
+          error(err.message)
+        }
+      } else {
+        error('Failed to create company')
+      }
     }
   }
 
@@ -77,7 +90,13 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             {...register('name')}
             aria-invalid={errors.name ? 'true' : 'false'}
           />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name ? (
+            <p className="text-sm text-destructive">{errors.name.message}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t worry, you can change this later in settings.
+            </p>
+          )}
         </div>
         {/* Sports */}
         <div className="space-y-2">
@@ -137,7 +156,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             </Button>
           )}
           <Button type="submit" className="flex-1" disabled={creating}>
-            Create Company
+            Next
           </Button>
         </div>
       </form>

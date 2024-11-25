@@ -41,3 +41,8 @@ CREATE POLICY courts_delete ON courts
         FROM users
         WHERE users.id = auth.uid()
     ));
+
+-- Add public read access for courts
+CREATE POLICY "Public can view courts" ON courts
+    FOR SELECT
+    USING (true);

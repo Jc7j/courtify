@@ -1,22 +1,69 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import { Skeleton } from '@/components/ui'
-import type { DatesSetArg } from '@fullcalendar/core'
+import type { DatesSetArg, EventClickArg, DateSelectArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
+import { CourtAvailability, Courts, AvailabilityStatus } from '@/types/graphql'
+import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
+import { toast } from 'sonner'
+import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 
-export function CompanyCourtCalendar() {
+interface CompanyCourtCalendarProps {
+  courts: Courts[]
+  availabilities: CourtAvailability[]
+  loading: boolean
+  onDateChange: (startDate: string, endDate: string) => void
+}
+
+export function CompanyCourtCalendar({
+  courts,
+  availabilities,
+  loading,
+  onDateChange,
+}: CompanyCourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const [selectedDate, setSelectedDate] = useState(dayjs())
+  const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
 
-  const { courts, availabilities, loading } = useCompanyAvailabilities(
-    selectedDate.startOf('day').toISOString(),
-    selectedDate.endOf('day').toISOString()
+  const { createAvailability } = useCourtAvailability({
+    startTime: selectedDate.startOf('day').toISOString(),
+    endTime: selectedDate.endOf('day').toISOString(),
+  })
+
+  const handleSelect = useCallback(
+    async (selectInfo: DateSelectArg) => {
+      const selectedStart = dayjs(selectInfo.startStr)
+      const now = dayjs()
+      const resourceId = parseInt(selectInfo.resource?.id || '0', 10)
+
+      if (!resourceId) {
+        toast.error('Please select a court')
+        return
+      }
+
+      if (selectedStart.isBefore(now.startOf('day'))) {
+        toast.error('Cannot create availability for past dates')
+        return
+      }
+
+      try {
+        await createAvailability({
+          courtNumber: resourceId,
+          startTime: selectInfo.startStr,
+          endTime: selectInfo.endStr,
+          status: AvailabilityStatus.Available,
+        })
+        toast.success('Availability created')
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to create availability')
+      }
+    },
+    [createAvailability]
   )
 
   if (loading) {
@@ -42,10 +89,21 @@ export function CompanyCourtCalendar() {
     courtNumber: court.court_number,
   }))
 
-  function handleDatesSet({ start }: DatesSetArg) {
+  function handleDatesSet({ start, end }: DatesSetArg) {
     const newDate = dayjs(start)
     if (!newDate.isSame(selectedDate, 'day')) {
       setSelectedDate(newDate)
+      onDateChange(start.toISOString(), end.toISOString())
+    }
+  }
+
+  function handleEventClick(clickInfo: EventClickArg) {
+    const availability = availabilities.find(
+      (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
+    )
+
+    if (availability) {
+      setSelectedAvailability(availability)
     }
   }
 
@@ -103,6 +161,13 @@ export function CompanyCourtCalendar() {
         expandRows
         stickyHeaderDates
         nowIndicator
+        selectable
+        selectMirror
+        selectConstraint={{
+          start: dayjs().startOf('day').toISOString(),
+          end: dayjs().add(6, 'months').toISOString(),
+        }}
+        selectOverlap={false}
         slotDuration="00:30:00"
         timeZone="local"
         resourceOrder="id"
@@ -116,12 +181,22 @@ export function CompanyCourtCalendar() {
           borderColor: 'transparent',
           textColor: 'hsl(var(--background))',
         }))}
+        select={handleSelect}
         slotLabelClassNames="text-muted-foreground text-xs sm:text-sm"
         resourceLabelClassNames="text-muted-foreground text-xs sm:text-sm font-medium"
         allDayClassNames="hidden"
         nowIndicatorClassNames="bg-primary"
         slotLaneClassNames="border-border"
+        eventClick={handleEventClick}
       />
+      {selectedAvailability && (
+        <CourtAvailabilityDialog
+          availability={selectedAvailability}
+          isOpen={!!selectedAvailability}
+          onClose={() => setSelectedAvailability(null)}
+          loading={false}
+        />
+      )}
     </div>
   )
 }

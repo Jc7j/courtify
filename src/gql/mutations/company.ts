@@ -1,26 +1,25 @@
 import { gql } from '@apollo/client'
 
-export const COMPANY_FIELDS = gql`
-  fragment CompanyFields on companies {
-    id
-    name
-    address
-    sports
-    businessinfo
-    slug
-    created_at
-    updated_at
-  }
-`
+import { COMPANY_FIELDS } from '../queries/company'
 
 export const CREATE_COMPANY = gql`
   ${COMPANY_FIELDS}
-  mutation CreateCompany($objects: [companies_insert_input!]!) {
+  mutation CreateCompany($objects: [companiesInsertInput!]!) {
     insertIntocompaniesCollection(objects: $objects) {
       records {
         ...CompanyFields
       }
-      affectedCount
+    }
+  }
+`
+
+export const UPDATE_COMPANY = gql`
+  ${COMPANY_FIELDS}
+  mutation UpdateCompany($id: UUID!, $set: companiesUpdateInput!) {
+    updatecompaniesCollection(filter: { id: { eq: $id } }, set: $set) {
+      records {
+        ...CompanyFields
+      }
     }
   }
 `

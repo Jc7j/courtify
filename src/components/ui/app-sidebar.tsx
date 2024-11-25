@@ -5,6 +5,9 @@ import { Logo } from '@/components/ui/logo'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import cn from '@/lib/utils/cn'
+import { useState } from 'react'
+import { CourtAvailabilityDialog } from '@/components/courts/CourtAvailabilityDialog'
+import dayjs from 'dayjs'
 
 import {
   Sidebar,
@@ -19,29 +22,31 @@ import {
 } from '@/components/ui/sidebar'
 import { Button } from './button'
 import { UserMenu } from '@/components/ui/user-menu'
+import { ROUTES } from '@/constants/routes'
+import { AvailabilityStatus } from '@/types/graphql'
 
 const items = [
   {
     title: 'Home',
-    url: '/dashboard',
+    url: ROUTES.DASHBOARD.HOME,
     icon: Home,
     exact: true,
   },
   {
     title: 'Courts',
-    url: '/dashboard/courts',
+    url: ROUTES.DASHBOARD.COURTS,
     icon: Calendar,
     exact: false,
   },
   {
     title: 'Bookings',
-    url: '#',
+    url: ROUTES.DASHBOARD.BOOKINGS,
     icon: ListChecks,
     exact: true,
   },
   {
     title: 'Settings',
-    url: '#',
+    url: ROUTES.DASHBOARD.SETTINGS,
     icon: Settings,
     exact: true,
   },
@@ -49,6 +54,7 @@ const items = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const [showNewAvailabilityDialog, setShowNewAvailabilityDialog] = useState(false)
 
   const isActivePath = (path: string, exact: boolean) => {
     if (exact) {
@@ -76,6 +82,7 @@ export function AppSidebar() {
             <SidebarMenu>
               <Button
                 variant="outline"
+                onClick={() => setShowNewAvailabilityDialog(true)}
                 className={cn(
                   'w-full mb-6',
                   'bg-sidebar-accent text-sidebar-accent-foreground',
@@ -136,6 +143,21 @@ export function AppSidebar() {
           </div>
         </div> */}
       </SidebarFooter>
+      <CourtAvailabilityDialog
+        isOpen={showNewAvailabilityDialog}
+        onClose={() => setShowNewAvailabilityDialog(false)}
+        availability={{
+          nodeId: '',
+          company_id: '',
+          court_number: 1, // Default to first court
+          start_time: dayjs().startOf('hour').add(1, 'hour').toISOString(),
+          end_time: dayjs().startOf('hour').add(2, 'hour').toISOString(),
+          status: AvailabilityStatus.Available,
+          created_at: '',
+          updated_at: '',
+        }}
+        isNew={true}
+      />
     </Sidebar>
   )
 }

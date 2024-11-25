@@ -1,0 +1,29 @@
+'use client'
+
+import { ProfileSection } from '@/components/account/ProfileSection'
+import { useUserStore } from '@/stores/useUserStore'
+import { Skeleton } from '@/components/ui'
+
+export default function AccountPage() {
+  const { user, isLoading } = useUserStore()
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) return null
+
+  return <ProfileSection user={user} />
+}

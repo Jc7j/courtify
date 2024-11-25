@@ -17,7 +17,6 @@ import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
 
 dayjs.extend(relativeTime)
 
@@ -35,7 +34,7 @@ export default function CourtsPage() {
   }
 
   function handleCourtClick(courtNumber: number) {
-    router.push(`${ROUTES.DASHBOARD}/courts/${courtNumber}`)
+    router.push(`${ROUTES.DASHBOARD.HOME}/courts/${courtNumber}`)
   }
 
   if (error) {
@@ -63,7 +62,12 @@ export default function CourtsPage() {
             Manage your courts and their availability schedules
           </p>
         </div>
-        <Button onClick={() => handleCreateCourt('New Court')} disabled={creating}>
+        <Button
+          variant="outline"
+          className="border-primary text-primary"
+          onClick={() => handleCreateCourt('New Court')}
+          disabled={creating}
+        >
           {creating ? (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
           ) : (
@@ -145,7 +149,6 @@ export default function CourtsPage() {
           </TableBody>
         </Table>
       </div>
-      <CompanyCourtCalendar />
     </div>
   )
 }

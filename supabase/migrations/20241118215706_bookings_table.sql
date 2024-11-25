@@ -92,3 +92,14 @@ CREATE POLICY bookings_update_company ON bookings
 
 CREATE POLICY bookings_insert_public ON bookings
     FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Public can view own bookings"
+  ON bookings FOR SELECT
+  USING (true);
+
+CREATE POLICY "Public can create bookings"
+  ON bookings FOR INSERT
+  WITH CHECK (
+    booking_status = 'pending' AND
+    payment_status = 'pending'
+  );

@@ -11,7 +11,7 @@ import {
   UPDATE_COURT_AVAILABILITY,
   DELETE_COURT_AVAILABILITY,
 } from '@/gql/mutations/court-availability'
-import { useUser } from '@/providers/UserProvider'
+import { useUserStore } from '@/stores/useUserStore'
 import type {
   CourtAvailability,
   CourtAvailabilityConnection,
@@ -84,7 +84,7 @@ export function useCompanyAvailabilities(
   startTime?: string,
   endTime?: string
 ): UseCompanyAvailabilitiesReturn {
-  const { user, loading: userLoading, isAuthenticated } = useUser()
+  const { user, isAuthenticated, isLoading } = useUserStore()
   const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
   const [courts, setCourts] = useState<Array<{ court_number: number; name: string }>>([])
 
@@ -118,16 +118,17 @@ export function useCompanyAvailabilities(
   return {
     courts,
     availabilities: localAvailabilities,
-    loading: userLoading || queryLoading,
+    loading: isLoading || queryLoading,
     error: queryError ? new Error(queryError.message) : null,
   }
 }
+
 export function useCourtAvailability({
   courtNumber,
   startTime,
   endTime,
 }: UseCourtAvailabilityProps = {}): UseCourtAvailabilityReturn {
-  const { user, loading: userLoading, isAuthenticated } = useUser()
+  const { user, isAuthenticated, isLoading } = useUserStore()
   const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
 
   const queryOptions = {
@@ -335,7 +336,7 @@ export function useCourtAvailability({
 
   return {
     availabilities: localAvailabilities,
-    loading: userLoading || queryLoading,
+    loading: isLoading || queryLoading,
     error: queryError ? new Error(queryError.message) : null,
     createAvailability,
     updateAvailability,

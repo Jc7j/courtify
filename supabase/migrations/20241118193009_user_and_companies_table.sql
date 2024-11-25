@@ -5,9 +5,22 @@ CREATE TABLE companies (
     sports TEXT NOT NULL,
     businessinfo TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
+    
+    -- Stripe Integration Fields
+    stripe_account_id TEXT UNIQUE,
+    stripe_account_enabled BOOLEAN DEFAULT false,
+    stripe_account_details JSONB,
+    stripe_webhook_secret TEXT,
+    stripe_payment_methods TEXT[] DEFAULT ARRAY['card']::TEXT[],
+    stripe_currency TEXT DEFAULT 'usd',
+    
+    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add comment to explain JSONB field
+COMMENT ON COLUMN companies.stripe_account_details IS 'Stores Stripe account metadata like business type, capabilities, etc.';
 
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 
@@ -61,6 +74,6 @@ CREATE POLICY companies_delete ON companies
         WHERE users.id = auth.uid()
     ));
 
-CREATE POLICY "companies_select_public" ON companies
-    FOR SELECT TO anon
-    USING (true);
+CREATE POLICY "Public can view companies"
+  ON companies FOR SELECT
+  USING (true);

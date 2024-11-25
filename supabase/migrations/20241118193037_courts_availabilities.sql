@@ -75,3 +75,10 @@ CREATE POLICY "court_availabilities_delete_auth" ON court_availabilities
 CREATE POLICY "court_availabilities_select_anon" ON court_availabilities
     FOR SELECT TO anon
     USING (status = 'available');
+
+CREATE POLICY "Public can view available courts"
+  ON court_availabilities FOR SELECT
+  USING (
+    status = 'available' AND
+    end_time > timezone('UTC', now())
+  );

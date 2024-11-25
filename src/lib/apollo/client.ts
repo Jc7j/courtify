@@ -1,150 +1,92 @@
-import { ApolloClient, createHttpLink, from, InMemoryCache, gql } from '@apollo/client'
+import { ApolloClient, createHttpLink, from, InMemoryCache, Observable } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
-import { getSession } from 'next-auth/react'
-import { loadErrorMessages, loadDevMessages } from '@apollo/client/dev'
+import { getSession, signOut } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
+import type { Operation } from '@apollo/client/core'
+import type { Observer } from 'zen-observable-ts'
+import { clearTokenCache } from '@/lib/auth/token-manager'
+import { useUserStore } from '@/stores/useUserStore'
 
-if (process.env.NODE_ENV !== 'production') {
-  loadDevMessages()
-  loadErrorMessages()
+const cache = new InMemoryCache()
+
+interface PendingOperation {
+  operation: Operation
+  observer: Observer<unknown>
 }
 
-const GRAPHQL_ENDPOINTS = {
-  local: 'http://localhost:54321/graphql/v1',
-  staging: 'https://staging.api.courtify.com/graphql/v1',
-  production: 'https://api.courtify.com/graphql/v1',
-} as const
+let pendingOperations: PendingOperation[] = []
+let isRefreshing = false
 
-const cache = new InMemoryCache({
-  typePolicies: {
-    Query: {
-      fields: {
-        courtsCollection: {
-          merge(existing, incoming, { args }) {
-            // For single court queries, replace the existing data
-            if (args?.first === 1) {
-              return incoming
-            }
+const errorLink = onError(({ graphQLErrors, operation, forward }) => {
+  if (graphQLErrors?.some((err) => err.message.includes('JWT expired'))) {
+    if (isRefreshing) {
+      return new Observable((observer) => {
+        pendingOperations.push({ operation, observer })
+      })
+    }
 
-            // For collection queries, merge the data
-            return {
-              ...incoming,
-              edges: incoming.edges,
-            }
-          },
-          read(existing, { args }) {
-            if (!existing) return undefined
+    isRefreshing = true
 
-            // For single court queries
-            if (args?.first === 1 && args?.filter) {
-              const court = existing.edges?.find(
-                (edge: any) =>
-                  edge.node.company_id === args.filter.company_id.eq &&
-                  edge.node.court_number === args.filter.court_number.eq
-              )
-              return court ? { edges: [court], __typename: 'CourtsConnection' } : undefined
-            }
+    return new Observable((observer) => {
+      getSession()
+        .then(async (session) => {
+          if (!session || session.error) {
+            clearTokenCache()
+            useUserStore.getState().reset()
+            await signOut({ redirect: false })
+            window.location.href = ROUTES.AUTH.SIGNIN
+            observer.complete()
+            return
+          }
 
-            // For company courts queries
-            if (args?.filter?.company_id) {
-              const companyId = args.filter.company_id.eq
-              const edges = existing.edges?.filter(
-                (edge: any) => edge.node.company_id === companyId
-              )
-              return edges?.length ? { edges, __typename: 'CourtsConnection' } : undefined
-            }
+          useUserStore.getState().setSession(session)
 
-            return existing
-          },
-        },
-      },
-    },
-    Courts: {
-      keyFields: ['company_id', 'court_number'], // Composite key for court records
-    },
-  },
-})
-
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (graphQLErrors) {
-    graphQLErrors.forEach(({ message, locations, path }) => {
-      console.error(
-        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}, Operation: ${operation.operationName}`
-      )
+          forward(operation).subscribe(observer)
+          pendingOperations.forEach(({ operation, observer }) => {
+            forward(operation).subscribe(observer)
+          })
+        })
+        .catch(async (error) => {
+          console.error('Session refresh error:', error)
+          clearTokenCache()
+          useUserStore.getState().reset()
+          await signOut({ redirect: false })
+          window.location.href = ROUTES.AUTH.SIGNIN
+          observer.error(error)
+        })
+        .finally(() => {
+          isRefreshing = false
+          pendingOperations = []
+        })
     })
   }
-  if (networkError) {
-    console.error(`[Network error]:`, networkError)
-  }
-  return forward(operation)
 })
 
 const authLink = setContext(async (_, { headers }) => {
-  try {
-    const session = await getSession()
-
-    if (session?.error === 'RefreshAccessTokenError') {
-      // Handle session refresh error
-      window.location.href = ROUTES.AUTH.SIGNIN
-      return { headers }
-    }
-
-    return {
-      headers: {
-        ...headers,
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        authorization: session?.supabaseAccessToken ? `Bearer ${session.supabaseAccessToken}` : '',
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-    }
-  } catch (error) {
-    console.error('Auth link error:', error)
-    return { headers }
-  }
+  const session = useUserStore.getState().session
+  return session?.supabaseAccessToken
+    ? {
+        headers: {
+          ...headers,
+          authorization: `Bearer ${session.supabaseAccessToken}`,
+        },
+      }
+    : { headers }
 })
 
 const httpLink = createHttpLink({
-  uri:
-    process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT ||
-    GRAPHQL_ENDPOINTS[
-      (process.env.NEXT_PUBLIC_APP_ENV as keyof typeof GRAPHQL_ENDPOINTS) || 'local'
-    ],
-  credentials: 'same-origin',
+  uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
 })
-
-const defaultOptions = {
-  watchQuery: {
-    fetchPolicy: 'cache-first' as const,
-    nextFetchPolicy: 'cache-and-network' as const,
-    errorPolicy: 'ignore' as const,
-  },
-  query: {
-    fetchPolicy: 'cache-first' as const,
-    nextFetchPolicy: 'cache-and-network' as const,
-    errorPolicy: 'all' as const,
-  },
-  mutate: {
-    errorPolicy: 'all' as const,
-  },
-}
 
 export const apolloClient = new ApolloClient({
   link: from([errorLink, authLink, httpLink]),
   cache,
-  defaultOptions,
+  defaultOptions: {
+    watchQuery: { fetchPolicy: 'network-only' },
+    query: { fetchPolicy: 'network-only' },
+    mutate: { fetchPolicy: 'no-cache' },
+  },
 })
 
-export function clearApolloCache() {
-  return apolloClient.clearStore()
-}
-
-export function createApolloClient() {
-  return new ApolloClient({
-    ssrMode: typeof window === 'undefined',
-    link: from([errorLink, authLink, httpLink]),
-    cache: new InMemoryCache(),
-    defaultOptions,
-  })
-}
+export const clearApolloCache = () => apolloClient.clearStore()

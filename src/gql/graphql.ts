@@ -187,6 +187,8 @@ export type IntListFilter = {
 /** The root type for creating and mutating data */
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Deletes zero or more records from the `bookings` collection */
+  deleteFrombookingsCollection: BookingsDeleteResponse;
   /** Deletes zero or more records from the `companies` collection */
   deleteFromcompaniesCollection: CompaniesDeleteResponse;
   /** Deletes zero or more records from the `court_availabilities` collection */
@@ -195,6 +197,8 @@ export type Mutation = {
   deleteFromcourtsCollection: CourtsDeleteResponse;
   /** Deletes zero or more records from the `users` collection */
   deleteFromusersCollection: UsersDeleteResponse;
+  /** Adds one or more `bookings` records to the collection */
+  insertIntobookingsCollection?: Maybe<BookingsInsertResponse>;
   /** Adds one or more `companies` records to the collection */
   insertIntocompaniesCollection?: Maybe<CompaniesInsertResponse>;
   /** Adds one or more `court_availabilities` records to the collection */
@@ -203,6 +207,9 @@ export type Mutation = {
   insertIntocourtsCollection?: Maybe<CourtsInsertResponse>;
   /** Adds one or more `users` records to the collection */
   insertIntousersCollection?: Maybe<UsersInsertResponse>;
+  update_past_availabilities?: Maybe<Scalars['Opaque']['output']>;
+  /** Updates zero or more records in the `bookings` collection */
+  updatebookingsCollection: BookingsUpdateResponse;
   /** Updates zero or more records in the `companies` collection */
   updatecompaniesCollection: CompaniesUpdateResponse;
   /** Updates zero or more records in the `court_availabilities` collection */
@@ -211,6 +218,13 @@ export type Mutation = {
   updatecourtsCollection: CourtsUpdateResponse;
   /** Updates zero or more records in the `users` collection */
   updateusersCollection: UsersUpdateResponse;
+};
+
+
+/** The root type for creating and mutating data */
+export type MutationDeleteFrombookingsCollectionArgs = {
+  atMost?: Scalars['Int']['input'];
+  filter?: InputMaybe<BookingsFilter>;
 };
 
 
@@ -243,6 +257,12 @@ export type MutationDeleteFromusersCollectionArgs = {
 
 
 /** The root type for creating and mutating data */
+export type MutationInsertIntobookingsCollectionArgs = {
+  objects: Array<BookingsInsertInput>;
+};
+
+
+/** The root type for creating and mutating data */
 export type MutationInsertIntocompaniesCollectionArgs = {
   objects: Array<CompaniesInsertInput>;
 };
@@ -263,6 +283,14 @@ export type MutationInsertIntocourtsCollectionArgs = {
 /** The root type for creating and mutating data */
 export type MutationInsertIntousersCollectionArgs = {
   objects: Array<UsersInsertInput>;
+};
+
+
+/** The root type for creating and mutating data */
+export type MutationUpdatebookingsCollectionArgs = {
+  atMost?: Scalars['Int']['input'];
+  filter?: InputMaybe<BookingsFilter>;
+  set: BookingsUpdateInput;
 };
 
 
@@ -331,6 +359,8 @@ export type PageInfo = {
 /** The root type for querying data */
 export type Query = {
   __typename?: 'Query';
+  /** A pagable collection of type `bookings` */
+  bookingsCollection?: Maybe<BookingsConnection>;
   /** A pagable collection of type `companies` */
   companiesCollection?: Maybe<CompaniesConnection>;
   /** A pagable collection of type `court_availabilities` */
@@ -341,6 +371,18 @@ export type Query = {
   node?: Maybe<Node>;
   /** A pagable collection of type `users` */
   usersCollection?: Maybe<UsersConnection>;
+};
+
+
+/** The root type for querying data */
+export type QueryBookingsCollectionArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  filter?: InputMaybe<BookingsFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<BookingsOrderBy>>;
 };
 
 
@@ -475,6 +517,182 @@ export type Availability_StatusFilter = {
   neq?: InputMaybe<Availability_Status>;
 };
 
+export enum Booking_Status {
+  Cancelled = 'cancelled',
+  Completed = 'completed',
+  Confirmed = 'confirmed',
+  NoShow = 'no_show',
+  Pending = 'pending'
+}
+
+/** Boolean expression comparing fields on type "booking_status" */
+export type Booking_StatusFilter = {
+  eq?: InputMaybe<Booking_Status>;
+  in?: InputMaybe<Array<Booking_Status>>;
+  is?: InputMaybe<FilterIs>;
+  neq?: InputMaybe<Booking_Status>;
+};
+
+export type Bookings = Node & {
+  __typename?: 'bookings';
+  amount_paid?: Maybe<Scalars['Int']['output']>;
+  amount_total: Scalars['Int']['output'];
+  booking_info?: Maybe<Scalars['JSON']['output']>;
+  booking_status: Booking_Status;
+  cancelled_at?: Maybe<Scalars['Datetime']['output']>;
+  company_id: Scalars['UUID']['output'];
+  court_availabilities: Court_Availabilities;
+  court_number: Scalars['Int']['output'];
+  created_at: Scalars['Datetime']['output'];
+  currency: Scalars['String']['output'];
+  customer_email: Scalars['String']['output'];
+  customer_name: Scalars['String']['output'];
+  customer_phone?: Maybe<Scalars['String']['output']>;
+  id: Scalars['UUID']['output'];
+  /** Globally Unique Record Identifier */
+  nodeId: Scalars['ID']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  payment_status: Payment_Status;
+  start_time: Scalars['Datetime']['output'];
+  stripe_customer_id?: Maybe<Scalars['String']['output']>;
+  stripe_payment_intent_id?: Maybe<Scalars['String']['output']>;
+  stripe_session_id?: Maybe<Scalars['String']['output']>;
+  updated_at: Scalars['Datetime']['output'];
+};
+
+export type BookingsConnection = {
+  __typename?: 'bookingsConnection';
+  edges: Array<BookingsEdge>;
+  pageInfo: PageInfo;
+};
+
+export type BookingsDeleteResponse = {
+  __typename?: 'bookingsDeleteResponse';
+  /** Count of the records impacted by the mutation */
+  affectedCount: Scalars['Int']['output'];
+  /** Array of records impacted by the mutation */
+  records: Array<Bookings>;
+};
+
+export type BookingsEdge = {
+  __typename?: 'bookingsEdge';
+  cursor: Scalars['String']['output'];
+  node: Bookings;
+};
+
+export type BookingsFilter = {
+  amount_paid?: InputMaybe<IntFilter>;
+  amount_total?: InputMaybe<IntFilter>;
+  /** Returns true only if all its inner filters are true, otherwise returns false */
+  and?: InputMaybe<Array<BookingsFilter>>;
+  booking_status?: InputMaybe<Booking_StatusFilter>;
+  cancelled_at?: InputMaybe<DatetimeFilter>;
+  company_id?: InputMaybe<UuidFilter>;
+  court_number?: InputMaybe<IntFilter>;
+  created_at?: InputMaybe<DatetimeFilter>;
+  currency?: InputMaybe<StringFilter>;
+  customer_email?: InputMaybe<StringFilter>;
+  customer_name?: InputMaybe<StringFilter>;
+  customer_phone?: InputMaybe<StringFilter>;
+  id?: InputMaybe<UuidFilter>;
+  nodeId?: InputMaybe<IdFilter>;
+  /** Negates a filter */
+  not?: InputMaybe<BookingsFilter>;
+  notes?: InputMaybe<StringFilter>;
+  /** Returns true if at least one of its inner filters is true, otherwise returns false */
+  or?: InputMaybe<Array<BookingsFilter>>;
+  payment_status?: InputMaybe<Payment_StatusFilter>;
+  start_time?: InputMaybe<DatetimeFilter>;
+  stripe_customer_id?: InputMaybe<StringFilter>;
+  stripe_payment_intent_id?: InputMaybe<StringFilter>;
+  stripe_session_id?: InputMaybe<StringFilter>;
+  updated_at?: InputMaybe<DatetimeFilter>;
+};
+
+export type BookingsInsertInput = {
+  amount_paid?: InputMaybe<Scalars['Int']['input']>;
+  amount_total?: InputMaybe<Scalars['Int']['input']>;
+  booking_info?: InputMaybe<Scalars['JSON']['input']>;
+  booking_status?: InputMaybe<Booking_Status>;
+  cancelled_at?: InputMaybe<Scalars['Datetime']['input']>;
+  company_id?: InputMaybe<Scalars['UUID']['input']>;
+  court_number?: InputMaybe<Scalars['Int']['input']>;
+  created_at?: InputMaybe<Scalars['Datetime']['input']>;
+  currency?: InputMaybe<Scalars['String']['input']>;
+  customer_email?: InputMaybe<Scalars['String']['input']>;
+  customer_name?: InputMaybe<Scalars['String']['input']>;
+  customer_phone?: InputMaybe<Scalars['String']['input']>;
+  id?: InputMaybe<Scalars['UUID']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  payment_status?: InputMaybe<Payment_Status>;
+  start_time?: InputMaybe<Scalars['Datetime']['input']>;
+  stripe_customer_id?: InputMaybe<Scalars['String']['input']>;
+  stripe_payment_intent_id?: InputMaybe<Scalars['String']['input']>;
+  stripe_session_id?: InputMaybe<Scalars['String']['input']>;
+  updated_at?: InputMaybe<Scalars['Datetime']['input']>;
+};
+
+export type BookingsInsertResponse = {
+  __typename?: 'bookingsInsertResponse';
+  /** Count of the records impacted by the mutation */
+  affectedCount: Scalars['Int']['output'];
+  /** Array of records impacted by the mutation */
+  records: Array<Bookings>;
+};
+
+export type BookingsOrderBy = {
+  amount_paid?: InputMaybe<OrderByDirection>;
+  amount_total?: InputMaybe<OrderByDirection>;
+  booking_status?: InputMaybe<OrderByDirection>;
+  cancelled_at?: InputMaybe<OrderByDirection>;
+  company_id?: InputMaybe<OrderByDirection>;
+  court_number?: InputMaybe<OrderByDirection>;
+  created_at?: InputMaybe<OrderByDirection>;
+  currency?: InputMaybe<OrderByDirection>;
+  customer_email?: InputMaybe<OrderByDirection>;
+  customer_name?: InputMaybe<OrderByDirection>;
+  customer_phone?: InputMaybe<OrderByDirection>;
+  id?: InputMaybe<OrderByDirection>;
+  notes?: InputMaybe<OrderByDirection>;
+  payment_status?: InputMaybe<OrderByDirection>;
+  start_time?: InputMaybe<OrderByDirection>;
+  stripe_customer_id?: InputMaybe<OrderByDirection>;
+  stripe_payment_intent_id?: InputMaybe<OrderByDirection>;
+  stripe_session_id?: InputMaybe<OrderByDirection>;
+  updated_at?: InputMaybe<OrderByDirection>;
+};
+
+export type BookingsUpdateInput = {
+  amount_paid?: InputMaybe<Scalars['Int']['input']>;
+  amount_total?: InputMaybe<Scalars['Int']['input']>;
+  booking_info?: InputMaybe<Scalars['JSON']['input']>;
+  booking_status?: InputMaybe<Booking_Status>;
+  cancelled_at?: InputMaybe<Scalars['Datetime']['input']>;
+  company_id?: InputMaybe<Scalars['UUID']['input']>;
+  court_number?: InputMaybe<Scalars['Int']['input']>;
+  created_at?: InputMaybe<Scalars['Datetime']['input']>;
+  currency?: InputMaybe<Scalars['String']['input']>;
+  customer_email?: InputMaybe<Scalars['String']['input']>;
+  customer_name?: InputMaybe<Scalars['String']['input']>;
+  customer_phone?: InputMaybe<Scalars['String']['input']>;
+  id?: InputMaybe<Scalars['UUID']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  payment_status?: InputMaybe<Payment_Status>;
+  start_time?: InputMaybe<Scalars['Datetime']['input']>;
+  stripe_customer_id?: InputMaybe<Scalars['String']['input']>;
+  stripe_payment_intent_id?: InputMaybe<Scalars['String']['input']>;
+  stripe_session_id?: InputMaybe<Scalars['String']['input']>;
+  updated_at?: InputMaybe<Scalars['Datetime']['input']>;
+};
+
+export type BookingsUpdateResponse = {
+  __typename?: 'bookingsUpdateResponse';
+  /** Count of the records impacted by the mutation */
+  affectedCount: Scalars['Int']['output'];
+  /** Array of records impacted by the mutation */
+  records: Array<Bookings>;
+};
+
 export type Companies = Node & {
   __typename?: 'companies';
   court_availabilitiesCollection?: Maybe<Court_AvailabilitiesConnection>;
@@ -599,6 +817,7 @@ export type CompaniesUpdateResponse = {
 
 export type Court_Availabilities = Node & {
   __typename?: 'court_availabilities';
+  bookingsCollection: BookingsConnection;
   companies: Companies;
   company_id: Scalars['UUID']['output'];
   court_number: Scalars['Int']['output'];
@@ -610,6 +829,17 @@ export type Court_Availabilities = Node & {
   start_time: Scalars['Datetime']['output'];
   status: Availability_Status;
   updated_at: Scalars['Datetime']['output'];
+};
+
+
+export type Court_AvailabilitiesBookingsCollectionArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  filter?: InputMaybe<BookingsFilter>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<BookingsOrderBy>>;
 };
 
 export type Court_AvailabilitiesConnection = {
@@ -792,6 +1022,21 @@ export type CourtsUpdateResponse = {
   affectedCount: Scalars['Int']['output'];
   /** Array of records impacted by the mutation */
   records: Array<Courts>;
+};
+
+export enum Payment_Status {
+  Failed = 'failed',
+  Paid = 'paid',
+  Pending = 'pending',
+  Refunded = 'refunded'
+}
+
+/** Boolean expression comparing fields on type "payment_status" */
+export type Payment_StatusFilter = {
+  eq?: InputMaybe<Payment_Status>;
+  in?: InputMaybe<Array<Payment_Status>>;
+  is?: InputMaybe<FilterIs>;
+  neq?: InputMaybe<Payment_Status>;
 };
 
 export type Users = Node & {
