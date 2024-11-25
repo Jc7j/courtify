@@ -16,10 +16,14 @@ interface UseCompanyReturn {
   error: Error | null
   creating: boolean
   updating: boolean
-  createCompany: (name: string) => Promise<void>
+  createCompany: (
+    name: string,
+    address: string,
+    sports: string,
+    businessinfo: string
+  ) => Promise<void>
   updateCompany: (data: UpdateCompanyInput) => Promise<void>
 }
-
 interface UseCompanyProps {
   slug?: string
 }
@@ -68,12 +72,28 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
 
-  const createCompany = async (name: string) => {
+  const createCompany = async (
+    name: string,
+    address: string,
+    sports: string,
+    businessinfo: string
+  ) => {
     try {
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
         variables: {
           objects: [{ name, slug }],
+          objects: [
+            {
+              name,
+              address,
+              sports,
+              businessinfo,
+              slug: generateSlug(name),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ],
         },
       })
 

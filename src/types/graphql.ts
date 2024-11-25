@@ -19,6 +19,9 @@ export interface User {
 export interface Company {
   id: string
   name: string
+  address: string
+  sports: string
+  businessinfo: string
   slug: string
   stripe_account_id?: string | null
   stripe_account_enabled: boolean
