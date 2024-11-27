@@ -68,7 +68,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
 
-  const createCompany = async (name: string) => {
+  async function createCompany(name: string) {
     try {
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
@@ -102,7 +102,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     }
   }
 
-  const updateCompany = async (data: UpdateCompanyInput) => {
+  async function updateCompany(data: UpdateCompanyInput) {
     if (!user?.company_id) throw new Error('No company found')
 
     try {

@@ -92,7 +92,7 @@ export function SessionDebug() {
     if (!expiresAt) return 'Not set'
     return new Date(expiresAt * 1000).toLocaleString()
   }
-
+  console.log('SessionDebug session', session)
   return (
     <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded-lg text-sm space-y-2 max-w-md overflow-auto max-h-[80vh]">
       <div className="font-bold border-b pb-1">NextAuth Session</div>

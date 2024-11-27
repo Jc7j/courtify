@@ -34,7 +34,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
     },
   })
 
-  const onSubmit = async (data: CreateCompanyFormData) => {
+  async function onSubmit(data: CreateCompanyFormData) {
     try {
       await createCompany(data.name)
 

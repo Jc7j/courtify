@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
 import { useUserStore } from '@/stores/useUserStore'
 
-export type OnboardingStep = 'signup' | 'create-intro' | 'create' | 'stripe-info' | 'invite-team'
+export type OnboardingStep = 'signup' | 'create-intro' | 'create' | 'invite-team'
 
 interface OnboardingState {
   isOnboarding: boolean
@@ -61,7 +61,7 @@ export function useOnboarding(): OnboardingState {
         throw new Error('Store update verification failed')
       }
 
-      handleStepChange('stripe-info')
+      handleStepChange('invite-team')
     } catch (err) {
       console.error('Error completing company creation:', err)
       throw err instanceof Error ? err : new Error('Failed to complete company setup')

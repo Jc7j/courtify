@@ -44,14 +44,14 @@ export function CompanyProfileCard({ company, loading }: CompanyProfileCardProps
     }
   }, [company])
 
-  const handleChange = (field: keyof CompanyForm, value: string) => {
+  function handleChange(field: keyof CompanyForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
     if (!isDirty && value !== (company?.[field] || '')) {
       setIsDirty(true)
     }
   }
 
-  const handleCancel = () => {
+  function handleCancel() {
     if (company) {
       setForm({
         name: company.name || '',
@@ -61,7 +61,7 @@ export function CompanyProfileCard({ company, loading }: CompanyProfileCardProps
     }
   }
 
-  const handleSave = async () => {
+  async function handleSave() {
     if (!isDirty) return
 
     try {

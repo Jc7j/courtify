@@ -45,14 +45,14 @@ export function ProfileSection({ user }: ProfileSectionProps) {
     }
   }, [user])
 
-  const handleChange = (field: keyof ProfileForm, value: string) => {
+  function handleChange(field: keyof ProfileForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
     if (!isDirty && value !== (user?.[field] || '')) {
       setIsDirty(true)
     }
   }
 
-  const handleCancel = () => {
+  function handleCancel() {
     if (user) {
       setForm({
         name: user.name || '',
@@ -62,7 +62,7 @@ export function ProfileSection({ user }: ProfileSectionProps) {
     }
   }
 
-  const handleSave = async () => {
+  async function handleSave() {
     if (!user?.email || !isDirty) return
 
     try {

@@ -12,23 +12,23 @@ interface InviteTeamProps {
 export function InviteTeam({ onBack, onComplete }: InviteTeamProps) {
   const [emails, setEmails] = useState<string[]>(['', '', ''])
 
-  const handleEmailChange = (index: number, value: string) => {
+  function handleEmailChange(index: number, value: string) {
     const newEmails = [...emails]
     newEmails[index] = value
     setEmails(newEmails)
   }
 
-  const addEmailField = () => {
+  function addEmailField() {
     setEmails([...emails, ''])
   }
 
-  const removeEmailField = (index: number) => {
+  function removeEmailField(index: number) {
     if (emails.length <= 3) return // Keep minimum 3 fields
     const newEmails = emails.filter((_, i) => i !== index)
     setEmails(newEmails)
   }
 
-  const handleSubmit = async () => {
+  async function handleSubmit() {
     const validEmails = emails.filter((email) => email.trim() !== '')
 
     if (validEmails.length === 0) {

@@ -69,7 +69,7 @@ export function CourtAvailabilityDialog({
   //   }
   // }
 
-  const handleTimeChange = async () => {
+  async function handleTimeChange() {
     try {
       setIsUpdating(true)
       const originalDate = dayjs(availability.start_time).format('YYYY-MM-DD')
@@ -102,7 +102,7 @@ export function CourtAvailabilityDialog({
     }
   }
 
-  const handleDelete = async () => {
+  async function handleDelete() {
     try {
       setIsUpdating(true)
       await deleteAvailability({
@@ -118,7 +118,7 @@ export function CourtAvailabilityDialog({
     }
   }
 
-  const handleTimeInputChange = (type: 'start' | 'end', value: string) => {
+  function handleTimeInputChange(type: 'start' | 'end', value: string) {
     if (type === 'start') {
       setStartTime(value)
     } else {
@@ -137,7 +137,7 @@ export function CourtAvailabilityDialog({
     [AvailabilityStatus.Past]: 'text-neutral-500 dark:text-neutral-400',
   }
 
-  const handleCreate = async () => {
+  async function handleCreate() {
     try {
       setIsUpdating(true)
       const originalDate = dayjs(availability.start_time).format('YYYY-MM-DD')
