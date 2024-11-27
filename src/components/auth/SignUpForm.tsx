@@ -5,9 +5,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input, Button, success, error as toastError } from '@/components/ui'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/providers/AuthProvider'
 import { Loader2 } from 'lucide-react'
 import { Separator } from '../ui/separator'
+import { ROUTES } from '@/constants/routes'
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -48,7 +49,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
 
-      if (message.includes('email')) {
+      if (message.toLowerCase().includes('email')) {
         setError('email', { message })
       } else {
         toastError(message)
@@ -70,7 +71,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             {...register('name')}
             type="text"
             id="name"
-            placeholder="Acme"
+            placeholder="John Doe"
             className={errors.name ? 'border-destructive' : ''}
             disabled={isLoading}
             autoComplete="name"
@@ -87,7 +88,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             {...register('email')}
             type="email"
             id="email"
-            placeholder="acme@acme.com"
+            placeholder="john@company.com"
             className={errors.email ? 'border-destructive' : ''}
             disabled={isLoading}
             autoComplete="email"
@@ -106,7 +107,6 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             id="password"
             className={errors.password ? 'border-destructive' : ''}
             disabled={isLoading}
-            formatPhoneNumber
             autoComplete="new-password"
           />
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
@@ -134,7 +134,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
       <div className="text-center text-sm">
         <span className="text-muted-foreground">Already have an account? </span>
         <a
-          href="/signin"
+          href={ROUTES.AUTH.SIGNIN}
           className="font-medium text-primary hover:text-primary/90 transition-colors duration-200"
         >
           Sign in

@@ -1,20 +1,20 @@
 import { create } from 'zustand'
-import type { Session } from 'next-auth'
+import type { BaseUser, AuthSession } from '@/types/auth'
 
 interface UserState {
-  user: Session['user'] | null
+  user: BaseUser | null
+  accessToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  session: Session | null
-  setSession: (session: Session | null) => void
+  setSession: (session: AuthSession | null) => void
   setIsLoading: (isLoading: boolean) => void
-  updateUser: (userData: Partial<Session['user']>) => void
+  updateUser: (userData: Partial<BaseUser>) => void
   reset: () => void
 }
 
 const initialState = {
   user: null,
-  session: null,
+  accessToken: null,
   isAuthenticated: false,
   isLoading: true,
 }
@@ -22,25 +22,22 @@ const initialState = {
 export const useUserStore = create<UserState>((set) => ({
   ...initialState,
 
-  setSession: (session) =>
+  setSession: async (session) => {
     set({
-      session,
       user: session?.user ?? null,
+      accessToken: session?.accessToken ?? null,
       isAuthenticated: !!session?.user,
       isLoading: false,
-    }),
+    })
+    return Promise.resolve()
+  },
 
   updateUser: (userData) =>
     set((state) => ({
       user: state.user ? { ...state.user, ...userData } : null,
-      session: state.session
-        ? {
-            ...state.session,
-            user: { ...state.session.user, ...userData },
-          }
-        : null,
     })),
 
   setIsLoading: (isLoading) => set({ isLoading }),
+
   reset: () => set(initialState),
 }))

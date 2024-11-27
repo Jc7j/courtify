@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { ROUTES } from '@/constants/routes'
 import { useUserStore } from '@/stores/useUserStore'
+import { useAuth } from '@/providers/AuthProvider'
 
 export type OnboardingStep = 'signup' | 'create-intro' | 'create' | 'invite-team'
 
@@ -16,8 +16,8 @@ interface OnboardingState {
 }
 
 export function useOnboarding(): OnboardingState {
-  const { user, isAuthenticated } = useUserStore()
-  const { update: updateSession } = useSession()
+  const { isAuthenticated, updateUser } = useUserStore()
+  const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -41,21 +41,10 @@ export function useOnboarding(): OnboardingState {
         throw new Error('Company ID not found after database update')
       }
 
-      const newSession = await updateSession()
-      if (!newSession) {
-        throw new Error('Failed to get new session')
-      }
+      // Update the user in our store with the new company_id
+      updateUser({ company_id: currentUser.company_id })
 
-      if (!newSession.user?.company_id) {
-        // If missing, merge it from our store
-        newSession.user = {
-          ...newSession.user,
-          company_id: currentUser.company_id,
-        }
-      }
-
-      useUserStore.getState().setSession(newSession)
-
+      // Verify the update was successful
       const updatedUser = useUserStore.getState().user
       if (!updatedUser?.company_id) {
         throw new Error('Store update verification failed')
@@ -66,7 +55,7 @@ export function useOnboarding(): OnboardingState {
       console.error('Error completing company creation:', err)
       throw err instanceof Error ? err : new Error('Failed to complete company setup')
     }
-  }, [updateSession, handleStepChange])
+  }, [updateUser, handleStepChange])
 
   return {
     isOnboarding: isAuthenticated && !user?.company_id,

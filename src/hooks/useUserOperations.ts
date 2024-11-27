@@ -1,7 +1,6 @@
-import { useSupabase } from '@/providers/SupabaseProvider'
-import { useSession } from 'next-auth/react'
 import { useUserStore } from '@/stores/useUserStore'
-import type { Session } from 'next-auth'
+import { supabase } from '@/lib/supabase/client'
+import type { BaseUser } from '@/types/auth'
 
 interface UpdateUserInput {
   name?: string
@@ -10,19 +9,19 @@ interface UpdateUserInput {
 }
 
 export function useUserOperations() {
-  const supabase = useSupabase()
-  const { update } = useSession()
-  const { setSession } = useUserStore()
+  const { updateUser } = useUserStore()
 
-  const updateProfile = async (input: UpdateUserInput): Promise<Session['user']> => {
+  const updateProfile = async (input: UpdateUserInput): Promise<BaseUser> => {
     const { name, email, currentEmail } = input
 
     try {
+      // Update auth email if changed
       if (email && email !== currentEmail) {
         const { error: updateAuthError } = await supabase.auth.updateUser({ email })
         if (updateAuthError) throw updateAuthError
       }
 
+      // Update user profile in database
       const { data: userData, error: updateError } = await supabase
         .from('users')
         .update({
@@ -38,18 +37,10 @@ export function useUserOperations() {
         throw new Error(updateError?.message || 'Failed to update profile')
       }
 
-      const newSession = await update()
-      if (!newSession) {
-        throw new Error('Failed to update session')
-      }
+      // Update local state
+      updateUser(userData)
 
-      setSession(newSession)
-
-      if (!newSession.user) {
-        throw new Error('Session update did not return user data')
-      }
-
-      return newSession.user
+      return userData
     } catch (error) {
       throw error instanceof Error ? error : new Error('An unexpected error occurred')
     }

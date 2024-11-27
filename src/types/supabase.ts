@@ -117,6 +117,12 @@ export type Database = {
           id: string
           name: string
           slug: string
+          stripe_account_details: Json | null
+          stripe_account_enabled: boolean | null
+          stripe_account_id: string | null
+          stripe_currency: string | null
+          stripe_payment_methods: string[] | null
+          stripe_webhook_secret: string | null
           updated_at: string
         }
         Insert: {
@@ -124,6 +130,12 @@ export type Database = {
           id?: string
           name: string
           slug: string
+          stripe_account_details?: Json | null
+          stripe_account_enabled?: boolean | null
+          stripe_account_id?: string | null
+          stripe_currency?: string | null
+          stripe_payment_methods?: string[] | null
+          stripe_webhook_secret?: string | null
           updated_at?: string
         }
         Update: {
@@ -131,6 +143,12 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+          stripe_account_details?: Json | null
+          stripe_account_enabled?: boolean | null
+          stripe_account_id?: string | null
+          stripe_currency?: string | null
+          stripe_payment_methods?: string[] | null
+          stripe_webhook_secret?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -18,13 +18,14 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { useUserStore } from '@/stores/useUserStore'
-import { signOut } from 'next-auth/react'
+import { useAuth } from '@/providers/AuthProvider'
 import { ROUTES } from '@/constants/routes'
 import cn from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
 
 export function UserMenu() {
   const { user } = useUserStore()
+  const { signOut } = useAuth()
   const { isMobile } = useSidebar()
   const router = useRouter()
 
@@ -36,8 +37,12 @@ export function UserMenu() {
     .join('')
     .toUpperCase()
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: ROUTES.AUTH.SIGNIN })
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   return (

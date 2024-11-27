@@ -1,10 +1,9 @@
 import { ThemeProvider } from '@/providers/ThemeProvider'
-import { NextAuthProvider } from '@/providers/NextAuthProvider'
-import { UserProvider } from '@/providers/UserProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
 import { Toaster } from '@/components/ui'
 import { ReactNode } from 'react'
 import { SessionDebug } from '@/components/debug/SessionDebug'
+import { AuthProvider } from '../providers/AuthProvider'
 
 import '@/styles/globals.css'
 
@@ -17,17 +16,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <NextAuthProvider>
+        <AuthProvider>
           <ApolloProvider>
-            <UserProvider>
-              <ThemeProvider>
-                {children}
-                <Toaster />
-                {/* {process.env.NODE_ENV === 'development' && <SessionDebug />} */}
-              </ThemeProvider>
-            </UserProvider>
+            <ThemeProvider>
+              {children}
+              <Toaster />
+              {process.env.NODE_ENV === 'development' && <SessionDebug />}
+            </ThemeProvider>
           </ApolloProvider>
-        </NextAuthProvider>
+        </AuthProvider>
       </body>
     </html>
   )

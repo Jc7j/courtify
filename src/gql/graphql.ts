@@ -703,6 +703,12 @@ export type Companies = Node & {
   /** Globally Unique Record Identifier */
   nodeId: Scalars['ID']['output'];
   slug: Scalars['String']['output'];
+  stripe_account_details?: Maybe<Scalars['JSON']['output']>;
+  stripe_account_enabled?: Maybe<Scalars['Boolean']['output']>;
+  stripe_account_id?: Maybe<Scalars['String']['output']>;
+  stripe_currency?: Maybe<Scalars['String']['output']>;
+  stripe_payment_methods?: Maybe<Array<Maybe<Scalars['String']['output']>>>;
+  stripe_webhook_secret?: Maybe<Scalars['String']['output']>;
   updated_at: Scalars['Datetime']['output'];
   usersCollection?: Maybe<UsersConnection>;
 };
@@ -772,6 +778,11 @@ export type CompaniesFilter = {
   /** Returns true if at least one of its inner filters is true, otherwise returns false */
   or?: InputMaybe<Array<CompaniesFilter>>;
   slug?: InputMaybe<StringFilter>;
+  stripe_account_enabled?: InputMaybe<BooleanFilter>;
+  stripe_account_id?: InputMaybe<StringFilter>;
+  stripe_currency?: InputMaybe<StringFilter>;
+  stripe_payment_methods?: InputMaybe<StringListFilter>;
+  stripe_webhook_secret?: InputMaybe<StringFilter>;
   updated_at?: InputMaybe<DatetimeFilter>;
 };
 
@@ -780,6 +791,12 @@ export type CompaniesInsertInput = {
   id?: InputMaybe<Scalars['UUID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
+  stripe_account_details?: InputMaybe<Scalars['JSON']['input']>;
+  stripe_account_enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  stripe_account_id?: InputMaybe<Scalars['String']['input']>;
+  stripe_currency?: InputMaybe<Scalars['String']['input']>;
+  stripe_payment_methods?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  stripe_webhook_secret?: InputMaybe<Scalars['String']['input']>;
   updated_at?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
@@ -796,6 +813,10 @@ export type CompaniesOrderBy = {
   id?: InputMaybe<OrderByDirection>;
   name?: InputMaybe<OrderByDirection>;
   slug?: InputMaybe<OrderByDirection>;
+  stripe_account_enabled?: InputMaybe<OrderByDirection>;
+  stripe_account_id?: InputMaybe<OrderByDirection>;
+  stripe_currency?: InputMaybe<OrderByDirection>;
+  stripe_webhook_secret?: InputMaybe<OrderByDirection>;
   updated_at?: InputMaybe<OrderByDirection>;
 };
 
@@ -804,6 +825,12 @@ export type CompaniesUpdateInput = {
   id?: InputMaybe<Scalars['UUID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
+  stripe_account_details?: InputMaybe<Scalars['JSON']['input']>;
+  stripe_account_enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  stripe_account_id?: InputMaybe<Scalars['String']['input']>;
+  stripe_currency?: InputMaybe<Scalars['String']['input']>;
+  stripe_payment_methods?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  stripe_webhook_secret?: InputMaybe<Scalars['String']['input']>;
   updated_at?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
