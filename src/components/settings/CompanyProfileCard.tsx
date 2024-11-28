@@ -131,7 +131,8 @@ export function CompanyProfileCard({ company, loading }: CompanyProfileCardProps
               disabled={updating}
             />
             <p className="text-xs text-muted-foreground">
-              This will be used in your booking URL: https://courtify.com/book/{form.slug}
+              This will be used in your booking URL: {process.env.NEXT_PUBLIC_APP_URL}/book/
+              {form.slug}
             </p>
           </div>
         </div>

@@ -6,30 +6,24 @@ interface UserState {
   accessToken: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  setSession: (session: AuthSession | null) => void
+  setSession: (session: AuthSession | null) => Promise<void>
   setIsLoading: (isLoading: boolean) => void
   updateUser: (userData: Partial<BaseUser>) => void
-  reset: () => void
+  reset: () => Promise<void>
 }
 
-const initialState = {
+export const useUserStore = create<UserState>((set) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
   isLoading: true,
-}
-
-export const useUserStore = create<UserState>((set) => ({
-  ...initialState,
 
   setSession: async (session) => {
     set({
       user: session?.user ?? null,
       accessToken: session?.accessToken ?? null,
       isAuthenticated: !!session?.user,
-      isLoading: false,
     })
-    return Promise.resolve()
   },
 
   updateUser: (userData) =>
@@ -39,5 +33,12 @@ export const useUserStore = create<UserState>((set) => ({
 
   setIsLoading: (isLoading) => set({ isLoading }),
 
-  reset: () => set(initialState),
+  reset: async () => {
+    set({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isLoading: false,
+    })
+  },
 }))

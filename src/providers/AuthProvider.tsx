@@ -15,31 +15,38 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name: string) => Promise<void>
   signOut: () => Promise<void>
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const { setSession, reset } = useUserStore()
+  const { setSession, reset, isLoading, setIsLoading } = useUserStore()
 
-  const setUserSession = async (supabaseSession: Session | null) => {
+  async function setUserSession(supabaseSession: Session | null) {
     if (!supabaseSession) {
       await setSession(null)
       return
     }
 
     try {
-      // Fetch complete user data from our database
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, email, name, company_id, active')
         .eq('id', supabaseSession.user.id)
         .single()
 
-      if (error) throw error
+      if (error || !userData) {
+        await supabase.auth.signOut()
+        throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
+      }
 
-      // Combine Supabase auth data with our database user data
+      if (!userData.active) {
+        await supabase.auth.signOut()
+        throw new Error(AUTH_ERRORS.ACCOUNT_DISABLED)
+      }
+
       const completeUser: BaseUser = {
         ...supabaseSession.user,
         name: userData.name,
@@ -52,33 +59,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
     } catch (error) {
       console.error('Error fetching complete user data:', error)
-      reset()
+      await reset()
+      throw error
     }
   }
 
   useEffect(() => {
+    let mounted = true
+
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (!mounted) return
+
+        if (session) {
+          await setUserSession(session)
+        } else {
+          await setSession(null)
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        await reset()
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await setUserSession(session)
-      } else if (event === 'SIGNED_OUT') {
-        reset()
-        router.replace(ROUTES.AUTH.SIGNIN)
+      if (!mounted) return
+
+      try {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await setUserSession(session)
+        } else if (event === 'SIGNED_OUT') {
+          await reset()
+          router.replace(ROUTES.AUTH.SIGNIN)
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error)
       }
     })
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUserSession(session)
-      }
-    })
+    initializeAuth()
 
-    return () => subscription.unsubscribe()
-  }, [router, reset])
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [router, reset, setIsLoading, setSession])
 
-  const signUp = async (email: string, password: string, name: string) => {
+  async function signUp(email: string, password: string, name: string) {
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -121,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  async function signIn(email: string, password: string) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -130,8 +167,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error
 
       if (data.session) {
-        await setUserSession(data.session)
-        router.replace(ROUTES.DASHBOARD.HOME)
+        try {
+          await setUserSession(data.session)
+          router.replace(ROUTES.DASHBOARD.HOME)
+        } catch (error) {
+          // Handle specific errors from setUserSession
+          if (error instanceof Error) {
+            if (error.message === AUTH_ERRORS.USER_NOT_FOUND) {
+              throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
+            } else if (error.message === AUTH_ERRORS.ACCOUNT_DISABLED) {
+              throw new Error(AUTH_ERRORS.ACCOUNT_DISABLED)
+            }
+          }
+          throw error
+        }
       }
     } catch (error) {
       throw new Error(getAuthErrorMessage(error))
@@ -140,17 +189,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      setIsLoading(true)
       await clearApolloCache()
+      await reset()
       const { error } = await supabase.auth.signOut()
       if (error) throw error
       router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {
       throw new Error(getAuthErrorMessage(error))
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const value = {
     user: useUserStore((state) => state.user),
+    isLoading,
     signIn,
     signUp,
     signOut,

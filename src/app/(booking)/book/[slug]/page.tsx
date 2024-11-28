@@ -3,7 +3,7 @@
 import { useState, use } from 'react'
 import { notFound } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
-import { Skeleton, Card } from '@/components/ui'
+import { Card } from '@/components/ui'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { GuestInfoForm, type GuestInfo } from '@/components/booking/GuestInfoForm'
 import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
@@ -37,18 +37,14 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   })
   const { selectedAvailability } = useBookingStore()
 
+  console.log('company', company)
   const [currentStep, setCurrentStep] = useState<BookingStep>('select-time')
   const [bookingState, setBookingState] = useState<BookingState>({})
 
   if (loading) {
     return (
-      <div className="flex min-h-screen">
-        <div className="hidden lg:flex flex-1 bg-secondary" />
-        <div className="w-full lg:w-1/2 p-8 space-y-4">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-12 w-[250px]" />
-          <Skeleton className="h-[400px] w-full" />
-        </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading company details...</p>
       </div>
     )
   }

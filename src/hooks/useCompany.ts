@@ -36,7 +36,8 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
   const variables = slug ? { slug } : { id: user?.company_id }
 
-  const skipQuery = slug ? !slug : !user?.company_id || userLoading
+  // Handle public pages
+  const skipQuery = !slug && (!user?.company_id || userLoading)
 
   const {
     data: companyData,
@@ -124,8 +125,8 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   return {
     company: companyData?.companiesCollection?.edges[0]?.node ?? null,
-    // More accurate loading state
-    loading: userLoading || queryLoading || !user?.company_id,
+    // Loading state to not include user-related conditions for public pages
+    loading: slug ? queryLoading : userLoading || queryLoading || !user?.company_id,
     error: queryError ?? null,
     creating,
     updating,
