@@ -37,19 +37,34 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   })
   const { selectedAvailability } = useBookingStore()
 
-  console.log('company', company)
   const [currentStep, setCurrentStep] = useState<BookingStep>('select-time')
   const [bookingState, setBookingState] = useState<BookingState>({})
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p>Loading company details...</p>
+        <div className="space-y-2 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">Loading company details...</p>
+        </div>
       </div>
     )
   }
 
-  if (error || !company) {
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="max-w-md p-6 text-center space-y-2">
+          <p className="text-destructive font-medium">Unable to load company details</p>
+          <p className="text-sm text-muted-foreground">
+            The company you&apos;re looking for might not exist or is currently unavailable.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!company) {
     notFound()
   }
 

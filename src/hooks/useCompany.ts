@@ -36,7 +36,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
   const variables = slug ? { slug } : { id: user?.company_id }
 
-  // Handle public pages
+  // Only skip for authenticated routes, not public ones
   const skipQuery = !slug && (!user?.company_id || userLoading)
 
   const {
@@ -47,7 +47,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   } = useQuery(queryToUse, {
     variables,
     skip: skipQuery,
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   })
 
@@ -123,10 +123,14 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     }
   }
 
+  // Simplified loading state logic
+  const isLoading = slug
+    ? queryLoading // For public pages, only care about query loading
+    : userLoading || queryLoading || !user?.company_id // For authenticated pages, include user state
+
   return {
     company: companyData?.companiesCollection?.edges[0]?.node ?? null,
-    // Loading state to not include user-related conditions for public pages
-    loading: slug ? queryLoading : userLoading || queryLoading || !user?.company_id,
+    loading: isLoading,
     error: queryError ?? null,
     creating,
     updating,

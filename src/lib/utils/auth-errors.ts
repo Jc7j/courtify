@@ -5,6 +5,9 @@ export const AUTH_ERRORS = {
   UNEXPECTED: 'An unexpected error occurred',
   USER_NOT_FOUND: 'User account not found. Please contact support.',
   ACCOUNT_DISABLED: 'This account has been disabled. Please contact support.',
+  SESSION_EXPIRED: 'Your session has expired. Please sign in again.',
+  REFRESH_FAILED: 'Unable to refresh session. Please sign in again.',
+  INVALID_SESSION: 'Invalid session. Please sign in again.',
 } as const
 
 interface ErrorWithMessage {

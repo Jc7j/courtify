@@ -24,9 +24,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { setSession, reset, isLoading, setIsLoading } = useUserStore()
 
-  async function setUserSession(supabaseSession: Session | null) {
-    if (!supabaseSession) {
-      await setSession(null)
+  // Centralized function to handle user data fetching and session setting
+  async function handleSession(session: Session | null) {
+    if (!session) {
+      await reset()
       return
     }
 
@@ -34,105 +35,93 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: userData, error } = await supabase
         .from('users')
         .select('id, email, name, company_id, active')
-        .eq('id', supabaseSession.user.id)
+        .eq('id', session.user.id)
         .single()
 
-      if (error || !userData) {
-        await supabase.auth.signOut()
-        throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
+      if (error || !userData || !userData.active) {
+        throw new Error(error?.message || AUTH_ERRORS.USER_NOT_FOUND)
       }
 
-      if (!userData.active) {
-        await supabase.auth.signOut()
-        throw new Error(AUTH_ERRORS.ACCOUNT_DISABLED)
-      }
-
-      const completeUser: BaseUser = {
-        ...supabaseSession.user,
-        name: userData.name,
-        company_id: userData.company_id,
-      }
-
-      await setSession({
-        user: completeUser,
-        accessToken: supabaseSession.access_token,
+      setSession({
+        user: {
+          ...session.user,
+          name: userData.name,
+          company_id: userData.company_id,
+        },
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+        expiresAt: session.expires_at,
       })
     } catch (error) {
-      console.error('Error fetching complete user data:', error)
+      console.error('Session handling error:', error)
       await reset()
-      throw error
+      router.replace(ROUTES.AUTH.SIGNIN)
     }
   }
 
+  // Initialize and monitor auth state
   useEffect(() => {
-    let mounted = true
+    setIsLoading(true)
 
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session).finally(() => setIsLoading(false))
+    })
 
-        if (!mounted) return
-
-        if (session) {
-          await setUserSession(session)
-        } else {
-          await setSession(null)
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-        await reset()
-      } finally {
-        if (mounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
+    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
-
-      try {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await setUserSession(session)
-        } else if (event === 'SIGNED_OUT') {
-          await reset()
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      switch (event) {
+        case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED':
+          handleSession(session)
+          break
+        case 'SIGNED_OUT':
+          reset()
           router.replace(ROUTES.AUTH.SIGNIN)
-        }
-      } catch (error) {
-        console.error('Auth state change error:', error)
+          break
       }
     })
 
-    initializeAuth()
+    return () => subscription.unsubscribe()
+  }, [])
 
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
+  async function signIn(email: string, password: string) {
+    try {
+      setIsLoading(true)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+
+      await handleSession(data.session)
+      router.replace(ROUTES.DASHBOARD.HOME)
+    } catch (error) {
+      throw new Error(getAuthErrorMessage(error))
+    } finally {
+      setIsLoading(false)
     }
-  }, [router, reset, setIsLoading, setSession])
+  }
 
   async function signUp(email: string, password: string, name: string) {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      setIsLoading(true)
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { name },
-          // TODO: Implement email confirmation flow
-          // emailRedirectTo: `${window.location.origin}${ROUTES.AUTH.CALLBACK}`,
         },
       })
+      if (error) throw error
+      if (!data.user?.id) throw new Error('No user ID returned from signup')
 
-      if (authError) throw authError
-      if (!authData.user?.id) throw new Error('No user ID returned from signup')
-
-      const { error: createError } = await supabase.from('users').insert([
+      // Create user profile
+      const { error: profileError } = await supabase.from('users').insert([
         {
-          id: authData.user.id,
+          id: data.user.id,
           email,
           name,
           active: true,
@@ -141,61 +130,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       ])
 
-      if (createError) {
+      if (profileError) {
         await supabase.auth.signOut()
-        throw createError
+        throw profileError
       }
 
-      // TODO: In the future, this would be gated behind email confirmation
-      // For now, immediately sign in the user
+      // Auto sign in after signup
       return signIn(email, password)
     } catch (error) {
-      // Check specifically for duplicate email error from Supabase
       if (error instanceof Error && error.message.includes('User already registered')) {
         throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
       }
       throw new Error(getAuthErrorMessage(error))
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  async function signIn(email: string, password: string) {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (error) throw error
-
-      if (data.session) {
-        try {
-          await setUserSession(data.session)
-          router.replace(ROUTES.DASHBOARD.HOME)
-        } catch (error) {
-          // Handle specific errors from setUserSession
-          if (error instanceof Error) {
-            if (error.message === AUTH_ERRORS.USER_NOT_FOUND) {
-              throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
-            } else if (error.message === AUTH_ERRORS.ACCOUNT_DISABLED) {
-              throw new Error(AUTH_ERRORS.ACCOUNT_DISABLED)
-            }
-          }
-          throw error
-        }
-      }
-    } catch (error) {
-      throw new Error(getAuthErrorMessage(error))
-    }
-  }
-
-  const signOut = async () => {
+  async function signOut() {
     try {
       setIsLoading(true)
       await clearApolloCache()
       await reset()
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      await supabase.auth.signOut()
       router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {
+      console.error('Sign out error:', error)
       throw new Error(getAuthErrorMessage(error))
     } finally {
       setIsLoading(false)
