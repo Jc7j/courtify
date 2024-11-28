@@ -8,9 +8,14 @@ import { ExternalLink, Loader2 } from 'lucide-react'
 import type { Company } from '@/types/graphql'
 import { useStripe } from '@/hooks/useStripe'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Progress } from '@/components/ui/progress'
 
 interface StripeSetupProps {
   company: Company
+}
+
+function getRequirementCategories(requirements: string[]): string[] {
+  return Array.from(new Set(requirements.map((req) => req.split('.')[0])))
 }
 
 export function StripeSetup({ company }: StripeSetupProps) {
@@ -20,7 +25,20 @@ export function StripeSetup({ company }: StripeSetupProps) {
   const searchParams = useSearchParams()
   const isReturningFromStripe = searchParams.get('stripe') === 'success'
 
-  // Check status when returning from Stripe
+  const stripeDetails = company.stripe_account_details
+    ? JSON.parse(company.stripe_account_details)
+    : null
+
+  const requirements = stripeDetails?.requirements || {}
+  const hasRequirements = requirements.currently_due?.length > 0
+
+  // Calculate completion percentage
+  const totalRequirements = requirements.eventually_due?.length || 0
+  const completedRequirements = totalRequirements - (requirements.currently_due?.length || 0)
+  const completionPercentage = totalRequirements
+    ? (completedRequirements / totalRequirements) * 100
+    : 0
+
   useEffect(() => {
     if (isReturningFromStripe) {
       checkStripeStatus().then(({ isEnabled, error }) => {
@@ -39,15 +57,8 @@ export function StripeSetup({ company }: StripeSetupProps) {
   async function handleConnect() {
     try {
       const { url, error } = await connectStripe()
-
-      if (error) {
-        throw new Error(error)
-      }
-
-      if (!url) {
-        throw new Error('Failed to get Stripe connect URL')
-      }
-
+      if (error) throw new Error(error)
+      if (!url) throw new Error('Failed to get Stripe connect URL')
       router.push(url)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to connect Stripe')
@@ -61,68 +72,95 @@ export function StripeSetup({ company }: StripeSetupProps) {
       '_blank'
     )
   }
-  console.log(company)
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Payment Processing</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {isConnected ? (
-          <div className="flex flex-col gap-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="font-medium text-green-600 dark:text-green-500">
-                  ✓ Stripe Account Connected
-                </p>
-                {company.stripe_account_id && (
-                  <p className="text-xs text-muted-foreground">
-                    Account ID: {company.stripe_account_id}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleConnect}
-                disabled={connecting || checking}
-                className="shrink-0"
-              >
-                {connecting || checking ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Reconnecting...
-                  </>
-                ) : (
-                  'Reconnect'
-                )}
-              </Button>
-            </div>
+          <div className="space-y-6">
+            {hasRequirements ? (
+              <>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-muted-foreground">Setup Progress</h3>
+                    <span className="text-sm font-medium">{Math.round(completionPercentage)}%</span>
+                  </div>
+                  <Progress value={completionPercentage} className="h-1" />
+                </div>
 
-            <div className="space-y-3">
-              <Button variant="secondary" className="w-full sm:w-auto" onClick={openStripeSettings}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Access Stripe Dashboard
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                View your payouts, transaction history, and manage your account settings in the
-                Stripe dashboard.
-              </p>
-            </div>
+                <div className="grid gap-2">
+                  {getRequirementCategories(requirements.currently_due || []).map(
+                    (category, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 rounded-lg border bg-card/50 p-3"
+                      >
+                        <div className="h-2 w-2 rounded-full bg-yellow-500/70" />
+                        <span className="text-sm font-medium capitalize">
+                          {category.replace('_', ' ')}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+
+                <Button onClick={openStripeSettings} className="w-full sm:w-auto">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Complete Setup in Stripe
+                </Button>
+              </>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div>
+                      <p className="font-medium">Card Payments</p>
+                      <p className="text-sm text-muted-foreground">Ready to accept payments</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div>
+                      <p className="font-medium">Payouts</p>
+                      <p className="text-sm text-muted-foreground">Ready to receive payouts</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Connect your Stripe account to start accepting payments for court bookings. You'll
-                need to:
-              </p>
-              <ul className="list-disc pl-4 text-sm text-muted-foreground">
-                <li>Provide basic business information</li>
-                <li>Set up your bank account for payouts</li>
-                <li>Verify your identity</li>
+          <div className="space-y-6">
+            <div className="rounded-lg border bg-card p-4">
+              <h4 className="font-medium">Accept Payments with Stripe</h4>
+              <ul className="mt-2 space-y-2">
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                  Provide business information
+                </li>
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                  Set up bank account
+                </li>
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                  Verify identity
+                </li>
               </ul>
             </div>
-            <Button onClick={handleConnect} disabled={connecting || checking}>
+
+            <Button
+              className="w-full sm:w-auto"
+              onClick={handleConnect}
+              disabled={connecting || checking}
+            >
               {connecting || checking ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

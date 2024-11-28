@@ -27,7 +27,11 @@ function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
 export function getAuthErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     // Check for our custom error messages first
-    if (Object.values(AUTH_ERRORS).includes(error.message as any)) {
+    if (
+      Object.values(AUTH_ERRORS).includes(
+        error.message as (typeof AUTH_ERRORS)[keyof typeof AUTH_ERRORS]
+      )
+    ) {
       return error.message
     }
 

@@ -17,7 +17,7 @@ export function BookingForm({ company }: BookingFormProps) {
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
 
-  const { courts, availabilities, loading, error } = useCompanyAvailabilities(
+  const { availabilities, loading, error } = useCompanyAvailabilities(
     dayjs(weekStartDate).startOf('day').toISOString(),
     dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
   )

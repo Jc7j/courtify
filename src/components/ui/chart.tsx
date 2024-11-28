@@ -3,7 +3,6 @@
 import cn from '@/lib/utils/cn'
 import * as React from 'react'
 import * as RechartsPrimitive from 'recharts'
-import { NameType, Payload, ValueType } from 'recharts/types/component/DefaultTooltipContent'
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const
