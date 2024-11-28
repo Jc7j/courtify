@@ -14,25 +14,42 @@ interface StripeSetupProps {
   company: Company
 }
 
+interface StripeAccountDetails {
+  requirements?: {
+    currently_due?: string[]
+    eventually_due?: string[]
+  }
+  capabilities?: {
+    card_payments?: 'active' | 'inactive'
+    transfers?: 'active' | 'inactive'
+  }
+  payouts_enabled?: boolean
+}
+
 function getRequirementCategories(requirements: string[]): string[] {
   return Array.from(new Set(requirements.map((req) => req.split('.')[0])))
 }
 
 export function StripeSetup({ company }: StripeSetupProps) {
-  const [isConnected, setIsConnected] = useState(company.stripe_account_id)
+  const [isConnected, setIsConnected] = useState<boolean>(!!company.stripe_account_id)
   const router = useRouter()
   const { connectStripe, checkStripeStatus, connecting, checking } = useStripe()
   const searchParams = useSearchParams()
   const isReturningFromStripe = searchParams.get('stripe') === 'success'
 
-  const stripeDetails = company.stripe_account_details
-    ? JSON.parse(company.stripe_account_details)
-    : null
+  const stripeDetails: StripeAccountDetails | null = (() => {
+    if (!company.stripe_account_details) return null
+    if (typeof company.stripe_account_details !== 'string') return null
+    try {
+      return JSON.parse(company.stripe_account_details) as StripeAccountDetails
+    } catch {
+      return null
+    }
+  })()
 
   const requirements = stripeDetails?.requirements || {}
-  const hasRequirements = requirements.currently_due?.length > 0
+  const hasRequirements = (requirements.currently_due?.length || 0) > 0
 
-  // Calculate completion percentage
   const totalRequirements = requirements.eventually_due?.length || 0
   const completedRequirements = totalRequirements - (requirements.currently_due?.length || 0)
   const completionPercentage = totalRequirements
@@ -54,7 +71,7 @@ export function StripeSetup({ company }: StripeSetupProps) {
     }
   }, [isReturningFromStripe, checkStripeStatus])
 
-  async function handleConnect() {
+  const handleConnect = async (): Promise<void> => {
     try {
       const { url, error } = await connectStripe()
       if (error) throw new Error(error)
@@ -65,7 +82,7 @@ export function StripeSetup({ company }: StripeSetupProps) {
     }
   }
 
-  const openStripeSettings = () => {
+  const openStripeSettings = (): void => {
     if (!company.stripe_account_id) return
     window?.open(
       `https://dashboard.stripe.com/connect/accounts/${company.stripe_account_id}`,

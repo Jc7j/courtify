@@ -45,5 +45,5 @@ export function getAuthErrorMessage(error: unknown): string {
       return error.message
     }
   }
-  return AUTH_ERRORS.UNKNOWN
+  return AUTH_ERRORS.UNEXPECTED
 }

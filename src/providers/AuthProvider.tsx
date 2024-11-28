@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useCallback, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useUserStore } from '@/stores/useUserStore'
 import { useRouter } from 'next/navigation'
@@ -25,39 +25,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { setSession, reset, isLoading, setIsLoading } = useUserStore()
 
   // Centralized function to handle user data fetching and session setting
-  async function handleSession(session: Session | null) {
-    if (!session) {
-      await reset()
-      return
-    }
-
-    try {
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('id, email, name, company_id, active')
-        .eq('id', session.user.id)
-        .single()
-
-      if (error || !userData || !userData.active) {
-        throw new Error(error?.message || AUTH_ERRORS.USER_NOT_FOUND)
+  const handleSession = useCallback(
+    async (session: Session | null) => {
+      if (!session) {
+        await reset()
+        return
       }
 
-      setSession({
-        user: {
-          ...session.user,
-          name: userData.name,
-          company_id: userData.company_id,
-        },
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresAt: session.expires_at,
-      })
-    } catch (error) {
-      console.error('Session handling error:', error)
-      await reset()
-      router.replace(ROUTES.AUTH.SIGNIN)
-    }
-  }
+      try {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('id, email, name, company_id, active')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error || !userData || !userData.active) {
+          throw new Error(error?.message || AUTH_ERRORS.USER_NOT_FOUND)
+        }
+
+        setSession({
+          user: {
+            ...session.user,
+            name: userData.name,
+            company_id: userData.company_id,
+          },
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token,
+          expiresAt: session.expires_at,
+        })
+      } catch (error) {
+        console.error('Session handling error:', error)
+        await reset()
+        router.replace(ROUTES.AUTH.SIGNIN)
+      }
+    },
+    [reset, router, setSession]
+  )
 
   // Initialize and monitor auth state
   useEffect(() => {
@@ -85,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [handleSession, reset, router, setIsLoading])
 
   async function signIn(email: string, password: string) {
     try {

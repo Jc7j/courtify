@@ -3,20 +3,9 @@ import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { useUserStore } from '@/stores/useUserStore'
 import { supabase } from '@/lib/supabase/client'
-import { BaseUser } from '@/types/auth'
+import type { BaseUser } from '@/types/auth'
 
-const cache = new InMemoryCache({
-  typePolicies: {
-    Query: {
-      fields: {
-        company: {
-          // Keep cache for 5 minutes
-          maxAge: 300000,
-        },
-      },
-    },
-  },
-})
+const cache = new InMemoryCache()
 
 const authLink = setContext(async (_, { headers }) => {
   // First try to get token from store
@@ -36,11 +25,25 @@ const authLink = setContext(async (_, { headers }) => {
     data: { session },
   } = await supabase.auth.getSession()
 
-  if (session?.access_token) {
-    useUserStore.getState().setSession({
-      user: session.user as BaseUser,
-      accessToken: session.access_token,
-    })
+  if (session?.access_token && session.user) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('name, company_id')
+      .eq('id', session.user.id)
+      .single()
+
+    if (userData) {
+      const baseUser: BaseUser = {
+        ...session.user,
+        name: userData.name,
+        company_id: userData.company_id,
+      }
+
+      useUserStore.getState().setSession({
+        user: baseUser,
+        accessToken: session.access_token,
+      })
+    }
   }
 
   return {
@@ -70,11 +73,10 @@ const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
 })
 
-// Add a custom fetch policy
 const defaultOptions = {
   watchQuery: {
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network' as const,
+    nextFetchPolicy: 'cache-first' as const,
   },
 }
 
@@ -85,7 +87,6 @@ export const apolloClient = new ApolloClient({
   connectToDevTools: process.env.NODE_ENV === 'development',
 })
 
-// Add a method to handle cache persistence
 export const clearApolloCache = async () => {
   try {
     await apolloClient.clearStore()
@@ -94,7 +95,6 @@ export const clearApolloCache = async () => {
   }
 }
 
-// Add a method to refetch active queries
 export const refetchActiveQueries = async () => {
   try {
     await apolloClient.refetchQueries({

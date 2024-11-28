@@ -12,6 +12,7 @@ interface UserState {
   setSession: (session: AuthSession | null) => void
   setIsLoading: (isLoading: boolean) => void
   updateSessionExpiry: (expiresAt: number) => void
+  updateUser: (updates: Partial<BaseUser>) => void
   reset: () => void
 }
 
@@ -37,6 +38,11 @@ export const useUserStore = create<UserState>()(
       setIsLoading: (isLoading) => set({ isLoading }),
 
       updateSessionExpiry: (expiresAt) => set({ expiresAt }),
+
+      updateUser: (updates) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        })),
 
       reset: () =>
         set({

@@ -9,6 +9,7 @@ import { OnboardingStep, useOnboarding } from '@/hooks/useOnboarding'
 import { InviteTeam } from '@/components/onboarding/InviteTeam'
 import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
+import { Suspense } from 'react'
 
 const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
   signup: { number: 1, progress: 25 },
@@ -17,7 +18,7 @@ const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
   'invite-team': { number: 4, progress: 100 },
 } as const
 
-export default function SignUpPage() {
+function SignUpContent() {
   const { user } = useUserStore()
   const { step, handleStepChange } = useOnboarding()
   const router = useRouter()
@@ -52,12 +53,10 @@ export default function SignUpPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="w-full max-w-md space-y-8">
-          {/* Logo */}
           <div className="flex justify-center">
             <Logo size="lg" />
           </div>
 
-          {/* Title */}
           <h1 className="text-3xl font-semibold text-center text-foreground">
             Create your free account
           </h1>
@@ -70,7 +69,6 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Form */}
       <div className="w-full lg:w-1/2 min-h-screen bg-background flex flex-col">
         <div className="flex-1 px-8 py-12">
           <div className="mb-12">
@@ -87,13 +85,11 @@ export default function SignUpPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-8 py-6 text-sm text-muted-foreground border-t">
           <p>© {new Date().getFullYear()} Courtify. All rights reserved.</p>
         </div>
       </div>
 
-      {/* Right side - Preview/Info */}
       <div className="hidden lg:flex flex-1 bg-secondary items-center justify-center p-12">
         <div className="max-w-lg space-y-4">
           <h2 className="text-2xl font-semibold text-secondary-foreground text-center">
@@ -107,5 +103,13 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignUpContent />
+    </Suspense>
   )
 }

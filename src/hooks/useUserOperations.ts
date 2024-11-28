@@ -1,6 +1,6 @@
 import { useUserStore } from '@/stores/useUserStore'
 import { supabase } from '@/lib/supabase/client'
-import type { BaseUser } from '@/types/auth'
+import type { UserProfile } from '@/types/auth'
 
 interface UpdateUserInput {
   name?: string
@@ -11,7 +11,7 @@ interface UpdateUserInput {
 export function useUserOperations() {
   const { updateUser } = useUserStore()
 
-  const updateProfile = async (input: UpdateUserInput): Promise<BaseUser> => {
+  const updateProfile = async (input: UpdateUserInput): Promise<UserProfile> => {
     const { name, email, currentEmail } = input
 
     try {
@@ -37,7 +37,7 @@ export function useUserOperations() {
         throw new Error(updateError?.message || 'Failed to update profile')
       }
 
-      // Update local state
+      // Update local state with partial data
       updateUser(userData)
 
       return userData
