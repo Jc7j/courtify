@@ -80,28 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single()
-
-      if (existingUser) throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { name },
-          emailRedirectTo: `${window.location.origin}${ROUTES.AUTH.CALLBACK}`,
+          // TODO: Implement email confirmation flow
+          // emailRedirectTo: `${window.location.origin}${ROUTES.AUTH.CALLBACK}`,
         },
       })
 
       if (authError) throw authError
+      if (!authData.user?.id) throw new Error('No user ID returned from signup')
 
       const { error: createError } = await supabase.from('users').insert([
         {
-          id: authData.user?.id,
+          id: authData.user.id,
           email,
           name,
           active: true,
@@ -110,10 +104,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       ])
 
-      if (createError) throw createError
+      if (createError) {
+        await supabase.auth.signOut()
+        throw createError
+      }
 
+      // TODO: In the future, this would be gated behind email confirmation
+      // For now, immediately sign in the user
       return signIn(email, password)
     } catch (error) {
+      // Check specifically for duplicate email error from Supabase
+      if (error instanceof Error && error.message.includes('User already registered')) {
+        throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
+      }
       throw new Error(getAuthErrorMessage(error))
     }
   }

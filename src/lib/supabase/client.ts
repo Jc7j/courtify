@@ -30,27 +30,3 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     schema: 'public',
   },
 })
-
-{
-  /* 
-  Uses the service role key (SUPABASE_SERVICE_ROLE_KEY)
-  Strictly for server-side operations
-  Bypasses Row Level Security
-  Has full database access
-  Perfect for background jobs, webhooks, or API routes
-  Never exposed to the client
-*/
-}
-// Admin client with elevated privileges (only use server-side)
-export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient<Database>(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-      },
-      db: {
-        schema: 'public',
-      },
-    })
-  : null

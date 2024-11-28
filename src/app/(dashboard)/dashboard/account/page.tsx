@@ -25,5 +25,9 @@ export default function AccountPage() {
 
   if (!user) return null
 
-  return <ProfileSection user={user} />
+  return (
+    <div className="p-8">
+      <ProfileSection user={user} />
+    </div>
+  )
 }

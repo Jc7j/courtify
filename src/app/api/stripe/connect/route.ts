@@ -1,24 +1,17 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/stripe'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
     const { company_id, company_name } = await req.json()
+    const supabaseAdmin = createAdminClient()
 
     if (!company_id || !company_name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    console.log('Attempting to update company:', {
-      company_id,
-      company_name,
-      adminClientExists: !!supabaseAdmin,
-    })
-
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not initialized')
-    }
+    console.log('Creating Stripe account for company:', { company_id, company_name })
 
     const account = await stripe.accounts.create({
       type: 'standard',
@@ -32,7 +25,7 @@ export async function POST(req: Request) {
       metadata: { company_id },
     })
 
-    console.log('Stripe account created:', account)
+    console.log('Stripe account created:', account.id)
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
@@ -40,9 +33,10 @@ export async function POST(req: Request) {
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?stripe=success`,
       type: 'account_onboarding',
     })
-    console.log('Stripe account link created:', accountLink)
 
-    const { data: existingCompany, error: fetchError } = await supabaseAdmin
+    console.log('Stripe account link created')
+
+    const { data: existingCompany } = await supabaseAdmin
       .from('companies')
       .select('stripe_account_id')
       .eq('id', company_id)
@@ -53,27 +47,26 @@ export async function POST(req: Request) {
       throw new Error('Company already has a Stripe account connected')
     }
 
-    const { data: updateData, error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('companies')
       .update({
         stripe_account_id: account.id,
         stripe_account_enabled: false,
-        stripe_account_details: account,
+        stripe_account_details: JSON.stringify(account),
         updated_at: new Date().toISOString(),
       })
       .eq('id', company_id)
-      .select()
 
     if (updateError) {
-      console.error('Update error details:', {
+      console.error('Database update error:', {
         code: updateError.code,
         message: updateError.message,
         details: updateError.details,
-        hint: updateError.hint,
       })
       throw new Error(`Failed to update company: ${updateError.message}`)
     }
 
+    console.log('Company updated with Stripe account')
     return NextResponse.json({ url: accountLink.url })
   } catch (error) {
     console.error('Stripe connect error:', error)
