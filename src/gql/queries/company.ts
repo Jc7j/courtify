@@ -14,7 +14,7 @@ export const GET_COMPANY_BY_SLUG = gql`
     companiesCollection(filter: { slug: { eq: $slug } }, first: 1) {
       edges {
         node {
-          ...CompanyFields
+          ...CompanyBySlugFields
         }
       }
     }

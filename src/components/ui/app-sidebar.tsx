@@ -39,12 +39,6 @@ const items = [
     exact: false,
   },
   {
-    title: 'Bookings',
-    url: ROUTES.DASHBOARD.BOOKINGS,
-    icon: ListChecks,
-    exact: true,
-  },
-  {
     title: 'Settings',
     url: ROUTES.DASHBOARD.SETTINGS,
     icon: Settings,

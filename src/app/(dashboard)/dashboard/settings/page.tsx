@@ -3,14 +3,84 @@
 import { useCompany } from '@/hooks/useCompany'
 import { CompanyProfileCard } from '@/components/settings/CompanyProfileCard'
 import { StripeSetup } from '@/components/settings/StripeSetup'
+import { useStripe } from '@/hooks/useStripe'
+import { useEffect, useState } from 'react'
+import { StripeStatus } from '@/types/stripe'
+import { toast } from 'sonner'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function SettingsPage() {
-  const { company, loading: companyLoading, error } = useCompany()
+  const { company, loading: companyLoading, error: companyError } = useCompany()
 
-  if (error) {
+  const { checkStripeStatus, checking } = useStripe()
+  const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+
+    async function fetchStripeStatus() {
+      if (!company?.id) return
+
+      const status = await checkStripeStatus()
+      if (!mounted) return
+
+      if (status.error) {
+        setError(new Error(status.error))
+        toast.error(status.error)
+        return
+      }
+
+      setStripeStatus(status)
+    }
+
+    fetchStripeStatus()
+
+    return () => {
+      mounted = false
+    }
+  }, [company?.id])
+
+  if (companyError || error) {
     return (
       <div className="p-8 rounded-lg bg-destructive/10 text-destructive">
-        <p className="font-medium">Error loading company data: {error.message}</p>
+        <p className="font-medium">Error loading data: {(companyError || error)?.message}</p>
+      </div>
+    )
+  }
+
+  if (companyLoading) {
+    return (
+      <div className="p-8 space-y-8">
+        <div className="space-y-1">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+
+        <div className="grid gap-8">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-7 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-7 w-40" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -32,7 +102,7 @@ export default function SettingsPage() {
 
       <div className="grid gap-8">
         <CompanyProfileCard company={company} loading={companyLoading} />
-        <StripeSetup company={company} />
+        <StripeSetup company={company} stripeStatus={stripeStatus} checking={checking} />
       </div>
     </div>
   )

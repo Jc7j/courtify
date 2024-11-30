@@ -93,6 +93,30 @@ export interface Booking {
   cancelled_at?: string | null
 }
 
+export enum ProductType {
+  CourtRental = 'court_rental',
+  Equipment = 'equipment',
+  Membership = 'membership',
+  Class = 'class',
+  Event = 'event',
+}
+
+export interface CompanyProduct {
+  id: string
+  company_id: string
+  name: string
+  description?: string | null
+  type: ProductType
+  price_amount: number
+  currency: string
+  stripe_price_id: string | null
+  stripe_product_id: string | null
+  metadata: Record<string, unknown>
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface CourtsEdge {
   node: Courts
   __typename: 'CourtsEdge'
@@ -131,4 +155,14 @@ export interface BookingEdge {
 export interface BookingConnection {
   edges: BookingEdge[]
   __typename: 'BookingConnection'
+}
+
+export interface CompanyProductEdge {
+  node: CompanyProduct
+  __typename: 'CompanyProductEdge'
+}
+
+export interface CompanyProductConnection {
+  edges: CompanyProductEdge[]
+  __typename: 'CompanyProductConnection'
 }

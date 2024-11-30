@@ -1,75 +1,36 @@
 'use client'
 
 import { Button } from '@/components/ui'
-import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import type { Company } from '@/types/graphql'
 import { useStripe } from '@/hooks/useStripe'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Progress } from '@/components/ui/progress'
+import type { StripeStatus } from '@/types/stripe'
 
 interface StripeSetupProps {
   company: Company
-}
-
-interface StripeAccountDetails {
-  requirements?: {
-    currently_due?: string[]
-    eventually_due?: string[]
-  }
-  capabilities?: {
-    card_payments?: 'active' | 'inactive'
-    transfers?: 'active' | 'inactive'
-  }
-  payouts_enabled?: boolean
+  stripeStatus: StripeStatus | null
+  checking: boolean
 }
 
 function getRequirementCategories(requirements: string[]): string[] {
   return Array.from(new Set(requirements.map((req) => req.split('.')[0])))
 }
 
-export function StripeSetup({ company }: StripeSetupProps) {
-  const [isConnected, setIsConnected] = useState<boolean>(!!company.stripe_account_id)
+export function StripeSetup({ company, stripeStatus, checking }: StripeSetupProps) {
   const router = useRouter()
-  const { connectStripe, checkStripeStatus, connecting, checking } = useStripe()
-  const searchParams = useSearchParams()
-  const isReturningFromStripe = searchParams.get('stripe') === 'success'
+  const { connectStripe, connecting } = useStripe()
 
-  const stripeDetails: StripeAccountDetails | null = (() => {
-    if (!company.stripe_account_details) return null
-    if (typeof company.stripe_account_details !== 'string') return null
-    try {
-      return JSON.parse(company.stripe_account_details) as StripeAccountDetails
-    } catch {
-      return null
-    }
-  })()
-
-  const requirements = stripeDetails?.requirements || {}
+  const requirements = stripeStatus?.accountDetails?.requirements || {}
   const hasRequirements = (requirements.currently_due?.length || 0) > 0
-
   const totalRequirements = requirements.eventually_due?.length || 0
   const completedRequirements = totalRequirements - (requirements.currently_due?.length || 0)
   const completionPercentage = totalRequirements
     ? (completedRequirements / totalRequirements) * 100
     : 0
-
-  useEffect(() => {
-    if (isReturningFromStripe) {
-      checkStripeStatus().then(({ isEnabled, error }) => {
-        if (error) {
-          toast.error(error)
-          return
-        }
-        setIsConnected(isEnabled)
-        if (isEnabled) {
-          toast.success('Stripe account connected successfully')
-        }
-      })
-    }
-  }, [isReturningFromStripe, checkStripeStatus])
 
   const handleConnect = async (): Promise<void> => {
     try {
@@ -90,15 +51,67 @@ export function StripeSetup({ company }: StripeSetupProps) {
     )
   }
 
+  if (checking) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Processing</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle>Payment Processing</CardTitle>
+        {stripeStatus?.isConnected && (
+          <Button variant="outline" size="sm" onClick={openStripeSettings} className="h-8">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Stripe Dashboard
+          </Button>
+        )}
       </CardHeader>
-      <CardContent className="space-y-6">
-        {isConnected ? (
+      <CardContent className="space-y-6 pt-4">
+        {!stripeStatus?.isConnected ? (
+          // Case 1: Not connected at all
           <div className="space-y-6">
-            {hasRequirements ? (
+            <div className="rounded-lg border bg-card p-4">
+              <h4 className="font-medium">Accept Payments with Stripe</h4>
+              <ul className="mt-2 space-y-2">
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                  Provide business information
+                </li>
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                  Set up bank account
+                </li>
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
+                  Verify identity
+                </li>
+              </ul>
+            </div>
+
+            <Button className="w-full sm:w-auto" onClick={handleConnect} disabled={connecting}>
+              {connecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                'Connect Stripe Account'
+              )}
+            </Button>
+          </div>
+        ) : !stripeStatus?.isEnabled ? (
+          // Case 2 & 3: Connected but needs setup or has pending requirements
+          <div className="space-y-6">
+            {hasRequirements && (
               <>
                 <div>
                   <div className="mb-2 flex items-center justify-between">
@@ -123,70 +136,44 @@ export function StripeSetup({ company }: StripeSetupProps) {
                     )
                   )}
                 </div>
-
-                <Button onClick={openStripeSettings} className="w-full sm:w-auto">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Complete Setup in Stripe
-                </Button>
               </>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div>
-                      <p className="font-medium">Card Payments</p>
-                      <p className="text-sm text-muted-foreground">Ready to accept payments</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div>
-                      <p className="font-medium">Payouts</p>
-                      <p className="text-sm text-muted-foreground">Ready to receive payouts</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="rounded-lg border bg-card p-4">
-              <h4 className="font-medium">Accept Payments with Stripe</h4>
-              <ul className="mt-2 space-y-2">
-                <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
-                  Provide business information
-                </li>
-                <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
-                  Set up bank account
-                </li>
-                <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="h-1.5 w-1.5 rounded-full bg-foreground/30" />
-                  Verify identity
-                </li>
-              </ul>
+
+            <div className="rounded-lg border bg-yellow-50 dark:bg-yellow-950/50 p-4">
+              <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+                Complete Your Stripe Setup
+              </h4>
+              <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                Additional information is needed before you can start accepting payments.
+              </p>
             </div>
 
-            <Button
-              className="w-full sm:w-auto"
-              onClick={handleConnect}
-              disabled={connecting || checking}
-            >
-              {connecting || checking ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                'Connect Stripe Account'
-              )}
+            <Button onClick={openStripeSettings} className="w-full sm:w-auto">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Complete Setup in Stripe
             </Button>
+          </div>
+        ) : (
+          // Fully configured and enabled
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <div>
+                  <p className="font-medium">Card Payments</p>
+                  <p className="text-sm text-muted-foreground">Ready to accept payments</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <div>
+                  <p className="font-medium">Payouts</p>
+                  <p className="text-sm text-muted-foreground">Ready to receive payouts</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

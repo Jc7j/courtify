@@ -1,12 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useUserStore } from '@/stores/useUserStore'
 import { useCompany } from './useCompany'
+import { StripeAccountDetails } from '@/types/stripe'
+
+interface StripeStatus {
+  isConnected: boolean
+  isEnabled: boolean
+  accountDetails: StripeAccountDetails | null
+  error: string | null
+}
 
 interface UseStripeReturn {
   connectStripe: () => Promise<{ url: string | null; error: string | null }>
-  checkStripeStatus: () => Promise<{ isEnabled: boolean; error: string | null }>
+  checkStripeStatus: () => Promise<StripeStatus>
   connecting: boolean
   checking: boolean
 }
@@ -16,6 +24,48 @@ export function useStripe(): UseStripeReturn {
   const { company } = useCompany()
   const [connecting, setConnecting] = useState(false)
   const [checking, setChecking] = useState(false)
+
+  const checkStripeStatus = useCallback(async (): Promise<StripeStatus> => {
+    try {
+      setChecking(true)
+      if (!user?.company_id) {
+        throw new Error('No company found')
+      }
+
+      const response = await fetch('/api/stripe/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company_id: user.company_id,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to check Stripe status')
+      }
+
+      return {
+        isConnected: !!data.accountId,
+        isEnabled: data.isEnabled,
+        accountDetails: data.accountDetails,
+        error: null,
+      }
+    } catch (err) {
+      console.error('Error checking Stripe status:', err)
+      return {
+        isConnected: false,
+        isEnabled: false,
+        accountDetails: null,
+        error: err instanceof Error ? err.message : 'Failed to check Stripe status',
+      }
+    } finally {
+      setChecking(false)
+    }
+  }, [user?.company_id])
 
   async function connectStripe() {
     try {
@@ -51,6 +101,7 @@ export function useStripe(): UseStripeReturn {
         console.error('Missing URL in response:', data)
         throw new Error('Failed to get Stripe connect URL')
       }
+      setConnecting(false)
 
       return {
         url: data.url,
@@ -64,44 +115,6 @@ export function useStripe(): UseStripeReturn {
       }
     } finally {
       setConnecting(false)
-    }
-  }
-
-  async function checkStripeStatus() {
-    try {
-      setChecking(true)
-      if (!user?.company_id) {
-        throw new Error('No company found')
-      }
-
-      const response = await fetch('/api/stripe/status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          company_id: user.company_id,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to check Stripe status')
-      }
-
-      return {
-        isEnabled: data.isEnabled,
-        error: null,
-      }
-    } catch (err) {
-      console.error('Error checking Stripe status:', err)
-      return {
-        isEnabled: false,
-        error: err instanceof Error ? err.message : 'Failed to check Stripe status',
-      }
-    } finally {
-      setChecking(false)
     }
   }
 

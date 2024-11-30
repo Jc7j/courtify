@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useCallback, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useUserStore } from '@/stores/useUserStore'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/lib/utils/auth-errors'
 import { clearApolloCache } from '@/lib/apollo/client'
@@ -22,13 +22,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { setSession, reset, isLoading, setIsLoading } = useUserStore()
+  const isSignupPage = pathname === ROUTES.AUTH.SIGNUP
 
   // Centralized function to handle user data fetching and session setting
   const handleSession = useCallback(
-    async (session: Session | null) => {
+    async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
+      console.log('session', session)
       if (!session) {
         await reset()
+        return
+      }
+
+      if (session && pathname === ROUTES.AUTH.SIGNIN) {
+        router.replace(ROUTES.DASHBOARD.HOME)
         return
       }
 
@@ -56,14 +64,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Session handling error:', error)
         await reset()
-        router.replace(ROUTES.AUTH.SIGNIN)
+        if (!options.skipRedirect) {
+          router.replace(ROUTES.AUTH.SIGNIN)
+        }
       }
     },
-    [reset, router, setSession]
+    [reset, router, setSession, pathname]
   )
 
   // Initialize and monitor auth state
   useEffect(() => {
+    // Skip session check on signup page
+    if (isSignupPage) {
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
 
     // Initial session check
@@ -77,18 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       switch (event) {
         case 'SIGNED_IN':
+          handleSession(session, { skipRedirect: isSignupPage })
+          break
         case 'TOKEN_REFRESHED':
           handleSession(session)
           break
         case 'SIGNED_OUT':
           reset()
-          router.replace(ROUTES.AUTH.SIGNIN)
+          if (!isSignupPage) {
+            router.replace(ROUTES.AUTH.SIGNIN)
+          }
           break
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [handleSession, reset, router, setIsLoading])
+  }, [handleSession, reset, router, setIsLoading, isSignupPage])
 
   async function signIn(email: string, password: string) {
     try {
