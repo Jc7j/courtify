@@ -1,8 +1,8 @@
 'use client'
 
 import { useCompany } from '@/hooks/useCompany'
-import { CompanyProfileCard } from '@/components/settings/CompanyProfileCard'
-import { StripeSetup } from '@/components/settings/StripeSetup'
+import { CompanyProfileSection } from '@/components/settings/CompanyProfileSection'
+import { StripeSection } from '@/components/settings/StripeSection'
 import { useStripe } from '@/hooks/useStripe'
 import { useEffect, useState } from 'react'
 import { StripeStatus } from '@/types/stripe'
@@ -94,15 +94,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Company Settings</h1>
         <p className="text-sm text-muted-foreground">Manage your company profile and preferences</p>
       </div>
 
-      <div className="grid gap-8">
-        <CompanyProfileCard company={company} loading={companyLoading} />
-        <StripeSetup company={company} stripeStatus={stripeStatus} checking={checking} />
+      <div className="grid gap-8 mt-8">
+        <CompanyProfileSection company={company} loading={companyLoading} />
+        <StripeSection company={company} stripeStatus={stripeStatus} checking={checking} />
       </div>
     </div>
   )

@@ -27,7 +27,14 @@ export default function AccountPage() {
 
   return (
     <div className="p-8">
-      <ProfileSection user={user} />
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Account Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your account profile and preferences</p>
+      </div>
+
+      <div className="grid gap-8 mt-8">
+        <ProfileSection user={user} />
+      </div>
     </div>
   )
 }

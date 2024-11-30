@@ -1,20 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  error as toastError,
-  success as toastSuccess,
-} from '@/components/ui'
-import { Check } from 'lucide-react'
+import { Button, Card, Input } from '@/components/ui'
+import { Check, X } from 'lucide-react'
 import type { BaseUser } from '@/types/auth'
 import { useUserOperations } from '@/hooks/useUserOperations'
+import { toast } from 'sonner'
 
 interface ProfileForm {
   name: string
@@ -45,14 +36,19 @@ export function ProfileSection({ user }: ProfileSectionProps) {
     }
   }, [user])
 
-  function handleChange(field: keyof ProfileForm, value: string) {
+  const handleChange = (field: keyof ProfileForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
-    if (!isDirty && value !== (user?.[field] || '')) {
-      setIsDirty(true)
-    }
+
+    // Check if any field is different from original
+    const isChanged =
+      field === 'name'
+        ? value !== user?.name || form.email !== user?.email
+        : value !== user?.email || form.name !== user?.name
+
+    setIsDirty(isChanged)
   }
 
-  function handleCancel() {
+  const handleCancel = () => {
     if (user) {
       setForm({
         name: user.name || '',
@@ -62,7 +58,7 @@ export function ProfileSection({ user }: ProfileSectionProps) {
     }
   }
 
-  async function handleSave() {
+  const handleSave = async () => {
     if (!user?.email || !isDirty) return
 
     try {
@@ -73,57 +69,60 @@ export function ProfileSection({ user }: ProfileSectionProps) {
         ...(form.email !== user.email && { email: form.email }),
       })
       setIsDirty(false)
-      toastSuccess('Profile updated successfully')
+      toast.success('Profile updated successfully')
     } catch (error) {
       handleCancel() // Reset form on error
-      toastError(error instanceof Error ? error.message : 'Failed to update profile')
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your account profile information</CardDescription>
+    <>
+      <Card>
+        <div className="p-4 flex items-center justify-between gap-4">
+          <label htmlFor="name" className="text-sm font-medium">
+            Name
+          </label>
+          <Input
+            id="name"
+            value={form.name}
+            onChange={(e) => handleChange('name', e.target.value)}
+            className="bg-muted border-0"
+            placeholder="Enter your name"
+            disabled={isLoading}
+          />
         </div>
-        <div className="flex gap-2">
-          {isDirty && (
-            <Button onClick={handleCancel} variant="outline" size="sm" disabled={isLoading}>
-              Cancel
-            </Button>
-          )}
-          <Button onClick={handleSave} disabled={!isDirty || isLoading} size="sm">
-            <Check className="h-4 w-4 mr-2" />
-            {isLoading ? 'Saving...' : 'Save Changes'}
+
+        <div className="p-4 flex items-center justify-between gap-4 border-t">
+          <label htmlFor="email" className="text-sm font-medium">
+            Email Address
+          </label>
+          <Input
+            id="email"
+            type="email"
+            value={form.email}
+            onChange={(e) => handleChange('email', e.target.value)}
+            className="bg-muted border-0"
+            placeholder="Enter your email"
+            disabled={isLoading}
+          />
+        </div>
+      </Card>
+
+      {isDirty && (
+        <div className="flex items-center justify-end gap-2">
+          <Button size="sm" onClick={handleSave} disabled={isLoading}>
+            <Check className="h-4 w-4" />
+            {isLoading ? 'Saving...' : 'Save changes'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleCancel} disabled={isLoading}>
+            <X className="h-4 w-4" />
+            Cancel
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6 max-w-md">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Name</label>
-            <Input
-              value={form.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Enter your name"
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email Address</label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="Enter your email"
-              disabled={isLoading}
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+    </>
   )
 }

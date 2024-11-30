@@ -5,16 +5,17 @@ import { Button } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
 import { Copy, Check } from 'lucide-react'
 import { useState } from 'react'
+import { BaseUser } from '@/types/auth'
 
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.com'
 
 function DashboardContent({
   company,
+  user,
 }: {
   company: NonNullable<ReturnType<typeof useCompany>['company']>
+  user: BaseUser
 }) {
-  const { user } = useUserStore()
-
   const [copied, setCopied] = useState(false)
 
   const handleCopySlug = async () => {
@@ -65,6 +66,7 @@ function DashboardContent({
 
 export default function DashboardPage() {
   const { company, loading, error } = useCompany()
+  const { user } = useUserStore()
 
   if (loading) {
     return (
@@ -82,7 +84,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (!company) {
+  if (!company || !user) {
     return (
       <div className="p-8 rounded-lg bg-destructive/10 text-destructive animate-fade-in">
         <p className="font-medium">No company data found</p>
@@ -90,5 +92,5 @@ export default function DashboardPage() {
     )
   }
 
-  return <DashboardContent company={company} />
+  return <DashboardContent company={company} user={user} />
 }

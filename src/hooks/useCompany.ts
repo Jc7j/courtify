@@ -85,7 +85,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
       const { error: updateError } = await supabase
         .from('users')
-        .update({ company_id: company.id })
+        .update({ company_id: company.id, role: 'owner' })
         .eq('id', user.id)
 
       if (updateError) throw updateError

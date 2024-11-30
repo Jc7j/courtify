@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Progress } from '@/components/ui/progress'
 import type { StripeStatus } from '@/types/stripe'
 
-interface StripeSetupProps {
+interface StripeSectionProps {
   company: Company
   stripeStatus: StripeStatus | null
   checking: boolean
@@ -20,7 +20,7 @@ function getRequirementCategories(requirements: string[]): string[] {
   return Array.from(new Set(requirements.map((req) => req.split('.')[0])))
 }
 
-export function StripeSetup({ company, stripeStatus, checking }: StripeSetupProps) {
+export function StripeSection({ company, stripeStatus, checking }: StripeSectionProps) {
   const router = useRouter()
   const { connectStripe, connecting } = useStripe()
 

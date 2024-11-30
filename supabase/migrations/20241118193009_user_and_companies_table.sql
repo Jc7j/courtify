@@ -1,3 +1,6 @@
+-- Create enum for member roles
+CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
+
 CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
@@ -25,25 +28,60 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true,
     company_id UUID REFERENCES companies(id),
+    
+    -- Member management fields
+    role member_role NOT NULL DEFAULT 'member',
+    invited_by UUID REFERENCES auth.users(id),
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    
+    -- Authentication fields
     last_login_at TIMESTAMPTZ,
     email_verified_at TIMESTAMPTZ,
+    
+    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX idx_users_company_members ON users(company_id, role, is_active);
+
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY users_select_own ON users
-    FOR SELECT TO authenticated
-    USING (auth.uid() = id);
+CREATE POLICY "Company members can view other members" ON users
+    FOR SELECT
+    USING (
+        company_id IN (
+            SELECT company_id 
+            FROM users 
+            WHERE id = auth.uid()
+        )
+        OR (auth.uid() IS NOT NULL)
+    );
 
-CREATE POLICY users_update_own ON users
-    FOR UPDATE TO authenticated
-    USING (auth.uid() = id);
+CREATE POLICY "Owners and admins can manage members" ON users
+    FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 
+            FROM users 
+            WHERE id = auth.uid() 
+            AND company_id = users.company_id 
+            AND role IN ('owner', 'admin')
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 
+            FROM users 
+            WHERE id = auth.uid() 
+            AND company_id = users.company_id 
+            AND role IN ('owner', 'admin')
+        )
+    );
 
-CREATE POLICY users_insert_public ON users
+CREATE POLICY "users_insert_public" ON users
     FOR INSERT
     WITH CHECK (true);
 
@@ -61,6 +99,7 @@ CREATE POLICY companies_update ON companies
         SELECT company_id 
         FROM users 
         WHERE users.id = auth.uid()
+        AND role IN ('owner', 'admin')
     ));
 
 CREATE POLICY companies_delete ON companies
@@ -69,6 +108,7 @@ CREATE POLICY companies_delete ON companies
         SELECT company_id 
         FROM users 
         WHERE users.id = auth.uid()
+        AND role = 'owner'
     ));
 
 CREATE POLICY "Public can view companies"

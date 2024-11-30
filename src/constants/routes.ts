@@ -9,7 +9,15 @@ export const ROUTES = {
     HOME: '/dashboard',
     ACCOUNT: '/dashboard/account',
     COURTS: '/dashboard/courts',
-    SETTINGS: '/dashboard/settings',
+    SETTINGS: {
+      HOME: '/dashboard/settings',
+      COMPANY: '/dashboard/settings/company',
+      SECURITY: '/dashboard/settings/security',
+      MEMBERS: '/dashboard/settings/members',
+      BILLING: '/dashboard/settings/billing',
+      ACCOUNT: '/dashboard/settings/account',
+      PREFERENCES: '/dashboard/settings/preferences',
+    },
   },
   UNAUTHORIZED: '/unauthorized',
 } as const

@@ -15,10 +15,15 @@ CREATE TABLE company_products (
     price_amount INTEGER NOT NULL, -- stored in cents
     currency TEXT NOT NULL DEFAULT 'USD',
     stripe_price_id TEXT,
+    stripe_product_id TEXT, -- Added this field for Stripe integration
     metadata JSONB DEFAULT '{}', -- Flexible field for type-specific data
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    -- Add unique constraint for Stripe IDs
+    CONSTRAINT unique_stripe_price_id UNIQUE (stripe_price_id),
+    CONSTRAINT unique_stripe_product_id UNIQUE (stripe_product_id)
 );
 
 -- Example metadata structure for court_rental type:
@@ -30,18 +35,40 @@ CREATE TABLE company_products (
 --   "court_requirements": ["indoor", "regulation_height"]
 -- }
 
--- Add to bookings table
-ALTER TABLE bookings
-ADD COLUMN product_id UUID REFERENCES company_products(id),
-ADD COLUMN booking_details JSONB DEFAULT '{}';
-
 -- RLS Policies
 ALTER TABLE company_products ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Company owners can manage their products" ON company_products
-    FOR ALL TO authenticated
-    USING (company_id = (SELECT company_id FROM users WHERE id = auth.uid()))
-    WITH CHECK (company_id = (SELECT company_id FROM users WHERE id = auth.uid()));
+-- Company members can view products
+CREATE POLICY "Company members can view products" ON company_products
+    FOR SELECT
+    USING (
+        company_id IN (
+            SELECT company_id 
+            FROM users 
+            WHERE id = auth.uid()
+        )
+        OR is_active = true
+    );
+
+-- Only owners/admins can manage products
+CREATE POLICY "Owners and admins can manage products" ON company_products
+    FOR ALL
+    USING (
+        company_id IN (
+            SELECT company_id 
+            FROM users 
+            WHERE id = auth.uid() 
+            AND role IN ('owner', 'admin')
+        )
+    )
+    WITH CHECK (
+        company_id IN (
+            SELECT company_id 
+            FROM users 
+            WHERE id = auth.uid() 
+            AND role IN ('owner', 'admin')
+        )
+    );
 
 CREATE POLICY "Public can view active products" ON company_products
     FOR SELECT

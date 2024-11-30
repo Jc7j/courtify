@@ -78,37 +78,22 @@ export default function CourtsPage() {
 
   return (
     <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground">Court Management</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your courts, schedules, and view bookings
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          className="border-primary text-primary"
-          onClick={() => handleCreateCourt('New Court')}
-          disabled={creating}
-        >
-          {creating ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          Add Court
-        </Button>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold text-foreground">Court Management</h1>
+        <p className="text-sm text-muted-foreground">
+          Manage your courts, schedules, and view bookings
+        </p>
       </div>
 
-      <Tabs defaultValue="courts" className="space-y-6">
+      <Tabs defaultValue="bookings" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="courts" className="space-x-2">
-            <Volleyball className="h-4 w-4" />
-            <span>Courts</span>
-          </TabsTrigger>
           <TabsTrigger value="bookings" className="space-x-2">
             <CalendarDays className="h-4 w-4" />
             <span>Calendar</span>
+          </TabsTrigger>
+          <TabsTrigger value="courts" className="space-x-2">
+            <Volleyball className="h-4 w-4" />
+            <span>Courts</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="space-x-2">
             <Clock className="h-4 w-4" />
@@ -116,7 +101,32 @@ export default function CourtsPage() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="bookings" className="space-y-4">
+          <CompanyCourtCalendar
+            courts={availabilityCourts as Courts[]}
+            availabilities={availabilities}
+            loading={availabilitiesLoading}
+            onDateChange={handleDateChange}
+          />
+        </TabsContent>
+
         <TabsContent value="courts" className="space-y-4">
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              className="border-primary text-primary"
+              onClick={() => handleCreateCourt('New Court')}
+              disabled={creating}
+            >
+              {creating ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              Add Court
+            </Button>
+          </div>
+
           <div className="border rounded-lg">
             <Table>
               <TableHeader>
@@ -189,15 +199,6 @@ export default function CourtsPage() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
-
-        <TabsContent value="bookings" className="space-y-4">
-          <CompanyCourtCalendar
-            courts={availabilityCourts as Courts[]}
-            availabilities={availabilities}
-            loading={availabilitiesLoading}
-            onDateChange={handleDateChange}
-          />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
