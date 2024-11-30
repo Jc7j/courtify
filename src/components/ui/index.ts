@@ -1,6 +1,7 @@
 export * from './badge'
 export * from './button'
 export * from './input'
+export * from './checkbox'
 export * from './logo'
 export * from './separator'
 export * from './sheet'

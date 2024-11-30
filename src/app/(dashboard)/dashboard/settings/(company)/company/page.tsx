@@ -2,87 +2,25 @@
 
 import { useCompany } from '@/hooks/useCompany'
 import { CompanyProfileSection } from '@/components/settings/CompanyProfileSection'
-import { StripeSection } from '@/components/settings/StripeSection'
-import { useStripe } from '@/hooks/useStripe'
-import { useEffect, useState } from 'react'
-import { StripeStatus } from '@/types/stripe'
-import { toast } from 'sonner'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Input, Card, Button, Checkbox, ConfirmationDialog } from '@/components/ui'
+import { useState } from 'react'
+import { useUserStore } from '@/stores/useUserStore'
+import { MemberRole } from '@/types/graphql'
 
 export default function SettingsPage() {
-  const { company, loading: companyLoading, error: companyError } = useCompany()
+  const { user } = useUserStore()
+  const { company, loading: companyLoading } = useCompany()
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [confirmName, setConfirmName] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
 
-  const { checkStripeStatus, checking } = useStripe()
-  const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-
-  useEffect(() => {
-    let mounted = true
-
-    async function fetchStripeStatus() {
-      if (!company?.id) return
-
-      const status = await checkStripeStatus()
-      if (!mounted) return
-
-      if (status.error) {
-        setError(new Error(status.error))
-        toast.error(status.error)
-        return
-      }
-
-      setStripeStatus(status)
-    }
-
-    fetchStripeStatus()
-
-    return () => {
-      mounted = false
-    }
-  }, [company?.id])
-
-  if (companyError || error) {
-    return (
-      <div className="p-8 rounded-lg bg-destructive/10 text-destructive">
-        <p className="font-medium">Error loading data: {(companyError || error)?.message}</p>
-      </div>
-    )
-  }
-
-  if (companyLoading) {
-    return (
-      <div className="p-8 space-y-8">
-        <div className="space-y-1">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-
-        <div className="grid gap-8">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-7 w-40" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-7 w-40" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
+  const handleDelete = async () => {
+    if (!company || confirmName !== company.name || !acknowledged) return
+    setIsDeleting(true)
+    // TODO: Implement delete functionality
+    setIsDeleting(false)
+    setShowDeleteDialog(false)
   }
 
   if (!company) {
@@ -102,8 +40,82 @@ export default function SettingsPage() {
 
       <div className="grid gap-8 mt-8">
         <CompanyProfileSection company={company} loading={companyLoading} />
-        <StripeSection company={company} stripeStatus={stripeStatus} checking={checking} />
+
+        {/* Only show delete section for owners */}
+        {user?.role === MemberRole.Owner && (
+          <Card>
+            <div className="p-4 flex items-center justify-between gap-4">
+              <div>
+                <label className="text-sm font-medium">Delete Workspace</label>
+                <p className="text-xs text-muted-foreground">
+                  Schedule workspace to be permanently deleted
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                Delete
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
+
+      {/* Dialog will only be accessible to owners due to conditional rendering above */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Verify workspace deletion request"
+        description={
+          <p>
+            If you are sure you want to proceed with the deletion of the workspace{' '}
+            <span className="font-medium">{company?.name}</span>, please continue below.
+          </p>
+        }
+        actionLabel="Delete my workspace"
+        onConfirm={handleDelete}
+        loading={isDeleting}
+        variant="destructive"
+        className="sm:max-w-md"
+        disableConfirm={confirmName !== company?.name || !acknowledged}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Keep in mind this operation is irreversible and will result in a complete deletion of
+            all the data associated with the workspace.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Data including but not limited to users, issues and comments will be permanently
+            deleted.
+          </p>
+          <div className="space-y-2">
+            <label htmlFor="confirm-name" className="text-sm font-medium">
+              To confirm, type &quot;{company?.name}&quot; in the box below.
+            </label>
+            <Input
+              id="confirm-name"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={company?.name}
+              className="bg-muted border-0"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="confirm-delete"
+              checked={acknowledged}
+              onCheckedChange={(checked: boolean) => setAcknowledged(checked)}
+              className="rounded border-input"
+            />
+            <label htmlFor="confirm-delete" className="text-sm">
+              I acknowledge that all of the workspace data will be deleted and want to proceed.
+            </label>
+          </div>
+        </div>
+      </ConfirmationDialog>
     </div>
   )
 }

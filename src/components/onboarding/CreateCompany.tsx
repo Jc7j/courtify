@@ -36,7 +36,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
 
   async function onSubmit(data: CreateCompanyFormData) {
     try {
-      await createCompany(data.name)
+      await createCompany(data.name.trim())
 
       const updatedUser = useUserStore.getState().user
       if (!updatedUser?.company_id) {

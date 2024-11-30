@@ -63,8 +63,8 @@ export function CompanyProfileSection({ company }: CompanyProfileSectionProps) {
 
     try {
       await updateCompany({
-        name: form.name,
-        slug: form.slug,
+        name: form.name.trim(),
+        slug: form.slug.trim(),
       })
       setIsDirty(false)
       toast.success('Company settings updated')

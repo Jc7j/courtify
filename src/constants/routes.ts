@@ -17,6 +17,7 @@ export const ROUTES = {
       BILLING: '/dashboard/settings/billing',
       ACCOUNT: '/dashboard/settings/account',
       PREFERENCES: '/dashboard/settings/preferences',
+      PRODUCTS: '/dashboard/settings/products',
     },
   },
   UNAUTHORIZED: '/unauthorized',

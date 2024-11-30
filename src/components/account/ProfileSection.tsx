@@ -65,8 +65,8 @@ export function ProfileSection({ user }: ProfileSectionProps) {
       setIsLoading(true)
       await updateProfile({
         currentEmail: user.email,
-        ...(form.name !== user.name && { name: form.name }),
-        ...(form.email !== user.email && { email: form.email }),
+        ...(form.name !== user.name && { name: form.name.trim() }),
+        ...(form.email !== user.email && { email: form.email.trim() }),
       })
       setIsDirty(false)
       toast.success('Profile updated successfully')

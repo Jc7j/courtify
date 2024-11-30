@@ -18,22 +18,26 @@ import {
 } from '@/components/ui/sidebar'
 
 const workspaceSettings = [
-  // {
-  //   title: 'Overview',
-  //   path: ROUTES.DASHBOARD.SETTINGS.HOME,
-  // },
   {
     title: 'General',
     path: ROUTES.DASHBOARD.SETTINGS.COMPANY,
   },
-  // {
-  //   title: 'Security',
-  //   path: ROUTES.DASHBOARD.SETTINGS.SECURITY,
-  // },
   {
     title: 'Members',
     path: ROUTES.DASHBOARD.SETTINGS.MEMBERS,
   },
+  {
+    title: 'Products',
+    path: ROUTES.DASHBOARD.SETTINGS.PRODUCTS,
+  },
+  // {
+  //   title: 'Overview',
+  //   path: ROUTES.DASHBOARD.SETTINGS.HOME,
+  // },
+  // {
+  //   title: 'Security',
+  //   path: ROUTES.DASHBOARD.SETTINGS.SECURITY,
+  // },
   // {
   //   title: 'Billing',
   //   path: ROUTES.DASHBOARD.SETTINGS.BILLING,
