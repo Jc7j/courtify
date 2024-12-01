@@ -32,9 +32,6 @@ export type Database = {
         Row: {
           amount_paid: number | null
           amount_total: number
-          booking_info: Json | null
-          booking_status: Database['public']['Enums']['booking_status']
-          cancelled_at: string | null
           company_id: string
           court_number: number
           created_at: string
@@ -42,21 +39,18 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone: string | null
-          id: string
-          notes: string | null
+          id: number
+          metadata: Json | null
           payment_status: Database['public']['Enums']['payment_status']
+          product_id: string | null
           start_time: string
-          stripe_customer_id: string | null
+          status: Database['public']['Enums']['booking_status']
           stripe_payment_intent_id: string | null
-          stripe_session_id: string | null
           updated_at: string
         }
         Insert: {
           amount_paid?: number | null
           amount_total: number
-          booking_info?: Json | null
-          booking_status?: Database['public']['Enums']['booking_status']
-          cancelled_at?: string | null
           company_id: string
           court_number: number
           created_at?: string
@@ -64,21 +58,18 @@ export type Database = {
           customer_email: string
           customer_name: string
           customer_phone?: string | null
-          id?: string
-          notes?: string | null
+          id?: number
+          metadata?: Json | null
           payment_status?: Database['public']['Enums']['payment_status']
+          product_id?: string | null
           start_time: string
-          stripe_customer_id?: string | null
+          status?: Database['public']['Enums']['booking_status']
           stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
           updated_at?: string
         }
         Update: {
           amount_paid?: number | null
           amount_total?: number
-          booking_info?: Json | null
-          booking_status?: Database['public']['Enums']['booking_status']
-          cancelled_at?: string | null
           company_id?: string
           court_number?: number
           created_at?: string
@@ -86,13 +77,13 @@ export type Database = {
           customer_email?: string
           customer_name?: string
           customer_phone?: string | null
-          id?: string
-          notes?: string | null
+          id?: number
+          metadata?: Json | null
           payment_status?: Database['public']['Enums']['payment_status']
+          product_id?: string | null
           start_time?: string
-          stripe_customer_id?: string | null
+          status?: Database['public']['Enums']['booking_status']
           stripe_payment_intent_id?: string | null
-          stripe_session_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -102,6 +93,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'court_availabilities'
             referencedColumns: ['company_id', 'court_number', 'start_time']
+          },
+          {
+            foreignKeyName: 'bookings_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'company_products'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -146,6 +144,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      company_products: {
+        Row: {
+          company_id: string
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          name: string
+          price_amount: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          type: Database['public']['Enums']['product_type']
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name: string
+          price_amount: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          type: Database['public']['Enums']['product_type']
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name?: string
+          price_amount?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          type?: Database['public']['Enums']['product_type']
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'company_products_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+        ]
       }
       court_availabilities: {
         Row: {
@@ -226,36 +280,45 @@ export type Database = {
       }
       users: {
         Row: {
-          active: boolean
           company_id: string | null
           created_at: string
           email: string
           email_verified_at: string | null
           id: string
+          invited_by: string | null
+          is_active: boolean
+          joined_at: string | null
           last_login_at: string | null
           name: string
+          role: Database['public']['Enums']['member_role']
           updated_at: string
         }
         Insert: {
-          active?: boolean
           company_id?: string | null
           created_at?: string
           email: string
           email_verified_at?: string | null
           id?: string
+          invited_by?: string | null
+          is_active?: boolean
+          joined_at?: string | null
           last_login_at?: string | null
           name: string
+          role?: Database['public']['Enums']['member_role']
           updated_at?: string
         }
         Update: {
-          active?: boolean
           company_id?: string | null
           created_at?: string
           email?: string
           email_verified_at?: string | null
           id?: string
+          invited_by?: string | null
+          is_active?: boolean
+          joined_at?: string | null
           last_login_at?: string | null
           name?: string
+          role?: Database['public']['Enums']['member_role']
           updated_at?: string
         }
         Relationships: [
@@ -617,7 +680,9 @@ export type Database = {
     Enums: {
       availability_status: 'available' | 'booked' | 'past'
       booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+      member_role: 'owner' | 'admin' | 'member'
       payment_status: 'pending' | 'paid' | 'refunded' | 'failed'
+      product_type: 'court_rental' | 'equipment' | 'membership' | 'class' | 'event'
     }
     CompositeTypes: {
       [_ in never]: never

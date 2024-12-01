@@ -49,17 +49,14 @@ CREATE INDEX idx_users_company_members ON users(company_id, role, is_active);
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Company members can view other members" ON users
-    FOR SELECT
-    USING (
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE id = auth.uid()
-        )
-        OR (auth.uid() IS NOT NULL)
-    );
+CREATE POLICY "Users are viewable by everyone" ON users
+  FOR SELECT USING (true);
 
+CREATE POLICY "Users can insert their own profile" ON users
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON users
+  FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Owners and admins can manage members" ON users
     FOR UPDATE
     USING (

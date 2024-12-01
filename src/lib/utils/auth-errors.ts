@@ -8,6 +8,7 @@ export const AUTH_ERRORS = {
   SESSION_EXPIRED: 'Your session has expired. Please sign in again.',
   REFRESH_FAILED: 'Unable to refresh session. Please sign in again.',
   INVALID_SESSION: 'Invalid session. Please sign in again.',
+  ACCOUNT_INACTIVE: 'This account has been disabled. Please contact support.',
 } as const
 
 interface ErrorWithMessage {

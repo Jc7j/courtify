@@ -17,7 +17,7 @@ export interface BaseUser extends Omit<SupabaseUser, 'role' | 'app_metadata' | '
   name: string
   company_id: string | null
   role: MemberRole
-  is_active: boolean
+  is_active?: boolean
   invited_by?: string
   joined_at?: string
 }
