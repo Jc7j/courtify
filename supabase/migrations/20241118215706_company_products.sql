@@ -1,9 +1,9 @@
 CREATE TYPE product_type AS ENUM (
   'court_rental',
-  'equipment',
-  'membership',
-  'class',
-  'event'
+  'equipment'
+--   'membership',
+--   'class',
+--   'event'
 );
 
 CREATE TABLE company_products (

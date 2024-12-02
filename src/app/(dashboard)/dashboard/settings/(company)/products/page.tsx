@@ -1,14 +1,17 @@
 'use client'
 
 import { useCompany } from '@/hooks/useCompany'
-import { StripeSection } from '@/components/settings/StripeSection'
+import { StripeSection } from '@/components/stripe/StripeSection'
 import { useStripe } from '@/hooks/useStripe'
 import { useEffect, useState } from 'react'
 import { StripeStatus } from '@/types/stripe'
 import { toast } from 'sonner'
+import { ProductList } from '@/components/stripe/ProductList'
+import { useCompanyProducts } from '@/hooks/useCompanyProducts'
 
 export default function ProductsPage() {
   const { company } = useCompany()
+  const { products } = useCompanyProducts()
 
   const { checkStripeStatus, checking } = useStripe()
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
@@ -50,6 +53,7 @@ export default function ProductsPage() {
 
       <div className="grid gap-8 mt-8">
         <StripeSection company={company} stripeStatus={stripeStatus} checking={checking} />
+        {stripeStatus?.isConnected && stripeStatus.isEnabled && <ProductList products={products} />}
       </div>
     </div>
   )

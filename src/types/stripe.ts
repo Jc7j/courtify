@@ -1,13 +1,32 @@
+/**
+ * Core Stripe types that focus on what we actually use
+ * while remaining flexible to API changes
+ */
+
+// Basic requirement structure we depend on
+export interface StripeRequirements {
+  currently_due: string[]
+  eventually_due: string[]
+}
+
+// Core business profile fields we use
+export interface StripeBusinessProfile {
+  name: string | null
+  url: string | null
+}
+
+// Essential account details we need
 export interface StripeAccountDetails {
-  requirements?: {
-    currently_due?: string[]
-    eventually_due?: string[]
+  id: string
+  email: string
+  business_profile: StripeBusinessProfile
+  capabilities: {
+    card_payments: 'active' | 'inactive'
+    transfers: 'active' | 'inactive'
   }
-  capabilities?: {
-    card_payments?: 'active' | 'inactive'
-    transfers?: 'active' | 'inactive'
-  }
-  payouts_enabled?: boolean
+  charges_enabled: boolean
+  payouts_enabled: boolean
+  requirements: StripeRequirements
 }
 
 export interface StripeStatus {

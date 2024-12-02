@@ -29,38 +29,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Centralized function to handle user data fetching and session setting
   const handleSession = useCallback(
     async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
-      console.log('[Auth] Handling session:', {
-        hasSession: !!session,
-        userId: session?.user?.id,
-        pathname,
-        skipRedirect: options.skipRedirect,
-      })
-
       if (!session) {
         console.log('[Auth] No session, resetting state')
         await reset()
         return
       }
 
-      if (session && pathname === ROUTES.AUTH.SIGNIN) {
-        console.log('[Auth] User already signed in, redirecting to dashboard')
-        router.replace(ROUTES.DASHBOARD.HOME)
-        return
-      }
-
       try {
-        // Fetch user data
+        // Fetch user data first
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id, email, name, company_id, role, is_active')
           .eq('id', session.user.id)
           .single()
-
-        console.log('[Auth] Fetched user data:', {
-          success: !!userData,
-          error: userError?.message,
-          isActive: userData?.is_active,
-        })
 
         if (userError) throw userError
         if (!userData) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
@@ -80,10 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           expiresAt: session.expires_at,
         })
 
-        console.log('[Auth] Session set successfully', {
-          hasCompany: !!userData.company_id,
-          role: userData.role,
-        })
+        // Only redirect after we've confirmed valid user data
+        if (pathname === ROUTES.AUTH.SIGNIN) {
+          console.log('[Auth] Valid user session, redirecting to dashboard')
+          router.replace(ROUTES.DASHBOARD.HOME)
+        }
       } catch (error) {
         console.error('[Auth] Session handling error:', {
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -91,9 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         await reset()
 
-        // Only redirect if not on signup page and redirect not explicitly skipped
         if (!options.skipRedirect && !isSignupPage) {
-          console.log('[Auth] Redirecting to signin due to error')
+          console.log('[Auth] Invalid user data, redirecting to signin')
           router.replace(ROUTES.AUTH.SIGNIN)
         }
       }
@@ -103,10 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize and monitor auth state
   useEffect(() => {
-    console.log('[Auth] Initializing auth state', {
-      isSignupPage,
-      pathname,
-    })
+    // console.log('[Auth] Initializing auth state', {
+    //   isSignupPage,
+    //   pathname,
+    // })
 
     // Skip session check on signup page
     if (isSignupPage) {
@@ -172,7 +153,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error
 
       await handleSession(data.session)
-      router.replace(ROUTES.DASHBOARD.HOME)
     } catch (error) {
       console.error('[Auth] Sign in error:', {
         error: error instanceof Error ? error.message : 'Unknown error',

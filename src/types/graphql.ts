@@ -102,9 +102,9 @@ export interface Booking {
 export enum ProductType {
   CourtRental = 'court_rental',
   Equipment = 'equipment',
-  Membership = 'membership',
-  Class = 'class',
-  Event = 'event',
+  // Membership = 'membership',
+  // Class = 'class',
+  // Event = 'event',
 }
 
 export interface CompanyProduct {

@@ -1,10 +1,12 @@
 'use client'
 
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Building2, UserCircle } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import cn from '@/lib/utils/cn'
+import { hasAdminAccess } from '@/lib/utils/admin-access'
 import { ROUTES } from '@/constants/routes'
+import { useUserStore } from '@/stores/useUserStore'
 
 import {
   Sidebar,
@@ -30,18 +32,6 @@ const workspaceSettings = [
     title: 'Products',
     path: ROUTES.DASHBOARD.SETTINGS.PRODUCTS,
   },
-  // {
-  //   title: 'Overview',
-  //   path: ROUTES.DASHBOARD.SETTINGS.HOME,
-  // },
-  // {
-  //   title: 'Security',
-  //   path: ROUTES.DASHBOARD.SETTINGS.SECURITY,
-  // },
-  // {
-  //   title: 'Billing',
-  //   path: ROUTES.DASHBOARD.SETTINGS.BILLING,
-  // },
 ]
 
 const accountSettings = [
@@ -49,18 +39,11 @@ const accountSettings = [
     title: 'Profile',
     path: ROUTES.DASHBOARD.SETTINGS.ACCOUNT,
   },
-  // {
-  //   title: 'Preferences',
-  //   path: ROUTES.DASHBOARD.SETTINGS.PREFERENCES,
-  // },
-  // {
-  //   title: 'Security & Access',
-  //   path: ROUTES.DASHBOARD.SETTINGS.SECURITY,
-  // },
 ]
 
 export function SettingsSidebar() {
   const pathname = usePathname()
+  const { user } = useUserStore()
 
   return (
     <Sidebar className="hidden lg:block w-[280px] border-r">
@@ -82,31 +65,41 @@ export function SettingsSidebar() {
 
           <SidebarGroupContent className="p-2">
             <SidebarMenu>
-              <div className="px-3 py-2">
-                <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Workspace</h2>
-                <div className="space-y-1">
-                  {workspaceSettings.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={pathname === item.path}>
-                        <Link
-                          href={item.path}
-                          className={cn(
-                            'flex w-full items-center rounded-md px-4 py-2 text-sm font-medium',
-                            'text-muted-foreground hover:text-foreground',
-                            'transition-colors duration-200',
-                            pathname === item.path && 'bg-accent text-foreground'
-                          )}
-                        >
-                          {item.title}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+              {/* Only show workspace settings for admin/owner */}
+              {hasAdminAccess(user) && (
+                <div className="px-3 py-2">
+                  <h2 className="mb-2 text-md font-semibold tracking-tight flex items-center gap-2">
+                    <Building2 className="h-3 w-3" />
+                    Workspace
+                  </h2>
+                  <div className="space-y-1">
+                    {workspaceSettings.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild isActive={pathname === item.path}>
+                          <Link
+                            href={item.path}
+                            className={cn(
+                              'flex w-full items-center rounded-md px-4 py-2 text-sm font-medium',
+                              'text-muted-foreground hover:text-foreground',
+                              'transition-colors duration-200',
+                              pathname === item.path && 'bg-accent text-foreground'
+                            )}
+                          >
+                            {item.title}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
+              {/* Always show account settings */}
               <div className="px-3 py-2">
-                <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Account</h2>
+                <h2 className="mb-2 text-md font-semibold tracking-tight flex items-center gap-2">
+                  <UserCircle className="h-3 w-3" />
+                  Account
+                </h2>
                 <div className="space-y-1">
                   {accountSettings.map((item) => (
                     <SidebarMenuItem key={item.title}>

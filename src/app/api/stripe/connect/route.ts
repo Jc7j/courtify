@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/stripe'
 import { createAdminClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/constants/routes'
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    console.log('Creating Stripe account for company:', { company_id, company_name })
+    // console.log('Creating Stripe account for company:', { company_id, company_name })
 
     const account = await stripe.accounts.create({
       type: 'standard',
@@ -25,16 +26,16 @@ export async function POST(req: Request) {
       metadata: { company_id },
     })
 
-    console.log('Stripe account created:', account.id)
+    // console.log('Stripe account created:', account.id)
 
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?stripe=success`,
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PRODUCTS}?refresh=true`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PRODUCTS}?stripe=success`,
       type: 'account_onboarding',
     })
 
-    console.log('Stripe account link created')
+    // console.log('Stripe account link created')
 
     const { data: existingCompany } = await supabaseAdmin
       .from('companies')
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
       throw new Error(`Failed to update company: ${updateError.message}`)
     }
 
-    console.log('Company updated with Stripe account')
+    // console.log('Company updated with Stripe account')
     return NextResponse.json({ url: accountLink.url })
   } catch (error) {
     console.error('Stripe connect error:', error)

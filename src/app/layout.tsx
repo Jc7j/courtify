@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ThemeProvider>
               {children}
               <Toaster />
-              {process.env.NODE_ENV === 'development' && <SessionDebug />}
+              {/* {process.env.NODE_ENV === 'development' && <SessionDebug />} */}
             </ThemeProvider>
           </ApolloProvider>
         </AuthProvider>

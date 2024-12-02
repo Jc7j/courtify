@@ -9,6 +9,13 @@ import { useStripe } from '@/hooks/useStripe'
 import { useRouter } from 'next/navigation'
 import { Progress } from '@/components/ui/progress'
 import type { StripeStatus } from '@/types/stripe'
+import {
+  hasStripeRequirements,
+  getStripeCompletionPercentage,
+  getRequirementCategories,
+  getStripeDashboardUrl,
+  hasBusinessProfile,
+} from '@/lib/utils/stripe'
 
 interface StripeSectionProps {
   company: Company
@@ -16,21 +23,14 @@ interface StripeSectionProps {
   checking: boolean
 }
 
-function getRequirementCategories(requirements: string[]): string[] {
-  return Array.from(new Set(requirements.map((req) => req.split('.')[0])))
-}
-
 export function StripeSection({ company, stripeStatus, checking }: StripeSectionProps) {
   const router = useRouter()
   const { connectStripe, connecting } = useStripe()
 
   const requirements = stripeStatus?.accountDetails?.requirements || {}
-  const hasRequirements = (requirements.currently_due?.length || 0) > 0
-  const totalRequirements = requirements.eventually_due?.length || 0
-  const completedRequirements = totalRequirements - (requirements.currently_due?.length || 0)
-  const completionPercentage = totalRequirements
-    ? (completedRequirements / totalRequirements) * 100
-    : 0
+  const hasRequirements =
+    hasStripeRequirements(requirements) && requirements.currently_due.length > 0
+  const completionPercentage = getStripeCompletionPercentage(requirements)
 
   const handleConnect = async (): Promise<void> => {
     try {
@@ -45,10 +45,13 @@ export function StripeSection({ company, stripeStatus, checking }: StripeSection
 
   const openStripeSettings = (): void => {
     if (!company.stripe_account_id) return
-    window?.open(
-      `https://dashboard.stripe.com/connect/accounts/${company.stripe_account_id}`,
-      '_blank'
-    )
+
+    const needsSetup =
+      !stripeStatus?.isEnabled &&
+      hasStripeRequirements(stripeStatus?.accountDetails?.requirements) &&
+      stripeStatus?.accountDetails?.requirements.currently_due.length > 0
+
+    window?.open(getStripeDashboardUrl(company.stripe_account_id, needsSetup), '_blank')
   }
 
   if (checking) {
@@ -155,25 +158,62 @@ export function StripeSection({ company, stripeStatus, checking }: StripeSection
           </div>
         ) : (
           // Fully configured and enabled
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <div>
-                  <p className="font-medium">Card Payments</p>
-                  <p className="text-sm text-muted-foreground">Ready to accept payments</p>
+          <div className="space-y-6">
+            {/* Status Grid */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                  <div>
+                    <p className="font-medium">Card Payments</p>
+                    <p className="text-sm text-muted-foreground">Ready to accept payments</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                  <div>
+                    <p className="font-medium">Payouts</p>
+                    <p className="text-sm text-muted-foreground">Ready to receive payouts</p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="rounded-lg border p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <div>
-                  <p className="font-medium">Payouts</p>
-                  <p className="text-sm text-muted-foreground">Ready to receive payouts</p>
+
+            {/* Business Details */}
+            {hasBusinessProfile(stripeStatus?.accountDetails) && (
+              <div className="rounded-lg border p-4 space-y-4">
+                <h3 className="font-medium">Business Details</h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-x-4 text-sm">
+                    <span className="text-muted-foreground">Email</span>
+                    <span>{stripeStatus.accountDetails.email}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 text-sm">
+                    <span className="text-muted-foreground">Business Name</span>
+                    <span>{stripeStatus.accountDetails.business_profile.name}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 text-sm">
+                    <span className="text-muted-foreground">Website</span>
+                    <span>
+                      {stripeStatus.accountDetails.business_profile.url ? (
+                        <a
+                          href={`https://${stripeStatus.accountDetails.business_profile.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {stripeStatus.accountDetails.business_profile.url}
+                        </a>
+                      ) : (
+                        'Not provided'
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </CardContent>

@@ -1,51 +1,34 @@
 import { gql } from '@apollo/client'
-
-export const PRODUCT_FIELDS = gql`
-  fragment ProductFields on company_products {
-    id
-    company_id
-    name
-    description
-    type
-    price_amount
-    currency
-    stripe_price_id
-    stripe_product_id
-    metadata
-    is_active
-    created_at
-    updated_at
-  }
-`
+import { COMPANY_PRODUCT_FIELDS } from '../queries/company-products'
 
 export const CREATE_PRODUCT = gql`
-  ${PRODUCT_FIELDS}
+  ${COMPANY_PRODUCT_FIELDS}
   mutation CreateCompanyProduct($input: company_productsInsertInput!) {
     insertIntocompany_productsCollection(objects: [$input]) {
       records {
-        ...ProductFields
+        ...CompanyProductFields
       }
     }
   }
 `
 
 export const UPDATE_PRODUCT = gql`
-  ${PRODUCT_FIELDS}
+  ${COMPANY_PRODUCT_FIELDS}
   mutation UpdateCompanyProduct($id: UUID!, $set: company_productsUpdateInput!) {
     updatecompany_productsCollection(filter: { id: { eq: $id } }, set: $set) {
       records {
-        ...ProductFields
+        ...CompanyProductFields
       }
     }
   }
 `
 
 export const DELETE_PRODUCT = gql`
-  ${PRODUCT_FIELDS}
+  ${COMPANY_PRODUCT_FIELDS}
   mutation DeleteCompanyProduct($id: UUID!) {
     deleteFromcompany_productsCollection(filter: { id: { eq: $id } }) {
       records {
-        ...ProductFields
+        ...CompanyProductFields
       }
     }
   }
