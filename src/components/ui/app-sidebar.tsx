@@ -23,7 +23,7 @@ import {
 import { Button } from './button'
 import { UserMenu } from '@/components/ui/user-menu'
 import { ROUTES } from '@/constants/routes'
-import { AvailabilityStatus } from '@/types/graphql'
+import { AvailabilityStatus, Company } from '@/types/graphql'
 
 const items = [
   {
@@ -40,7 +40,11 @@ const items = [
   },
 ]
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  companyName: Company['name']
+}
+
+export function AppSidebar({ companyName }: AppSidebarProps) {
   const pathname = usePathname()
   const [showNewAvailabilityDialog, setShowNewAvailabilityDialog] = useState(false)
 
@@ -59,10 +63,7 @@ export function AppSidebar() {
             <div className="flex items-center gap-3 p-4">
               <Logo size="sm" href="/dashboard" clickable />
               <div className="flex items-baseline gap-2">
-                <span className="font-semibold text-lg text-sidebar-foreground">Courtify</span>
-                <span className="text-xs text-sidebar-foreground/60">
-                  v{process.env.NEXT_PUBLIC_APP_VERSION}
-                </span>
+                <span className="font-semibold  text-sidebar-foreground">{companyName}</span>
               </div>
             </div>
           </SidebarHeader>

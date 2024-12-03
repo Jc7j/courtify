@@ -1,13 +1,15 @@
 'use client'
 
 import { AppSidebar, SidebarProvider } from '@/components/ui'
+import { useCompany } from '@/hooks/useCompany'
 import { ReactNode, Suspense } from 'react'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { company } = useCompany()
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
-        <AppSidebar />
+        <AppSidebar companyName={company?.name || 'Courtify'} />
 
         <main className="flex-1 overflow-y-auto">
           <Suspense fallback={<DashboardSkeleton />}>{children}</Suspense>

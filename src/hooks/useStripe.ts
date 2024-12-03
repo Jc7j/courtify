@@ -87,12 +87,6 @@ export function useStripe(): UseStripeReturn {
 
       const data = await response.json()
 
-      console.log('Stripe connect response:', {
-        status: response.status,
-        ok: response.ok,
-        data,
-      })
-
       if (!response.ok) {
         throw new Error(data.error || 'Failed to connect Stripe')
       }

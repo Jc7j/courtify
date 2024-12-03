@@ -1257,11 +1257,8 @@ export type Payment_StatusFilter = {
 };
 
 export enum Product_Type {
-  Class = 'class',
   CourtRental = 'court_rental',
-  Equipment = 'equipment',
-  Event = 'event',
-  Membership = 'membership'
+  Equipment = 'equipment'
 }
 
 /** Boolean expression comparing fields on type "product_type" */

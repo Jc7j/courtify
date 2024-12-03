@@ -4,7 +4,7 @@ import { CompanyProduct } from '@/types/graphql'
 import { formatCurrency } from '@/lib/utils/format-currency'
 import { CreateProductDialog } from './CreateProductDialog'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, Trash2, Loader2 } from 'lucide-react'
+import { MoreHorizontal, Archive, Loader2 } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,17 +19,17 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui'
 
 import { useState, useMemo } from 'react'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
+import cn from '@/lib/utils/cn'
 
 interface ProductListProps {
   products: CompanyProduct[]
 }
 
-type ActionType = 'archive' | 'delete'
+type ActionType = 'archive'
 
 interface ProductAction {
   type: ActionType
@@ -37,7 +37,7 @@ interface ProductAction {
 }
 
 export function ProductList({ products }: ProductListProps) {
-  const { archiveProduct, deleteProduct, deleting } = useCompanyProducts()
+  const { archiveProduct } = useCompanyProducts()
   const [productAction, setProductAction] = useState<ProductAction | null>(null)
 
   const sortedProducts = useMemo(() => {
@@ -66,11 +66,9 @@ export function ProductList({ products }: ProductListProps) {
 
     if (type === 'archive') {
       response = await archiveProduct(product.id)
-    } else {
-      response = await deleteProduct(product.id)
     }
 
-    if (!response.error) {
+    if (!response?.error) {
       setProductAction(null)
     }
   }
@@ -78,16 +76,16 @@ export function ProductList({ products }: ProductListProps) {
   const getActionContent = () => {
     if (!productAction) return null
 
-    const { type, product } = productAction
-    const isDelete = type === 'delete'
+    const { product } = productAction
+    const isActive = product.is_active
 
     return {
-      title: isDelete ? 'Delete Product' : 'Archive Product',
-      description: isDelete
-        ? `Are you sure you want to delete "${product.name}"? This action cannot be undone.`
-        : `Are you sure you want to archive "${product.name}"? This will hide the product from new bookings.`,
-      actionLabel: isDelete ? 'Delete' : 'Archive',
-      loading: isDelete && deleting,
+      title: isActive ? 'Archive Product' : 'Restore Product',
+      description: isActive
+        ? `Are you sure you want to archive "${product.name}"? This will hide the product from new bookings.`
+        : `Are you sure you want to restore "${product.name}"? This will make the product available for new bookings.`,
+      actionLabel: isActive ? 'Archive' : 'Restore',
+      loading: false,
     }
   }
 
@@ -144,30 +142,19 @@ export function ProductList({ products }: ProductListProps) {
                     <DropdownMenuItem onClick={() => handleEdit(product)} className="gap-2">
                       <span className="flex items-center gap-2 flex-1">Edit product</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {product.is_active ? (
-                      <DropdownMenuItem
-                        onClick={() => handleActionClick('archive', product)}
-                        className="gap-2 text-yellow-600 dark:text-yellow-500 focus:text-yellow-600 dark:focus:text-yellow-500"
-                      >
-                        <Archive className="h-4 w-4" />
-                        <span className="flex-1">Archive product</span>
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        onClick={() => handleActionClick('archive', product)}
-                        className="gap-2 text-emerald-600 dark:text-emerald-500 focus:text-emerald-600 dark:focus:text-emerald-500"
-                      >
-                        <Archive className="h-4 w-4" />
-                        <span className="flex-1">Unarchive product</span>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem
-                      onClick={() => handleActionClick('delete', product)}
-                      className="gap-2 text-destructive focus:text-destructive dark:text-red-400 dark:focus:text-red-400"
+                      onClick={() => handleActionClick('archive', product)}
+                      className={cn(
+                        'gap-2',
+                        product.is_active
+                          ? 'text-yellow-600 dark:text-yellow-500 focus:text-yellow-600 dark:focus:text-yellow-500'
+                          : 'text-emerald-600 dark:text-emerald-500 focus:text-emerald-600 dark:focus:text-emerald-500'
+                      )}
                     >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="flex-1">Delete product</span>
+                      <Archive className="h-4 w-4" />
+                      <span className="flex-1">
+                        {product.is_active ? 'Archive product' : 'Restore product'}
+                      </span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -193,7 +180,7 @@ export function ProductList({ products }: ProductListProps) {
               {actionContent?.loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  Archiving...
                 </>
               ) : (
                 actionContent?.actionLabel

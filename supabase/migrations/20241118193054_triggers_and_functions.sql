@@ -1,20 +1,3 @@
-CREATE OR REPLACE FUNCTION update_availability_status()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.end_time < timezone('UTC', now()) THEN
-        IF NEW.status != 'past' THEN
-            NEW.status := 'past';
-        END IF;
-    ELSE
-        IF NEW.status = 'past' AND OLD.status IS NULL THEN
-            NEW.status := 'available';
-        END IF;
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -26,37 +9,42 @@ $$ language 'plpgsql';
 CREATE OR REPLACE FUNCTION validate_availability_update()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF OLD.status = 'past' THEN
-        RAISE EXCEPTION 'Cannot modify past availabilities';
-    END IF;
-
-    IF NEW.start_time >= NEW.end_time THEN
-        RAISE EXCEPTION 'Start time must be before end time';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1 FROM court_availabilities
-        WHERE company_id = NEW.company_id
-        AND court_number = NEW.court_number
-        AND start_time < NEW.end_time
-        AND end_time > NEW.start_time
-        AND start_time != OLD.start_time
-    ) THEN
-        RAISE EXCEPTION 'Time slot overlaps with existing availability';
-    END IF;
-
+    -- Update status to past if end_time has passed
     IF NEW.end_time < NOW() THEN
         NEW.status := 'past';
+    END IF;
+
+    -- Don't allow modifications to past availabilities
+    IF OLD.status = 'past' THEN
+        RAISE EXCEPTION 'Cannot modify past availabilities';
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER check_availability_status
-    BEFORE INSERT OR UPDATE ON court_availabilities
-    FOR EACH ROW
-    EXECUTE FUNCTION update_availability_status();
+CREATE OR REPLACE FUNCTION get_court_availabilities(
+    p_company_id UUID,
+    p_start_time TIMESTAMPTZ,
+    p_end_time TIMESTAMPTZ
+) RETURNS SETOF court_availabilities AS $$
+BEGIN
+    -- First update past availabilities
+    UPDATE court_availabilities
+    SET status = 'past'
+    WHERE company_id = p_company_id
+    AND end_time < NOW()
+    AND status != 'past';
+    
+    -- Then return results
+    RETURN QUERY
+    SELECT *
+    FROM court_availabilities
+    WHERE company_id = p_company_id
+    AND start_time <= p_end_time
+    AND end_time >= p_start_time;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users

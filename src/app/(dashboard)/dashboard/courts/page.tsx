@@ -17,20 +17,27 @@ import {
   TabsTrigger,
 } from '@/components/ui'
 import { useCourt } from '@/hooks/useCourt'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
 import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Courts } from '@/types/graphql'
 import { Card } from '@/components/ui/card'
 
 dayjs.extend(relativeTime)
 
+type TabValue = 'bookings' | 'courts' | 'history'
+
 export default function CourtsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState<TabValue>(
+    (searchParams.get('tab') as TabValue) || 'bookings'
+  )
+
   const { courts, loading, error, createCourt, creating, refetch } = useCourt()
   const [selectedDate, setSelectedDate] = useState({
     start: dayjs().startOf('day').toISOString(),
@@ -60,6 +67,23 @@ export default function CourtsPage() {
     router.push(`${ROUTES.DASHBOARD.HOME}/courts/${courtNumber}`)
   }
 
+  const handleTabChange = (value: string) => {
+    const tab = value as TabValue
+    setActiveTab(tab)
+
+    const params = new URLSearchParams(searchParams)
+    params.set('tab', tab)
+    router.push(`${ROUTES.DASHBOARD.HOME}/courts?${params.toString()}`, { scroll: false })
+  }
+
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      const params = new URLSearchParams(searchParams)
+      params.set('tab', 'bookings')
+      router.replace(`${ROUTES.DASHBOARD.HOME}/courts?${params.toString()}`, { scroll: false })
+    }
+  }, [router, searchParams])
+
   if (error) {
     return (
       <div className="p-8 space-y-8">
@@ -85,7 +109,7 @@ export default function CourtsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="bookings" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList>
           <TabsTrigger value="bookings" className="space-x-2">
             <CalendarDays className="h-4 w-4" />

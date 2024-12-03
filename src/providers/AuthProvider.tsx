@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSession = useCallback(
     async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
       if (!session) {
-        console.log('[Auth] No session, resetting state')
+        // console.log('[Auth] No session, resetting state')
         await reset()
         return
       }
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Only redirect after we've confirmed valid user data
         if (pathname === ROUTES.AUTH.SIGNIN) {
-          console.log('[Auth] Valid user session, redirecting to dashboard')
+          // console.log('[Auth] Valid user session, redirecting to dashboard')
           router.replace(ROUTES.DASHBOARD.HOME)
         }
       } catch (error) {
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await reset()
 
         if (!options.skipRedirect && !isSignupPage) {
-          console.log('[Auth] Invalid user data, redirecting to signin')
+          // console.log('[Auth] Invalid user data, redirecting to signin')
           router.replace(ROUTES.AUTH.SIGNIN)
         }
       }
@@ -98,11 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('[Auth] Initial session check:', {
-        hasSession: !!session,
-        error: error?.message,
-      })
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      // console.log('[Auth] Initial session check:', {
+      //   hasSession: !!session,
+      //   error: error?.message,
+      // })
       handleSession(session).finally(() => setIsLoading(false))
     })
 
@@ -110,10 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] Auth state changed:', {
-        event,
-        hasSession: !!session,
-      })
+      // console.log('[Auth] Auth state changed:', {
+      //   event,
+      //   hasSession: !!session,
+      // })
 
       switch (event) {
         case 'SIGNED_IN':

@@ -8,6 +8,7 @@ import { useCourt } from '@/hooks/useCourt'
 import { toast } from 'sonner'
 import { CourtCalendar } from '@/components/courts/CourtCalendar'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+import { ROUTES } from '@/constants/routes'
 
 export default function CourtPage() {
   const params = useParams()
@@ -46,7 +47,7 @@ export default function CourtPage() {
     try {
       await deleteCourt(courtNumber)
       toast.success('Court deleted successfully')
-      router.back()
+      router.push(`${ROUTES.DASHBOARD.HOME}/courts?tab=courts`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete court')
     }

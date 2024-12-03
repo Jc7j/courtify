@@ -22,14 +22,3 @@ export const UPDATE_PRODUCT = gql`
     }
   }
 `
-
-export const DELETE_PRODUCT = gql`
-  ${COMPANY_PRODUCT_FIELDS}
-  mutation DeleteCompanyProduct($id: UUID!) {
-    deleteFromcompany_productsCollection(filter: { id: { eq: $id } }) {
-      records {
-        ...CompanyProductFields
-      }
-    }
-  }
-`

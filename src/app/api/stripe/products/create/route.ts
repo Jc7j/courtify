@@ -14,43 +14,25 @@ interface CreateProductRequest {
 }
 
 export async function POST(req: Request) {
-  console.log('[stripe/products/create] Received request')
-
   try {
-    // Parse and validate request body first
     const body = (await req.json()) as CreateProductRequest
-    console.log('[stripe/products/create] Request body:', {
-      ...body,
-      priceAmount: body.priceAmount,
-    })
 
     if (!body.name || !body.type || !body.priceAmount || !body.company_id) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Initialize Supabase admin client
     const supabase = createAdminClient()
-    console.log('[stripe/products/create] Initialized Supabase client')
 
-    // Get company's Stripe account directly
     const { data: company } = await supabase
       .from('companies')
       .select('stripe_account_id, stripe_account_enabled')
       .eq('id', body.company_id)
       .single()
 
-    console.log('[stripe/products/create] Stripe account check:', {
-      companyId: body.company_id,
-      hasStripeAccount: !!company?.stripe_account_id,
-      stripeEnabled: company?.stripe_account_enabled,
-    })
-
     if (!company?.stripe_account_id || !company.stripe_account_enabled) {
       return NextResponse.json({ error: 'Stripe account not configured' }, { status: 400 })
     }
 
-    // Create Stripe price with product data
-    console.log('[stripe/products/create] Creating Stripe price...')
     const price = await stripe.prices.create(
       {
         currency: body.currency?.toLowerCase() || 'usd',
@@ -73,11 +55,6 @@ export async function POST(req: Request) {
         stripeAccount: company.stripe_account_id,
       }
     )
-
-    console.log('[stripe/products/create] Stripe price created:', {
-      priceId: price.id,
-      productId: price.product,
-    })
 
     return NextResponse.json({
       stripe_price_id: price.id,

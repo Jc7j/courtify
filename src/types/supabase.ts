@@ -682,7 +682,7 @@ export type Database = {
       booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
       member_role: 'owner' | 'admin' | 'member'
       payment_status: 'pending' | 'paid' | 'refunded' | 'failed'
-      product_type: 'court_rental' | 'equipment' | 'membership' | 'class' | 'event'
+      product_type: 'court_rental' | 'equipment'
     }
     CompositeTypes: {
       [_ in never]: never

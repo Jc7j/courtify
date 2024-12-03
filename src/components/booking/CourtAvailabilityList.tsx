@@ -49,11 +49,6 @@ const AvailabilitySlot = memo(function AvailabilitySlot({
             {courtCount} {courtCount === 1 ? 'court' : 'courts'} available
           </span>
         </div>
-        <span
-          className={cn('text-sm font-medium', selected ? 'text-primary' : 'text-muted-foreground')}
-        >
-          $30/hr
-        </span>
       </div>
     </div>
   )

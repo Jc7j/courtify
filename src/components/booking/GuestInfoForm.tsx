@@ -10,11 +10,16 @@ import {
   SelectTrigger,
   SelectValue,
   Input,
+  Card,
+  Checkbox,
+  Label,
 } from '@/components/ui'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useBookingStore } from '@/stores/useBookingStore'
 import dayjs from 'dayjs'
+import { CompanyProduct } from '@/types/graphql'
+import cn from '@/lib/utils/cn'
 
 const guestInfoSchema = z.object({
   name: z
@@ -28,14 +33,16 @@ const guestInfoSchema = z.object({
     .max(15, 'Phone number must be less than 15 digits')
     .regex(/^[0-9+\-\s()]*$/, 'Invalid phone number format'),
   net_height: z.enum(['Mens', 'Womens', 'CoedPlus', 'Coed']),
+  selectedCourtProduct: z.string(),
+  selectedEquipment: z.array(z.string()).default([]),
 })
 
 export type GuestInfo = z.infer<typeof guestInfoSchema>
 
 interface GuestInfoFormProps {
-  defaultValues?: Partial<GuestInfo>
-  onSubmit: (data: GuestInfo) => void
+  onSubmit?: (data: GuestInfo) => void
   loading?: boolean
+  products: CompanyProduct[]
 }
 
 const NET_HEIGHT_OPTIONS = [
@@ -45,9 +52,12 @@ const NET_HEIGHT_OPTIONS = [
   { value: 'Coed', label: 'Co-ed' },
 ] as const
 
-export function GuestInfoForm({ defaultValues, onSubmit, loading }: GuestInfoFormProps) {
-  const { selectedAvailability } = useBookingStore()
+export function GuestInfoForm({ onSubmit, loading, products }: GuestInfoFormProps) {
+  const { selectedAvailability, guestInfo, setGuestInfo } = useBookingStore()
   const [touched, setTouched] = useState<Partial<Record<keyof GuestInfo, boolean>>>({})
+
+  const courtProducts = products.filter((p) => p.type === 'court_rental')
+  const equipmentProducts = products.filter((p) => p.type === 'equipment')
 
   const {
     register,
@@ -55,6 +65,7 @@ export function GuestInfoForm({ defaultValues, onSubmit, loading }: GuestInfoFor
     formState: { errors },
     setValue,
     trigger,
+    watch,
   } = useForm<GuestInfo>({
     resolver: zodResolver(guestInfoSchema),
     defaultValues: {
@@ -62,9 +73,18 @@ export function GuestInfoForm({ defaultValues, onSubmit, loading }: GuestInfoFor
       email: '',
       phone: '',
       net_height: 'Mens',
-      ...defaultValues,
+      selectedCourtProduct: courtProducts[0]?.id,
+      selectedEquipment: [],
+      ...guestInfo,
     },
   })
+
+  const selectedEquipment = watch('selectedEquipment')
+
+  const handleFormSubmit = (data: GuestInfo) => {
+    setGuestInfo(data)
+    onSubmit?.(data)
+  }
 
   function handleFieldBlur(field: keyof GuestInfo) {
     setTouched((prev) => ({ ...prev, [field]: true }))
@@ -73,114 +93,225 @@ export function GuestInfoForm({ defaultValues, onSubmit, loading }: GuestInfoFor
 
   const showError = (field: keyof GuestInfo) => touched[field] && errors[field]
 
+  const handleEquipmentChange = (productId: string, checked: boolean) => {
+    const current = new Set(selectedEquipment)
+    if (checked) {
+      current.add(productId)
+    } else {
+      current.delete(productId)
+    }
+    setValue('selectedEquipment', Array.from(current))
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Selected Time Summary */}
+    <div className="space-y-8">
+      {/* Selected Time Card */}
       {selectedAvailability && (
-        <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-          <h3 className="font-medium">Selected Court Time</h3>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>{dayjs(selectedAvailability.start_time).format('dddd, MMMM D, YYYY')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>
-                {dayjs(selectedAvailability.start_time).format('h:mm A')} -{' '}
-                {dayjs(selectedAvailability.end_time).format('h:mm A')}
-              </span>
+        <Card className="overflow-hidden">
+          {/* <div className="bg-primary/5 border-b p-4">
+            <h3 className="text-lg font-semibold text-primary">Selected Time</h3>
+          </div> */}
+          <div className="p-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-sm font-medium">Date</span>
+                </div>
+                <p className="text-lg">
+                  {dayjs(selectedAvailability.start_time).format('dddd, MMMM D, YYYY')}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Time</span>
+                </div>
+                <p className="text-lg">
+                  {dayjs(selectedAvailability.start_time).format('h:mm A')} -{' '}
+                  {dayjs(selectedAvailability.end_time).format('h:mm A')}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Guest Information Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">
-              Full Name
-            </label>
-            <Input
-              id="name"
-              placeholder="Acme Doe"
-              {...register('name')}
-              onBlur={() => handleFieldBlur('name')}
-              className={showError('name') ? 'border-destructive' : ''}
-              disabled={loading}
-            />
-            {showError('name') && (
-              <p className="text-sm text-destructive">{errors.name?.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email Address
-            </label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="acme@example.com"
-              {...register('email')}
-              onBlur={() => handleFieldBlur('email')}
-              className={showError('email') ? 'border-destructive' : ''}
-              disabled={loading}
-            />
-            {showError('email') && (
-              <p className="text-sm text-destructive">{errors.email?.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="phone" className="text-sm font-medium">
-              Phone Number
-            </label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="(555) 123-4567"
-              formatPhoneNumber
-              {...register('phone')}
-              onBlur={() => handleFieldBlur('phone')}
-              className={showError('phone') ? 'border-destructive' : ''}
-              disabled={loading}
-            />
-            {showError('phone') && (
-              <p className="text-sm text-destructive">{errors.phone?.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="net_height" className="text-sm font-medium">
-              Net Height
-            </label>
-            <Select
-              defaultValue="Mens"
-              onValueChange={(value) => {
-                setValue('net_height', value as GuestInfo['net_height'])
-                handleFieldBlur('net_height')
-              }}
-              disabled={loading}
-            >
-              <SelectTrigger id="net_height" className="w-full">
-                <SelectValue placeholder="Select net height" />
-              </SelectTrigger>
-              <SelectContent>
-                {NET_HEIGHT_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {showError('net_height') && (
-              <p className="text-sm text-destructive">{errors.net_height?.message}</p>
-            )}
-          </div>
+      <Card>
+        <div className="bg-primary/5 border-b p-4">
+          <h3 className="text-lg font-semibold text-primary">Your Information</h3>
         </div>
-      </form>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6">
+          <div className="space-y-6">
+            {/* Contact Information Section */}
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Full Name
+                  </label>
+                  <Input
+                    id="name"
+                    placeholder="John Smith"
+                    {...register('name')}
+                    onBlur={() => handleFieldBlur('name')}
+                    className={cn(
+                      'transition-colors',
+                      showError('name') ? 'border-destructive' : ''
+                    )}
+                    disabled={loading}
+                  />
+                  {showError('name') && (
+                    <p className="text-sm text-destructive">{errors.name?.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    {...register('email')}
+                    onBlur={() => handleFieldBlur('email')}
+                    className={cn(showError('email') ? 'border-destructive' : '')}
+                    disabled={loading}
+                  />
+                  {showError('email') && (
+                    <p className="text-sm text-destructive">{errors.email?.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label htmlFor="phone" className="text-sm font-medium">
+                    Phone Number
+                  </label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    formatPhoneNumber
+                    {...register('phone')}
+                    onBlur={() => handleFieldBlur('phone')}
+                    className={cn(showError('phone') ? 'border-destructive' : '')}
+                    disabled={loading}
+                  />
+                  {showError('phone') && (
+                    <p className="text-sm text-destructive">{errors.phone?.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Court Options Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-base">Court Options</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Court Product Selection */}
+                {courtProducts.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Court Type</label>
+                    <Select
+                      defaultValue={courtProducts[0]?.id}
+                      onValueChange={(value) => {
+                        setValue('selectedCourtProduct', value)
+                        handleFieldBlur('selectedCourtProduct')
+                      }}
+                      disabled={loading}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select court type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courtProducts.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            <div className="flex justify-between items-center w-full gap-4">
+                              <span>{product.name}</span>
+                              <span className="text-primary font-medium">
+                                ${(product.price_amount / 100).toFixed(2)}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Net Height Selection */}
+                <div className="space-y-2">
+                  <label htmlFor="net_height" className="text-sm font-medium">
+                    Net Height
+                  </label>
+                  <Select
+                    defaultValue="Mens"
+                    onValueChange={(value) => {
+                      setValue('net_height', value as GuestInfo['net_height'])
+                      handleFieldBlur('net_height')
+                    }}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="net_height" className="w-full">
+                      <SelectValue placeholder="Select net height" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NET_HEIGHT_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {showError('net_height') && (
+                    <p className="text-sm text-destructive">{errors.net_height?.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Equipment Selection */}
+            {equipmentProducts.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="font-medium text-base">Additional Equipment</h4>
+                <Card className="divide-y">
+                  {equipmentProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox
+                        id={product.id}
+                        checked={selectedEquipment.includes(product.id)}
+                        onCheckedChange={(checked) =>
+                          handleEquipmentChange(product.id, checked as boolean)
+                        }
+                        className="mr-4"
+                      />
+                      <Label htmlFor={product.id} className="flex-1 cursor-pointer select-none">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{product.name}</p>
+                            {product.description && (
+                              <p className="text-sm text-muted-foreground">{product.description}</p>
+                            )}
+                          </div>
+                          <span className="text-primary font-medium ml-4">
+                            ${(product.price_amount / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </Card>
+              </div>
+            )}
+          </div>
+        </form>
+      </Card>
     </div>
   )
 }

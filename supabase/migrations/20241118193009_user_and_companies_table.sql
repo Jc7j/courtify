@@ -36,9 +36,9 @@ CREATE TABLE users (
     joined_at TIMESTAMPTZ DEFAULT NOW(),
     is_active BOOLEAN NOT NULL DEFAULT true,
     
-    -- Authentication fields
-    last_login_at TIMESTAMPTZ,
-    email_verified_at TIMESTAMPTZ,
+    -- -- Authentication fields
+    -- last_login_at TIMESTAMPTZ,
+    -- email_verified_at TIMESTAMPTZ,
     
     -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

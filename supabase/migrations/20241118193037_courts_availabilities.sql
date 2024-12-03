@@ -1,4 +1,4 @@
-CREATE TYPE availability_status AS ENUM ('available', 'booked', 'past');
+CREATE TYPE availability_status AS ENUM ('available', 'held', 'booked', 'past');
 
 CREATE TABLE court_availabilities (
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -12,17 +12,14 @@ CREATE TABLE court_availabilities (
     PRIMARY KEY (company_id, court_number, start_time),
     FOREIGN KEY (company_id, court_number) REFERENCES courts(company_id, court_number) ON DELETE CASCADE,
     
-    CONSTRAINT valid_time_range CHECK (start_time < end_time),
-    CONSTRAINT valid_status CHECK (
-        (status = 'past' AND end_time < timezone('UTC', now())) OR
-        (status != 'past' AND end_time >= timezone('UTC', now()))
-    )
+    CONSTRAINT valid_time_range CHECK (start_time < end_time)
 );
 
 ALTER TABLE court_availabilities ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_court_availabilities_lookup ON court_availabilities (company_id, court_number, start_time);
 CREATE INDEX idx_court_availabilities_status ON court_availabilities (status);
+CREATE INDEX idx_court_availabilities_end_time ON court_availabilities(end_time);
 
 ALTER TABLE court_availabilities
 ADD CONSTRAINT no_overlapping_slots 
