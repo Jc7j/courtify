@@ -28,12 +28,27 @@ interface ArchiveProductResponse {
   error?: string
 }
 
+interface StripeProduct {
+  id: string
+  name: string
+  description: string | null
+  active: boolean
+  metadata: Record<string, unknown>
+  priceId: string
+  unitAmount: number
+  currency: string
+}
+
+interface SyncResponse {
+  stripeProducts: StripeProduct[]
+}
+
 export function useCompanyProducts() {
   const { user } = useUserStore()
   const { company } = useCompany()
   const [error, setError] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
 
-  // Query products
   const {
     data,
     loading: loadingProducts,
@@ -42,6 +57,85 @@ export function useCompanyProducts() {
     variables: { companyId: company?.id },
     skip: !company?.id,
   })
+
+  const [updateProductMutation] = useMutation(UPDATE_PRODUCT)
+
+  async function syncWithStripe() {
+    if (!user?.company_id || syncing) return
+
+    try {
+      setSyncing(true)
+
+      // 1. Get Stripe products
+      const response = await fetch('/api/stripe/products/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: user.company_id }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to fetch Stripe products')
+      }
+
+      const { stripeProducts } = (await response.json()) as SyncResponse
+
+      // 2. Update database products based on Stripe data
+      const dbProducts =
+        data?.company_productsCollection?.edges?.map((edge: CompanyProductEdge) => edge.node) || []
+
+      // Update existing products
+      for (const dbProduct of dbProducts) {
+        const stripeProduct = stripeProducts.find(
+          (p: StripeProduct) => p.id === dbProduct.stripe_product_id
+        )
+
+        await updateProductMutation({
+          variables: {
+            id: dbProduct.id,
+            set: {
+              is_active: stripeProduct?.active ?? false,
+              updated_at: new Date().toISOString(),
+            },
+          },
+        })
+      }
+
+      for (const stripeProduct of stripeProducts) {
+        const existingProduct = dbProducts.find(
+          (p: CompanyProduct) => p.stripe_product_id === stripeProduct.id
+        )
+
+        if (!existingProduct) {
+          await createProductMutation({
+            variables: {
+              input: {
+                company_id: user.company_id,
+                name: stripeProduct.name,
+                description: stripeProduct.description,
+                type: (stripeProduct.metadata?.type as ProductType) || ProductType.CourtRental,
+                price_amount: stripeProduct.unitAmount,
+                currency: stripeProduct.currency,
+                stripe_price_id: stripeProduct.priceId,
+                stripe_product_id: stripeProduct.id,
+                is_active: stripeProduct.active,
+                metadata: stripeProduct.metadata || {},
+              },
+            },
+          })
+        }
+      }
+
+      await refetch()
+    } catch (err) {
+      console.error('[useCompanyProducts] Error syncing products:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sync products'
+      toast.error(errorMessage)
+      setError(errorMessage)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   // Create product mutation
   const [createProductMutation, { loading: creating }] = useMutation(CREATE_PRODUCT, {
@@ -191,11 +285,12 @@ export function useCompanyProducts() {
 
   return {
     products,
-    loadingProducts,
+    loadingProducts: loadingProducts || syncing,
     createProduct,
     creating,
     error,
     refetch,
     archiveProduct,
+    syncWithStripe,
   }
 }

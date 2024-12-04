@@ -47,8 +47,19 @@ export function useBookings(): UseBookingsReturn {
     data?.bookingsCollection?.edges?.map((edge: { node: Booking }) => edge.node) || []
 
   async function createBookingWithIntent(input: CreateBookingInput) {
-    console.log('createBookingWithIntent', input)
+    console.log(' Starting createBookingWithIntent:', {
+      companyId: input.companyId,
+      courtNumber: input.courtNumber,
+      startTime: input.startTime,
+      products: {
+        court: input.selectedProducts.courtProductId,
+        equipment: input.selectedProducts.equipmentProductIds,
+      },
+    })
+
     try {
+      // Log before updating court availability
+      console.log('📝 Updating court availability to HELD...')
       const { errors: availabilityError } = await updateCourtAvailability({
         variables: {
           company_id: input.companyId,
@@ -61,9 +72,12 @@ export function useBookings(): UseBookingsReturn {
       })
 
       if (availabilityError) {
+        console.error('❌ Court availability update failed:', availabilityError)
         throw new Error('Court is no longer available')
       }
+      console.log('✅ Court availability updated successfully')
 
+      console.log('💳 Creating payment intent...')
       const response = await fetch('/api/stripe/create-payment-intent', {
         method: 'POST',
         headers: {
@@ -73,6 +87,10 @@ export function useBookings(): UseBookingsReturn {
       })
 
       if (!response.ok) {
+        console.error('❌ Payment intent creation failed:', response.status)
+
+        // Log reversion attempt
+        console.log('🔄 Reverting court availability to AVAILABLE...')
         await updateCourtAvailability({
           variables: {
             company_id: input.companyId,
@@ -88,10 +106,11 @@ export function useBookings(): UseBookingsReturn {
         throw new Error(error.message || 'Failed to create payment intent')
       }
 
-      const { clientSecret } = await response.json()
-      return { clientSecret }
+      const data = await response.json()
+      console.log('✅ Payment intent created successfully')
+      return { clientSecret: data.clientSecret }
     } catch (err) {
-      console.error('Error creating booking:', err)
+      console.error('❌ Error in createBookingWithIntent:', err)
       throw err instanceof Error ? err : new Error('Failed to create booking')
     }
   }

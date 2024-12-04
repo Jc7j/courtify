@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useImperativeHandle, RefObject } from 'react'
 import { Clock, Calendar } from 'lucide-react'
 import { z } from 'zod'
 import {
@@ -38,6 +38,10 @@ const guestInfoSchema = z.object({
 
 export type GuestInfo = z.infer<typeof guestInfoSchema>
 
+type FormRef = {
+  submit: () => void
+}
+
 interface GuestInfoFormProps {
   onSubmit: (data: GuestInfo) => void
   loading?: boolean
@@ -47,6 +51,7 @@ interface GuestInfoFormProps {
     start_time: string
     end_time: string
   }
+  formRef?: RefObject<FormRef>
 }
 
 const NET_HEIGHT_OPTIONS = [
@@ -62,6 +67,7 @@ export function GuestInfoForm({
   products,
   defaultValues,
   selectedTime,
+  formRef,
 }: GuestInfoFormProps) {
   const [touched, setTouched] = useState<Partial<Record<keyof GuestInfo, boolean>>>({})
 
@@ -88,11 +94,11 @@ export function GuestInfoForm({
     },
   })
 
-  const selectedEquipment = watch('selectedEquipment')
+  useImperativeHandle(formRef, () => ({
+    submit: () => handleSubmit(onSubmit)(),
+  }))
 
-  const handleFormSubmit = (data: GuestInfo) => {
-    onSubmit(data)
-  }
+  const selectedEquipment = watch('selectedEquipment')
 
   function handleFieldBlur(field: keyof GuestInfo) {
     setTouched((prev) => ({ ...prev, [field]: true }))
@@ -148,7 +154,7 @@ export function GuestInfoForm({
         <div className="bg-primary/5 border-b p-4">
           <h3 className="text-lg font-semibold text-primary">Your Information</h3>
         </div>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6">
           <div className="space-y-6">
             {/* Contact Information Section */}
             <div className="space-y-4">

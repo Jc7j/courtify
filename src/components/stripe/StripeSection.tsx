@@ -3,8 +3,7 @@
 import { Button } from '@/components/ui'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ExternalLink, Loader2 } from 'lucide-react'
-import type { Company } from '@/types/graphql'
+import { ExternalLink, Loader2, RefreshCcw } from 'lucide-react'
 import { useStripe } from '@/hooks/useStripe'
 import { useRouter } from 'next/navigation'
 import { Progress } from '@/components/ui/progress'
@@ -13,45 +12,43 @@ import {
   hasStripeRequirements,
   getStripeCompletionPercentage,
   getRequirementCategories,
-  getStripeDashboardUrl,
   hasBusinessProfile,
 } from '@/lib/utils/stripe'
 
+// @TODO Figure out right links and right way to handle every case
+// @TODO Ensure syncing with DB products aligns with companes Stripe products
+
 interface StripeSectionProps {
-  company: Company
   stripeStatus: StripeStatus | null
   checking: boolean
 }
 
-export function StripeSection({ company, stripeStatus, checking }: StripeSectionProps) {
+export function StripeSection({ stripeStatus, checking }: StripeSectionProps) {
   const router = useRouter()
   const { connectStripe, connecting } = useStripe()
-
+  console.log('stripeStatus', stripeStatus)
   const requirements = stripeStatus?.accountDetails?.requirements || {}
   const hasRequirements =
     hasStripeRequirements(requirements) && requirements.currently_due.length > 0
   const completionPercentage = getStripeCompletionPercentage(requirements)
 
-  const handleConnect = async (): Promise<void> => {
+  async function handleConnect(
+    options: { reconnect?: boolean; linkType?: 'onboarding' | 'update' } = {}
+  ): Promise<void> {
     try {
-      const { url, error } = await connectStripe()
+      const shouldUseOnboarding =
+        !stripeStatus?.isEnabled ||
+        (stripeStatus?.accountDetails?.requirements?.currently_due?.length ?? 0) > 0
+
+      const linkType = shouldUseOnboarding ? 'onboarding' : options.linkType
+
+      const { url, error } = await connectStripe({ ...options, linkType })
       if (error) throw new Error(error)
       if (!url) throw new Error('Failed to get Stripe connect URL')
       router.push(url)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to connect Stripe')
     }
-  }
-
-  const openStripeSettings = (): void => {
-    if (!company.stripe_account_id) return
-
-    const needsSetup =
-      !stripeStatus?.isEnabled &&
-      hasStripeRequirements(stripeStatus?.accountDetails?.requirements) &&
-      stripeStatus?.accountDetails?.requirements.currently_due.length > 0
-
-    window?.open(getStripeDashboardUrl(company.stripe_account_id, needsSetup), '_blank')
   }
 
   if (checking) {
@@ -72,7 +69,7 @@ export function StripeSection({ company, stripeStatus, checking }: StripeSection
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle>Payment Processing</CardTitle>
         {stripeStatus?.isConnected && (
-          <Button variant="outline" size="sm" onClick={openStripeSettings} className="h-8">
+          <Button variant="outline" size="sm" onClick={() => console.log('login')} className="h-8">
             <ExternalLink className="mr-2 h-4 w-4" />
             Stripe Dashboard
           </Button>
@@ -100,7 +97,11 @@ export function StripeSection({ company, stripeStatus, checking }: StripeSection
               </ul>
             </div>
 
-            <Button className="w-full sm:w-auto" onClick={handleConnect} disabled={connecting}>
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => handleConnect({ linkType: 'onboarding' })}
+              disabled={connecting}
+            >
               {connecting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -151,7 +152,10 @@ export function StripeSection({ company, stripeStatus, checking }: StripeSection
               </p>
             </div>
 
-            <Button onClick={openStripeSettings} className="w-full sm:w-auto">
+            <Button
+              onClick={() => handleConnect({ reconnect: false, linkType: 'update' })}
+              className="w-full sm:w-auto"
+            >
               <ExternalLink className="mr-2 h-4 w-4" />
               Complete Setup in Stripe
             </Button>

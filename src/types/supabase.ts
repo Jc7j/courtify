@@ -1,4 +1,10 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   graphql_public: {
@@ -41,10 +47,9 @@ export type Database = {
           customer_phone: string | null
           id: number
           metadata: Json | null
-          payment_status: Database['public']['Enums']['payment_status']
-          product_id: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           start_time: string
-          status: Database['public']['Enums']['booking_status']
+          status: Database["public"]["Enums"]["booking_status"]
           stripe_payment_intent_id: string | null
           updated_at: string
         }
@@ -60,10 +65,9 @@ export type Database = {
           customer_phone?: string | null
           id?: number
           metadata?: Json | null
-          payment_status?: Database['public']['Enums']['payment_status']
-          product_id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           start_time: string
-          status?: Database['public']['Enums']['booking_status']
+          status?: Database["public"]["Enums"]["booking_status"]
           stripe_payment_intent_id?: string | null
           updated_at?: string
         }
@@ -79,27 +83,19 @@ export type Database = {
           customer_phone?: string | null
           id?: number
           metadata?: Json | null
-          payment_status?: Database['public']['Enums']['payment_status']
-          product_id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           start_time?: string
-          status?: Database['public']['Enums']['booking_status']
+          status?: Database["public"]["Enums"]["booking_status"]
           stripe_payment_intent_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'bookings_company_id_court_number_start_time_fkey'
-            columns: ['company_id', 'court_number', 'start_time']
+            foreignKeyName: "bookings_company_id_court_number_start_time_fkey"
+            columns: ["company_id", "court_number", "start_time"]
             isOneToOne: false
-            referencedRelation: 'court_availabilities'
-            referencedColumns: ['company_id', 'court_number', 'start_time']
-          },
-          {
-            foreignKeyName: 'bookings_product_id_fkey'
-            columns: ['product_id']
-            isOneToOne: false
-            referencedRelation: 'company_products'
-            referencedColumns: ['id']
+            referencedRelation: "court_availabilities"
+            referencedColumns: ["company_id", "court_number", "start_time"]
           },
         ]
       }
@@ -158,7 +154,7 @@ export type Database = {
           price_amount: number
           stripe_price_id: string | null
           stripe_product_id: string | null
-          type: Database['public']['Enums']['product_type']
+          type: Database["public"]["Enums"]["product_type"]
           updated_at: string
         }
         Insert: {
@@ -173,7 +169,7 @@ export type Database = {
           price_amount: number
           stripe_price_id?: string | null
           stripe_product_id?: string | null
-          type: Database['public']['Enums']['product_type']
+          type: Database["public"]["Enums"]["product_type"]
           updated_at?: string
         }
         Update: {
@@ -188,16 +184,16 @@ export type Database = {
           price_amount?: number
           stripe_price_id?: string | null
           stripe_product_id?: string | null
-          type?: Database['public']['Enums']['product_type']
+          type?: Database["public"]["Enums"]["product_type"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'company_products_company_id_fkey'
-            columns: ['company_id']
+            foreignKeyName: "company_products_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -208,7 +204,7 @@ export type Database = {
           created_at: string
           end_time: string
           start_time: string
-          status: Database['public']['Enums']['availability_status']
+          status: Database["public"]["Enums"]["availability_status"]
           updated_at: string
         }
         Insert: {
@@ -217,7 +213,7 @@ export type Database = {
           created_at?: string
           end_time: string
           start_time: string
-          status?: Database['public']['Enums']['availability_status']
+          status?: Database["public"]["Enums"]["availability_status"]
           updated_at?: string
         }
         Update: {
@@ -226,23 +222,23 @@ export type Database = {
           created_at?: string
           end_time?: string
           start_time?: string
-          status?: Database['public']['Enums']['availability_status']
+          status?: Database["public"]["Enums"]["availability_status"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'court_availabilities_company_id_court_number_fkey'
-            columns: ['company_id', 'court_number']
+            foreignKeyName: "court_availabilities_company_id_court_number_fkey"
+            columns: ["company_id", "court_number"]
             isOneToOne: false
-            referencedRelation: 'courts'
-            referencedColumns: ['company_id', 'court_number']
+            referencedRelation: "courts"
+            referencedColumns: ["company_id", "court_number"]
           },
           {
-            foreignKeyName: 'court_availabilities_company_id_fkey'
-            columns: ['company_id']
+            foreignKeyName: "court_availabilities_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -270,11 +266,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'courts_company_id_fkey'
-            columns: ['company_id']
+            foreignKeyName: "courts_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -283,51 +279,45 @@ export type Database = {
           company_id: string | null
           created_at: string
           email: string
-          email_verified_at: string | null
           id: string
           invited_by: string | null
           is_active: boolean
           joined_at: string | null
-          last_login_at: string | null
           name: string
-          role: Database['public']['Enums']['member_role']
+          role: Database["public"]["Enums"]["member_role"]
           updated_at: string
         }
         Insert: {
           company_id?: string | null
           created_at?: string
           email: string
-          email_verified_at?: string | null
           id?: string
           invited_by?: string | null
           is_active?: boolean
           joined_at?: string | null
-          last_login_at?: string | null
           name: string
-          role?: Database['public']['Enums']['member_role']
+          role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
         }
         Update: {
           company_id?: string | null
           created_at?: string
           email?: string
-          email_verified_at?: string | null
           id?: string
           invited_by?: string | null
           is_active?: boolean
           joined_at?: string | null
-          last_login_at?: string | null
           name?: string
-          role?: Database['public']['Enums']['member_role']
+          role?: Database["public"]["Enums"]["member_role"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'users_company_id_fkey'
-            columns: ['company_id']
+            foreignKeyName: "users_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -338,351 +328,363 @@ export type Database = {
     Functions: {
       gbt_bit_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_bool_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_bool_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_bpchar_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_bytea_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_cash_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_cash_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_date_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_date_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_enum_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_enum_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_float4_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_float4_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_float8_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_float8_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_inet_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_int2_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_int2_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_int4_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_int4_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_int8_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_int8_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_intv_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_intv_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_intv_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_macad_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_macad_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_macad8_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_macad8_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_numeric_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_oid_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_oid_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_text_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_time_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_time_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_timetz_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_ts_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_ts_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_tstz_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_uuid_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_uuid_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_var_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbt_var_fetch: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey_var_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey_var_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey16_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey16_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey2_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey2_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey32_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey32_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey4_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey4_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey8_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gbtreekey8_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
-      update_past_availabilities: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      get_court_availabilities: {
+        Args: {
+          p_company_id: string
+          p_start_time: string
+          p_end_time: string
+        }
+        Returns: {
+          company_id: string
+          court_number: number
+          created_at: string
+          end_time: string
+          start_time: string
+          status: Database["public"]["Enums"]["availability_status"]
+          updated_at: string
+        }[]
       }
     }
     Enums: {
-      availability_status: 'available' | 'booked' | 'past'
-      booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
-      member_role: 'owner' | 'admin' | 'member'
-      payment_status: 'pending' | 'paid' | 'refunded' | 'failed'
-      product_type: 'court_rental' | 'equipment'
+      availability_status: "available" | "held" | "booked" | "past"
+      booking_status: "confirmed" | "cancelled" | "completed"
+      member_role: "owner" | "admin" | "member"
+      payment_status: "paid" | "refunded" | "failed"
+      product_type: "court_rental" | "equipment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -690,25 +692,27 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, 'public'>]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   PublicTableNameOrOptions extends
-    | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-        Database[PublicTableNameOrOptions['schema']]['Views'])
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-      Database[PublicTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] & PublicSchema['Views'])
-    ? (PublicSchema['Tables'] & PublicSchema['Views'])[PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -716,18 +720,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends keyof PublicSchema['Tables'] | { schema: keyof Database },
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-    ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -735,18 +741,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends keyof PublicSchema['Tables'] | { schema: keyof Database },
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-    ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -754,27 +762,30 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends keyof PublicSchema['Enums'] | { schema: keyof Database },
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions['schema']]['Enums']
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
-    ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema['CompositeTypes']
+    | keyof PublicSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema['CompositeTypes']
-    ? PublicSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+

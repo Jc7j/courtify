@@ -19,8 +19,6 @@ export interface User {
   is_active: boolean
   invited_by?: string | null
   joined_at?: string
-  email_verified_at?: string | null
-  last_login_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -66,15 +64,12 @@ export enum AvailabilityStatus {
 }
 
 export enum BookingStatus {
-  Pending = 'pending',
   Confirmed = 'confirmed',
   Cancelled = 'cancelled',
   Completed = 'completed',
-  NoShow = 'no_show',
 }
 
 export enum PaymentStatus {
-  Pending = 'pending',
   Paid = 'paid',
   Refunded = 'refunded',
   Failed = 'failed',

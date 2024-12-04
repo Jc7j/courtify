@@ -77,7 +77,11 @@ function CourtAvailabilityListComponent({
 
     const filteredAvailabilities = availabilities.filter((availability) => {
       const availabilityStart = dayjs(availability.start_time).utc()
-      return availabilityStart.isSame(selectedDateUtc, 'day') && availabilityStart.isAfter(now)
+      return (
+        availability.status === 'available' &&
+        availabilityStart.isSame(selectedDateUtc, 'day') &&
+        availabilityStart.isAfter(now)
+      )
     })
 
     const slots = filteredAvailabilities.reduce(

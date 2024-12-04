@@ -1,12 +1,10 @@
 CREATE TYPE booking_status AS ENUM (
-    'pending',   
     'confirmed',  
     'cancelled',  
-    'completed',  
+    'completed'
 );
 
-CREATE TYPE payment_status AS ENUM (
-    'pending',   
+CREATE TYPE payment_status AS ENUM (  
     'paid',      
     'refunded',  
     'failed'     
@@ -24,8 +22,10 @@ CREATE TABLE bookings (
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
     
-    status booking_status NOT NULL DEFAULT 'pending',
-    payment_status payment_status NOT NULL DEFAULT 'pending',
+    -- When booking completes, status changes to 'completed'
+    -- Once payment succeeds, payment_status will be updated to 'paid'
+    status booking_status NOT NULL DEFAULT 'confirmed',
+    payment_status payment_status NOT NULL DEFAULT 'failed',
     
     stripe_payment_intent_id TEXT UNIQUE,
     
@@ -69,9 +69,6 @@ CREATE POLICY "Customers can view their bookings" ON bookings
         )
     );
 
-CREATE POLICY "Public can create pending bookings" ON bookings
+CREATE POLICY "Public can create bookings" ON bookings
     FOR INSERT
-    WITH CHECK (
-        status = 'pending' 
-        AND payment_status = 'pending'
-    );
+    WITH CHECK (true);

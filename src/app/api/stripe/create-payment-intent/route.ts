@@ -21,21 +21,38 @@ interface RequestBody {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody
+    console.log(' Received payment intent request:', {
+      companyId: body.companyId,
+      courtNumber: body.courtNumber,
+      startTime: body.startTime,
+      products: {
+        court: body.selectedProducts.courtProductId,
+        equipment: body.selectedProducts.equipmentProductIds,
+      },
+    })
 
     // Get company and verify Stripe setup
     const supabase = createAdminClient()
-    const { data: company } = await supabase
+    console.log('🔍 Fetching company details...')
+    const { data: company, error: companyError } = await supabase
       .from('companies')
       .select('stripe_account_id, stripe_currency')
       .eq('id', body.companyId)
       .single()
 
+    if (companyError) {
+      console.error('❌ Error fetching company:', companyError)
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+    }
+
     if (!company?.stripe_account_id) {
+      console.error('❌ Company has no Stripe account:', body.companyId)
       return NextResponse.json({ error: 'Company is not setup for payments' }, { status: 400 })
     }
 
     // Get selected products with prices
-    const { data: products } = await supabase
+    console.log('🔍 Fetching product details...')
+    const { data: products, error: productsError } = await supabase
       .from('company_products')
       .select('id, price_amount, name, type')
       .in('id', [
@@ -43,14 +60,29 @@ export async function POST(req: Request) {
         ...body.selectedProducts.equipmentProductIds,
       ])
 
+    if (productsError) {
+      console.error('❌ Error fetching products:', productsError)
+      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
+    }
+
     if (!products?.length) {
+      console.error('❌ No products found for IDs:', {
+        court: body.selectedProducts.courtProductId,
+        equipment: body.selectedProducts.equipmentProductIds,
+      })
       return NextResponse.json({ error: 'Products not found' }, { status: 400 })
     }
 
     // Calculate total amount
     const amount = products.reduce((sum, product) => sum + product.price_amount, 0)
+    console.log('💰 Calculated total amount:', {
+      amount,
+      currency: company.stripe_currency,
+      products: products.map((p) => ({ id: p.id, name: p.name, price: p.price_amount })),
+    })
 
     // Create payment intent
+    console.log('💳 Creating Stripe payment intent...')
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
@@ -75,11 +107,17 @@ export async function POST(req: Request) {
       }
     )
 
+    console.log('✅ Payment intent created:', {
+      id: paymentIntent.id,
+      amount: paymentIntent.amount,
+      status: paymentIntent.status,
+    })
+
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
     })
   } catch (error) {
-    console.error('[stripe/create-payment-intent] Error:', error)
+    console.error('❌ [stripe/create-payment-intent] Error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create payment intent' },
       { status: 500 }

@@ -11,8 +11,6 @@ const USER_FIELDS = gql`
     is_active
     invited_by
     joined_at
-    email_verified_at
-    last_login_at
     created_at
     updated_at
   }
@@ -20,6 +18,7 @@ const USER_FIELDS = gql`
 
 // Get a single user by ID
 export const GET_USER = gql`
+  ${USER_FIELDS}
   query GetUser($id: UUID!) {
     usersCollection(filter: { id: { eq: $id } }) {
       edges {
@@ -29,11 +28,11 @@ export const GET_USER = gql`
       }
     }
   }
-  ${USER_FIELDS}
 `
 
 // Get all members of a company
 export const GET_COMPANY_MEMBERS = gql`
+  ${USER_FIELDS}
   query GetCompanyMembers($companyId: UUID!) {
     usersCollection(
       filter: { company_id: { eq: $companyId } }
@@ -46,5 +45,4 @@ export const GET_COMPANY_MEMBERS = gql`
       }
     }
   }
-  ${USER_FIELDS}
 `

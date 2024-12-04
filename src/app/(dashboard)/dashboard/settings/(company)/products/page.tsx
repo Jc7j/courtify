@@ -21,7 +21,6 @@ export default function ProductsPage() {
 
     async function fetchStripeStatus() {
       if (!company?.id) return
-
       const status = await checkStripeStatus()
       if (!mounted) return
 
@@ -52,7 +51,7 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid gap-8 mt-8">
-        <StripeSection company={company} stripeStatus={stripeStatus} checking={checking} />
+        <StripeSection stripeStatus={stripeStatus} checking={checking} />
         {stripeStatus?.isConnected && stripeStatus.isEnabled && <ProductList products={products} />}
       </div>
     </div>

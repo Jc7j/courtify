@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState, use, useRef } from 'react'
 import { notFound } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
 import { BookingForm } from '@/components/booking/BookingForm'
@@ -16,7 +16,6 @@ import { loadStripe } from '@stripe/stripe-js'
 import { useBookings } from '@/hooks/useBookings'
 import { PaymentWrapper } from '@/components/booking/PaymentWrapper'
 
-type BookingStep = 'select-time' | 'guest-info' | 'payment'
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export default function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -29,14 +28,15 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     slug: resolvedParams.slug,
   })
   const { products } = useCompanyProducts()
-  const { selectedAvailability, guestInfo } = useBookingStore()
+  const { selectedAvailability, guestInfo, currentStep, setCurrentStep, isLoading, setLoading } =
+    useBookingStore()
   const { createBookingWithIntent } = useBookings()
 
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
-  const [currentStep, setCurrentStep] = useState<BookingStep>('select-time')
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const formRef = useRef<{ submit: () => void }>(null)
 
   const {
     availabilities,
@@ -47,13 +47,18 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
   )
 
-  const loading = companyLoading || availabilitiesLoading
+  const loading = companyLoading || availabilitiesLoading || isLoading
   const error = companyError || availabilitiesError
+
+  function handlePaymentSuccess() {
+    useBookingStore.getState().clearBooking()
+  }
 
   async function handleGuestInfoSubmit(data: GuestInfo) {
     if (!company || !selectedAvailability) return
 
     try {
+      setLoading(true)
       useBookingStore.getState().setGuestInfo(data)
 
       const { clientSecret } = await createBookingWithIntent({
@@ -78,19 +83,16 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       setCurrentStep('payment')
     } catch (error) {
       console.error('Error creating booking:', error)
+    } finally {
+      setLoading(false)
     }
-  }
-
-  function handlePaymentSuccess() {
-    // Will implement later
-    console.log('Payment successful')
   }
 
   function handleNext() {
     if (currentStep === 'select-time' && selectedAvailability) {
       setCurrentStep('guest-info')
     } else if (currentStep === 'guest-info') {
-      setCurrentStep('payment')
+      formRef.current?.submit()
     }
   }
 
@@ -140,7 +142,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   if (!company) {
     notFound()
   }
-
+  console.log('guestInfo', guestInfo)
   return (
     <div className="flex min-h-screen">
       {/* Left side - Info */}
@@ -200,6 +202,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                       }
                     : undefined
                 }
+                formRef={formRef}
               />
             )}
 

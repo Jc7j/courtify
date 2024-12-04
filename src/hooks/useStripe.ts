@@ -13,10 +13,17 @@ interface StripeStatus {
 }
 
 interface UseStripeReturn {
-  connectStripe: () => Promise<{ url: string | null; error: string | null }>
+  connectStripe: (
+    options?: ConnectStripeOptions
+  ) => Promise<{ url: string | null; error: string | null }>
   checkStripeStatus: () => Promise<StripeStatus>
   connecting: boolean
   checking: boolean
+}
+
+interface ConnectStripeOptions {
+  reconnect?: boolean
+  linkType?: 'onboarding' | 'update'
 }
 
 export function useStripe(): UseStripeReturn {
@@ -32,7 +39,7 @@ export function useStripe(): UseStripeReturn {
         throw new Error('No company found')
       }
 
-      const response = await fetch('/api/stripe/status', {
+      const response = await fetch('/api/stripe/accounts/status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,14 +74,17 @@ export function useStripe(): UseStripeReturn {
     }
   }, [user?.company_id])
 
-  async function connectStripe() {
+  async function connectStripe({
+    reconnect = false,
+    linkType = 'onboarding',
+  }: ConnectStripeOptions = {}) {
     try {
       setConnecting(true)
       if (!user?.company_id || !company) {
         throw new Error('No company found')
       }
 
-      const response = await fetch('/api/stripe/connect', {
+      const response = await fetch('/api/stripe/accounts/connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,6 +92,8 @@ export function useStripe(): UseStripeReturn {
         body: JSON.stringify({
           company_id: company.id,
           company_name: company.name,
+          reconnect,
+          link_type: linkType === 'update' ? 'update' : 'onboarding',
         }),
       })
 
