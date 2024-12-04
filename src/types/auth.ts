@@ -1,42 +1,30 @@
-import type { DefaultSession } from 'next-auth'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-export interface BaseUser {
+export type MemberRole = 'owner' | 'admin' | 'member'
+
+export type UserProfile = {
   id: string
   email: string
   name: string
   company_id: string | null
+  role: MemberRole
+  is_active: boolean
+  invited_by?: string
+  joined_at?: string
 }
 
-// What we get from Supabase/DB
-export interface AuthorizedUser extends BaseUser {
-  supabaseAccessToken: string
-  supabaseRefreshToken: string
+export interface BaseUser extends Omit<SupabaseUser, 'role' | 'app_metadata' | 'user_metadata'> {
+  name: string
+  company_id: string | null
+  role: MemberRole
+  is_active?: boolean
+  invited_by?: string
+  joined_at?: string
 }
 
-// Extend the built-in session type
-declare module 'next-auth' {
-  interface Session extends DefaultSession {
-    user: BaseUser
-    supabaseAccessToken: string
-    error?: string
-    supabaseRefreshToken?: string
-  }
-
-  interface User {
-    id: string
-    email: string
-    name: string
-    company_id: string | null
-    supabaseAccessToken: string
-    supabaseRefreshToken: string
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    user: BaseUser
-    supabaseAccessToken: string
-    supabaseRefreshToken: string
-    error?: string
-  }
+export interface AuthSession {
+  user: BaseUser
+  accessToken: string
+  refreshToken?: string | null
+  expiresAt?: number | null
 }

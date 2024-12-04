@@ -1,92 +1,106 @@
-import { ApolloClient, createHttpLink, from, InMemoryCache, Observable } from '@apollo/client'
+import { ApolloClient, createHttpLink, from, InMemoryCache } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
-import { getSession, signOut } from 'next-auth/react'
-import { ROUTES } from '@/constants/routes'
-import type { Operation } from '@apollo/client/core'
-import type { Observer } from 'zen-observable-ts'
-import { clearTokenCache } from '@/lib/auth/token-manager'
 import { useUserStore } from '@/stores/useUserStore'
+import { supabase } from '@/lib/supabase/client'
+import type { BaseUser } from '@/types/auth'
 
 const cache = new InMemoryCache()
 
-interface PendingOperation {
-  operation: Operation
-  observer: Observer<unknown>
-}
+const authLink = setContext(async (_, { headers }) => {
+  // First try to get token from store
+  const token = useUserStore.getState().accessToken
 
-let pendingOperations: PendingOperation[] = []
-let isRefreshing = false
+  if (token) {
+    return {
+      headers: {
+        ...headers,
+        authorization: `Bearer ${token}`,
+      },
+    }
+  }
 
-const errorLink = onError(({ graphQLErrors, operation, forward }) => {
-  if (graphQLErrors?.some((err) => err.message.includes('JWT expired'))) {
-    if (isRefreshing) {
-      return new Observable((observer) => {
-        pendingOperations.push({ operation, observer })
+  // If no token in store, get fresh session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (session?.access_token && session.user) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('name, company_id')
+      .eq('id', session.user.id)
+      .single()
+
+    if (userData) {
+      const baseUser: BaseUser = {
+        ...session.user,
+        name: userData.name,
+        company_id: userData.company_id,
+      }
+
+      useUserStore.getState().setSession({
+        user: baseUser,
+        accessToken: session.access_token,
       })
     }
+  }
 
-    isRefreshing = true
-
-    return new Observable((observer) => {
-      getSession()
-        .then(async (session) => {
-          if (!session || session.error) {
-            clearTokenCache()
-            useUserStore.getState().reset()
-            await signOut({ redirect: false })
-            window.location.href = ROUTES.AUTH.SIGNIN
-            observer.complete()
-            return
-          }
-
-          useUserStore.getState().setSession(session)
-
-          forward(operation).subscribe(observer)
-          pendingOperations.forEach(({ operation, observer }) => {
-            forward(operation).subscribe(observer)
-          })
-        })
-        .catch(async (error) => {
-          console.error('Session refresh error:', error)
-          clearTokenCache()
-          useUserStore.getState().reset()
-          await signOut({ redirect: false })
-          window.location.href = ROUTES.AUTH.SIGNIN
-          observer.error(error)
-        })
-        .finally(() => {
-          isRefreshing = false
-          pendingOperations = []
-        })
-    })
+  return {
+    headers: {
+      ...headers,
+      authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+    },
   }
 })
 
-const authLink = setContext(async (_, { headers }) => {
-  const session = useUserStore.getState().session
-  return session?.supabaseAccessToken
-    ? {
-        headers: {
-          ...headers,
-          authorization: `Bearer ${session.supabaseAccessToken}`,
-        },
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+  if (graphQLErrors) {
+    for (const err of graphQLErrors) {
+      if (err.message.includes('JWT expired') || err.message.includes('invalid token')) {
+        // Let Supabase handle the refresh and retry the operation
+        return forward(operation)
       }
-    : { headers }
+    }
+  }
+
+  if (networkError) {
+    console.error('[Network error]:', networkError)
+  }
 })
 
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
 })
 
+const defaultOptions = {
+  watchQuery: {
+    fetchPolicy: 'cache-and-network' as const,
+    nextFetchPolicy: 'cache-first' as const,
+  },
+}
+
 export const apolloClient = new ApolloClient({
   link: from([errorLink, authLink, httpLink]),
   cache,
-  defaultOptions: {
-    watchQuery: { fetchPolicy: 'network-only' },
-    query: { fetchPolicy: 'network-only' },
-    mutate: { fetchPolicy: 'no-cache' },
-  },
+  defaultOptions,
+  connectToDevTools: process.env.NODE_ENV === 'development',
 })
 
-export const clearApolloCache = () => apolloClient.clearStore()
+export const clearApolloCache = async () => {
+  try {
+    await apolloClient.clearStore()
+  } catch (error) {
+    console.error('Error clearing Apollo cache:', error)
+  }
+}
+
+export const refetchActiveQueries = async () => {
+  try {
+    await apolloClient.refetchQueries({
+      include: 'active',
+    })
+  } catch (error) {
+    console.error('Error refetching queries:', error)
+  }
+}

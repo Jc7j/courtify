@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { cva, type VariantProps } from 'class-variance-authority'
 import cn from '@/lib/utils/cn'

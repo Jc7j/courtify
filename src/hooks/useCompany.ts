@@ -40,7 +40,8 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
   const variables = slug ? { slug } : { id: user?.company_id }
 
-  const skipQuery = slug ? !slug : !user?.company_id || userLoading
+  // Only skip for authenticated routes, not public ones
+  const skipQuery = !slug && (!user?.company_id || userLoading)
 
   const {
     data: companyData,
@@ -50,7 +51,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   } = useQuery(queryToUse, {
     variables,
     skip: skipQuery,
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
   })
 
@@ -72,17 +73,16 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
 
-  const createCompany = async (
+  async function createCompany(
     name: string,
     address: string,
     sports: string,
-    businessinfo: string
-  ) => {
+    businessinfo: string) {
+
     try {
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
         variables: {
-          objects: [{ name, slug }],
           objects: [
             {
               name,
@@ -104,7 +104,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
       const { error: updateError } = await supabase
         .from('users')
-        .update({ company_id: company.id })
+        .update({ company_id: company.id, role: 'owner' })
         .eq('id', user.id)
 
       if (updateError) throw updateError
@@ -122,7 +122,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     }
   }
 
-  const updateCompany = async (data: UpdateCompanyInput) => {
+  async function updateCompany(data: UpdateCompanyInput) {
     if (!user?.company_id) throw new Error('No company found')
 
     try {
@@ -142,10 +142,14 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     }
   }
 
+  // Simplified loading state logic
+  const isLoading = slug
+    ? queryLoading // For public pages, only care about query loading
+    : userLoading || queryLoading || !user?.company_id // For authenticated pages, include user state
+
   return {
     company: companyData?.companiesCollection?.edges[0]?.node ?? null,
-    // More accurate loading state
-    loading: userLoading || queryLoading || !user?.company_id,
+    loading: isLoading,
     error: queryError ?? null,
     creating,
     updating,

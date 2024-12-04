@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/providers/AuthProvider'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -36,7 +36,7 @@ export default function SignInPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sign in'
 
-      if (message.includes('credentials')) {
+      if (message.toLowerCase().includes('invalid credentials')) {
         setError('email', { message: 'Invalid email or password' })
         setError('password', { message: 'Invalid email or password' })
       } else {

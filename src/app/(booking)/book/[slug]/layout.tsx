@@ -3,14 +3,15 @@ import { ReactNode } from 'react'
 
 interface BookingLayoutProps {
   children: ReactNode
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: BookingLayoutProps): Promise<Metadata> {
+  const { slug } = await params
   return {
-    title: `Book a Court `,
+    title: `Book a Court ${slug}`,
     description: `Book a court at `,
   }
 }

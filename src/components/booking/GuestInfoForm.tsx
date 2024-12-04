@@ -66,9 +66,9 @@ export function GuestInfoForm({ defaultValues, onSubmit, loading }: GuestInfoFor
     },
   })
 
-  const handleFieldBlur = async (field: keyof GuestInfo) => {
+  function handleFieldBlur(field: keyof GuestInfo) {
     setTouched((prev) => ({ ...prev, [field]: true }))
-    await trigger(field)
+    trigger(field)
   }
 
   const showError = (field: keyof GuestInfo) => touched[field] && errors[field]

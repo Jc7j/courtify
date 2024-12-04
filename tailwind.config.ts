@@ -68,8 +68,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-geist-sans)'],
-        mono: ['var(--font-geist-mono)'],
+        sans: ['var(--font-open-sans)'],
       },
       borderRadius: {
         lg: 'var(--radius)',

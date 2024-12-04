@@ -1,46 +1,68 @@
 import { create } from 'zustand'
-import type { Session } from 'next-auth'
+import { persist } from 'zustand/middleware'
+import type { BaseUser, AuthSession } from '@/types/auth'
 
 interface UserState {
-  user: Session['user'] | null
+  user: BaseUser | null
+  accessToken: string | null
+  refreshToken: string | null
+  expiresAt: number | null
   isAuthenticated: boolean
   isLoading: boolean
-  session: Session | null
-  setSession: (session: Session | null) => void
+  setSession: (session: AuthSession | null) => void
   setIsLoading: (isLoading: boolean) => void
-  updateUser: (userData: Partial<Session['user']>) => void
+  updateSessionExpiry: (expiresAt: number) => void
+  updateUser: (updates: Partial<BaseUser>) => void
   reset: () => void
 }
 
-const initialState = {
-  user: null,
-  session: null,
-  isAuthenticated: false,
-  isLoading: true,
-}
+export const useUserStore = create<UserState>()(
+  persist(
+    (set) => ({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null,
+      isAuthenticated: false,
+      isLoading: true,
 
-export const useUserStore = create<UserState>((set) => ({
-  ...initialState,
+      setSession: (session) =>
+        set({
+          user: session?.user ?? null,
+          accessToken: session?.accessToken ?? null,
+          refreshToken: session?.refreshToken ?? null,
+          expiresAt: session?.expiresAt ?? null,
+          isAuthenticated: !!session?.user,
+        }),
 
-  setSession: (session) =>
-    set({
-      session,
-      user: session?.user ?? null,
-      isAuthenticated: !!session?.user,
-      isLoading: false,
+      setIsLoading: (isLoading) => set({ isLoading }),
+
+      updateSessionExpiry: (expiresAt) => set({ expiresAt }),
+
+      updateUser: (updates) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        })),
+
+      reset: () =>
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          expiresAt: null,
+          isAuthenticated: false,
+          isLoading: false,
+        }),
     }),
-
-  updateUser: (userData) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, ...userData } : null,
-      session: state.session
-        ? {
-            ...state.session,
-            user: { ...state.session.user, ...userData },
-          }
-        : null,
-    })),
-
-  setIsLoading: (isLoading) => set({ isLoading }),
-  reset: () => set(initialState),
-}))
+    {
+      name: 'courtify-user-store',
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        expiresAt: state.expiresAt,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+)
