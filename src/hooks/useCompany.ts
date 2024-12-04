@@ -71,10 +71,18 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   async function createCompany(name: string) {
     try {
+      const now = new Date().toISOString()
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
         variables: {
-          objects: [{ name, slug }],
+          objects: [
+            {
+              name,
+              slug,
+              created_at: now,
+              updated_at: now,
+            },
+          ],
         },
       })
 
@@ -110,7 +118,10 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
       const result = await updateCompanyMutation({
         variables: {
           id: user.company_id,
-          set: data,
+          set: {
+            ...data,
+            updated_at: new Date().toISOString(),
+          },
         },
       })
 

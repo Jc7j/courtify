@@ -8,10 +8,16 @@ import { GuestInfoForm } from '@/components/booking/GuestInfoForm'
 import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
 import { useBookingStore } from '@/stores/useBookingStore'
 import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
-import dayjs from 'dayjs'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
+import type { GuestInfo } from '@/components/booking/GuestInfoForm'
+import dayjs from 'dayjs'
+import { Elements } from '@stripe/react-stripe-js'
+import { loadStripe } from '@stripe/stripe-js'
+import { useBookings } from '@/hooks/useBookings'
+import { PaymentWrapper } from '@/components/booking/PaymentWrapper'
 
 type BookingStep = 'select-time' | 'guest-info' | 'payment'
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export default function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params)
@@ -23,13 +29,14 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     slug: resolvedParams.slug,
   })
   const { products } = useCompanyProducts()
-
   const { selectedAvailability, guestInfo } = useBookingStore()
+  const { createBookingWithIntent } = useBookings()
 
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
   const [currentStep, setCurrentStep] = useState<BookingStep>('select-time')
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   const {
     availabilities,
@@ -42,6 +49,71 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   const loading = companyLoading || availabilitiesLoading
   const error = companyError || availabilitiesError
+
+  async function handleGuestInfoSubmit(data: GuestInfo) {
+    if (!company || !selectedAvailability) return
+
+    try {
+      useBookingStore.getState().setGuestInfo(data)
+
+      const { clientSecret } = await createBookingWithIntent({
+        companyId: company.id,
+        courtNumber: selectedAvailability.court_number,
+        startTime: selectedAvailability.start_time,
+        guestInfo: {
+          name: data.name,
+          email: data.email,
+          phone: data.phone || '',
+          net_height: data.net_height,
+          selectedCourtProduct: data.selectedCourtProduct,
+          selectedEquipment: data.selectedEquipment,
+        },
+        selectedProducts: {
+          courtProductId: data.selectedCourtProduct,
+          equipmentProductIds: data.selectedEquipment,
+        },
+      })
+
+      setClientSecret(clientSecret)
+      setCurrentStep('payment')
+    } catch (error) {
+      console.error('Error creating booking:', error)
+    }
+  }
+
+  function handlePaymentSuccess() {
+    // Will implement later
+    console.log('Payment successful')
+  }
+
+  function handleNext() {
+    if (currentStep === 'select-time' && selectedAvailability) {
+      setCurrentStep('guest-info')
+    } else if (currentStep === 'guest-info') {
+      setCurrentStep('payment')
+    }
+  }
+
+  const handleBack = () => {
+    if (currentStep === 'guest-info') {
+      setCurrentStep('select-time')
+    } else if (currentStep === 'payment') {
+      setCurrentStep('guest-info')
+    }
+  }
+
+  function canGoNext(): boolean {
+    switch (currentStep) {
+      case 'select-time':
+        return Boolean(selectedAvailability)
+      case 'guest-info':
+        return true
+      case 'payment':
+        return true
+      default:
+        return false
+    }
+  }
 
   if (loading) {
     return (
@@ -67,35 +139,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   if (!company) {
     notFound()
-  }
-
-  const handleNext = () => {
-    if (currentStep === 'select-time' && selectedAvailability) {
-      setCurrentStep('guest-info')
-    } else if (currentStep === 'guest-info' && guestInfo) {
-      setCurrentStep('payment')
-    }
-  }
-
-  const handleBack = () => {
-    if (currentStep === 'guest-info') {
-      setCurrentStep('select-time')
-    } else if (currentStep === 'payment') {
-      setCurrentStep('guest-info')
-    }
-  }
-
-  const canGoNext = (): boolean => {
-    switch (currentStep) {
-      case 'select-time':
-        return Boolean(selectedAvailability)
-      case 'guest-info':
-        return Boolean(guestInfo)
-      case 'payment':
-        return false
-      default:
-        return false
-    }
   }
 
   return (
@@ -125,9 +168,14 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
             <div className="mb-8">
               <h1 className="text-3xl font-bold">{company.name}</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Select a date to view available court times
+                {currentStep === 'select-time'
+                  ? 'Select a date to view available court times'
+                  : currentStep === 'guest-info'
+                    ? 'Enter your information'
+                    : 'Complete your payment'}
               </p>
             </div>
+
             {currentStep === 'select-time' && (
               <BookingForm
                 selectedDate={selectedDate}
@@ -137,8 +185,45 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                 availabilities={availabilities}
               />
             )}
+
             {currentStep === 'guest-info' && (
-              <GuestInfoForm onSubmit={() => handleNext()} products={products} />
+              <GuestInfoForm
+                onSubmit={handleGuestInfoSubmit}
+                products={products}
+                loading={loading}
+                defaultValues={guestInfo}
+                selectedTime={
+                  selectedAvailability
+                    ? {
+                        start_time: selectedAvailability.start_time,
+                        end_time: selectedAvailability.end_time,
+                      }
+                    : undefined
+                }
+              />
+            )}
+
+            {currentStep === 'payment' && clientSecret && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#6366F1',
+                      colorBackground: '#ffffff',
+                      colorText: '#1f2937',
+                    },
+                  },
+                }}
+              >
+                <PaymentWrapper
+                  onSuccess={handlePaymentSuccess}
+                  onBack={() => setCurrentStep('guest-info')}
+                  amount={0}
+                />
+              </Elements>
             )}
           </div>
         </BottomBarContent>
@@ -148,6 +233,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           onPrevious={currentStep !== 'select-time' ? handleBack : undefined}
           canGoNext={canGoNext()}
           nextLabel={currentStep === 'guest-info' ? 'Continue to Payment' : 'Next'}
+          className={currentStep === 'payment' ? 'hidden' : undefined}
         />
       </div>
     </div>

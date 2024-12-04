@@ -16,7 +16,6 @@ import {
 } from '@/components/ui'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useBookingStore } from '@/stores/useBookingStore'
 import dayjs from 'dayjs'
 import { CompanyProduct } from '@/types/graphql'
 import cn from '@/lib/utils/cn'
@@ -40,9 +39,14 @@ const guestInfoSchema = z.object({
 export type GuestInfo = z.infer<typeof guestInfoSchema>
 
 interface GuestInfoFormProps {
-  onSubmit?: (data: GuestInfo) => void
+  onSubmit: (data: GuestInfo) => void
   loading?: boolean
   products: CompanyProduct[]
+  defaultValues?: Partial<GuestInfo>
+  selectedTime?: {
+    start_time: string
+    end_time: string
+  }
 }
 
 const NET_HEIGHT_OPTIONS = [
@@ -52,8 +56,13 @@ const NET_HEIGHT_OPTIONS = [
   { value: 'Coed', label: 'Co-ed' },
 ] as const
 
-export function GuestInfoForm({ onSubmit, loading, products }: GuestInfoFormProps) {
-  const { selectedAvailability, guestInfo, setGuestInfo } = useBookingStore()
+export function GuestInfoForm({
+  onSubmit,
+  loading,
+  products,
+  defaultValues,
+  selectedTime,
+}: GuestInfoFormProps) {
   const [touched, setTouched] = useState<Partial<Record<keyof GuestInfo, boolean>>>({})
 
   const courtProducts = products.filter((p) => p.type === 'court_rental')
@@ -75,15 +84,14 @@ export function GuestInfoForm({ onSubmit, loading, products }: GuestInfoFormProp
       net_height: 'Mens',
       selectedCourtProduct: courtProducts[0]?.id,
       selectedEquipment: [],
-      ...guestInfo,
+      ...defaultValues,
     },
   })
 
   const selectedEquipment = watch('selectedEquipment')
 
   const handleFormSubmit = (data: GuestInfo) => {
-    setGuestInfo(data)
-    onSubmit?.(data)
+    onSubmit(data)
   }
 
   function handleFieldBlur(field: keyof GuestInfo) {
@@ -106,11 +114,8 @@ export function GuestInfoForm({ onSubmit, loading, products }: GuestInfoFormProp
   return (
     <div className="space-y-8">
       {/* Selected Time Card */}
-      {selectedAvailability && (
+      {selectedTime && (
         <Card className="overflow-hidden">
-          {/* <div className="bg-primary/5 border-b p-4">
-            <h3 className="text-lg font-semibold text-primary">Selected Time</h3>
-          </div> */}
           <div className="p-6">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -119,7 +124,7 @@ export function GuestInfoForm({ onSubmit, loading, products }: GuestInfoFormProp
                   <span className="text-sm font-medium">Date</span>
                 </div>
                 <p className="text-lg">
-                  {dayjs(selectedAvailability.start_time).format('dddd, MMMM D, YYYY')}
+                  {dayjs(selectedTime.start_time).format('dddd, MMMM D, YYYY')}
                 </p>
               </div>
 
@@ -129,8 +134,8 @@ export function GuestInfoForm({ onSubmit, loading, products }: GuestInfoFormProp
                   <span className="text-sm font-medium">Time</span>
                 </div>
                 <p className="text-lg">
-                  {dayjs(selectedAvailability.start_time).format('h:mm A')} -{' '}
-                  {dayjs(selectedAvailability.end_time).format('h:mm A')}
+                  {dayjs(selectedTime.start_time).format('h:mm A')} -{' '}
+                  {dayjs(selectedTime.end_time).format('h:mm A')}
                 </p>
               </div>
             </div>

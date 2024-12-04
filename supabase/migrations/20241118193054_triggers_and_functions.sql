@@ -1,11 +1,3 @@
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
 CREATE OR REPLACE FUNCTION validate_availability_update()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -46,27 +38,3 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON users
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_companies_updated_at
-    BEFORE UPDATE ON companies
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_courts_updated_at
-    BEFORE UPDATE ON courts
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_court_availabilities_updated_at
-    BEFORE UPDATE ON court_availabilities
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER validate_availability_update
-    BEFORE UPDATE ON court_availabilities
-    FOR EACH ROW
-    EXECUTE FUNCTION validate_availability_update();

@@ -17,10 +17,6 @@ CREATE TABLE court_availabilities (
 
 ALTER TABLE court_availabilities ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_court_availabilities_lookup ON court_availabilities (company_id, court_number, start_time);
-CREATE INDEX idx_court_availabilities_status ON court_availabilities (status);
-CREATE INDEX idx_court_availabilities_end_time ON court_availabilities(end_time);
-
 ALTER TABLE court_availabilities
 ADD CONSTRAINT no_overlapping_slots 
 EXCLUDE USING gist (

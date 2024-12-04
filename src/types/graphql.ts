@@ -60,6 +60,7 @@ export interface CourtAvailability {
 
 export enum AvailabilityStatus {
   Available = 'available',
+  Held = 'held',
   Booked = 'booked',
   Past = 'past',
 }

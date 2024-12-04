@@ -27,12 +27,17 @@ export function WeeklyCalendar({
     return Array.from({ length: 7 }).map((_, i) => start.add(i, 'day'))
   }, [startDate])
 
-  // Create a Set of dates that have availabilities for O(1) lookup
+  // Create a Set of dates that have future availabilities for O(1) lookup
   const availableDates = useMemo(() => {
     const dates = new Set<string>()
+    const now = dayjs()
+
     availabilities.forEach((availability) => {
-      const date = dayjs(availability.start_time).format('YYYY-MM-DD')
-      dates.add(date)
+      // Only add to available dates if the time hasn't passed yet
+      if (dayjs(availability.start_time).isAfter(now)) {
+        const date = dayjs(availability.start_time).format('YYYY-MM-DD')
+        dates.add(date)
+      }
     })
     return dates
   }, [availabilities])

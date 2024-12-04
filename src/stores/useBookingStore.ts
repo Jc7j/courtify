@@ -8,13 +8,13 @@ interface BookingState {
   weekStartDate: Date
   selectedAvailability?: CourtAvailability
   guestInfo?: GuestInfo
+  bookingId?: string
   setSelectedDate: (date: Date) => void
   setWeekStartDate: (date: Date) => void
   setSelectedAvailability: (availability?: CourtAvailability) => void
   setGuestInfo: (info: GuestInfo) => void
-  clearSelectedAvailability: () => void
-  clearGuestInfo: () => void
-  resetDates: () => void
+  setBookingId: (id: string) => void
+  clearBooking: () => void
   reset: () => void
 }
 
@@ -27,6 +27,7 @@ const initialState = {
 
 export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
+  bookingId: undefined,
 
   setSelectedDate: (date: Date) =>
     set({
@@ -43,16 +44,9 @@ export const useBookingStore = create<BookingState>((set) => ({
 
   setGuestInfo: (info: GuestInfo) => set({ guestInfo: info }),
 
-  clearSelectedAvailability: () => set({ selectedAvailability: undefined }),
-
-  clearGuestInfo: () => set({ guestInfo: undefined }),
-
-  resetDates: () =>
-    set({
-      selectedDate: initialState.selectedDate,
-      weekStartDate: initialState.weekStartDate,
-      selectedAvailability: undefined,
-    }),
+  setBookingId: (id: string) => set({ bookingId: id }),
+  clearBooking: () =>
+    set({ bookingId: undefined, guestInfo: undefined, selectedAvailability: undefined }),
 
   reset: () => set(initialState),
 }))

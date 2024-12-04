@@ -45,11 +45,6 @@ CREATE TABLE bookings (
     CONSTRAINT valid_amount CHECK (amount_total > 0)
 );
 
-CREATE INDEX idx_bookings_company_date ON bookings(company_id, start_time);
-CREATE INDEX idx_bookings_customer ON bookings(customer_email, start_time);
-CREATE INDEX idx_bookings_status ON bookings(status, payment_status);
-CREATE INDEX idx_bookings_stripe ON bookings(stripe_payment_intent_id);
-
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Company staff can manage bookings" ON bookings
