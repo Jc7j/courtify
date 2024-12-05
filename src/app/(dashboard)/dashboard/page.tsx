@@ -67,7 +67,7 @@ function DashboardContent({
 export default function DashboardPage() {
   const { company, loading, error } = useCompany()
   const { user } = useUserStore()
-  console.log('user', user)
+
   if (loading) {
     return (
       <div className="p-8 animate-fade-in">

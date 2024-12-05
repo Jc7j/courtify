@@ -7,6 +7,7 @@
 export interface StripeRequirements {
   currently_due: string[]
   eventually_due: string[]
+  pending_verification: string[]
 }
 
 // Core business profile fields we use
@@ -19,6 +20,8 @@ export interface StripeBusinessProfile {
 export interface StripeAccountDetails {
   id: string
   email: string
+  object: string
+  type: string
   business_profile: StripeBusinessProfile
   capabilities: {
     card_payments: 'active' | 'inactive'

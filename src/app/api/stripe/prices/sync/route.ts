@@ -27,29 +27,7 @@ export async function POST(req: Request) {
       { stripeAccount: company.stripe_account_id }
     )
 
-    // Get prices for all products
-    const stripeProducts = await Promise.all(
-      products.data.map(async (product) => {
-        const prices = await stripe.prices.list({ product: product.id, limit: 1 })
-
-        const price = prices.data[0]
-
-        return {
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          active: product.active,
-          metadata: product.metadata,
-          priceId: price?.id || '',
-          unitAmount: price?.unit_amount || 0,
-          currency: price?.currency?.toUpperCase() || 'USD',
-        }
-      })
-    )
-
-    console.log('stripeProducts', stripeProducts)
-
-    return NextResponse.json({ stripeProducts })
+    return NextResponse.json({ products })
   } catch (error) {
     console.error('Error fetching Stripe products:', error)
     return NextResponse.json(

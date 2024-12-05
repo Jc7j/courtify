@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui'
-import { ProductType } from '@/types/graphql'
+import { ProductType, StripePaymentType } from '@/types/graphql'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
 
 const PRODUCT_TYPES: { value: ProductType; label: string }[] = [
@@ -33,6 +33,7 @@ export function CreateProductDialog() {
     description: '',
     type: 'court_rental' as ProductType,
     priceAmount: '',
+    stripePaymentType: StripePaymentType.OneTime,
   })
 
   const handleSubmit = async (e: FormEvent) => {
@@ -44,6 +45,7 @@ export function CreateProductDialog() {
         description: formData.description,
         type: formData.type,
         priceAmount: Math.round(parseFloat(formData.priceAmount) * 100), // Convert to cents
+        stripePaymentType: formData.stripePaymentType,
       })
 
       if (response.error) {
@@ -56,6 +58,7 @@ export function CreateProductDialog() {
         description: '',
         type: ProductType.CourtRental,
         priceAmount: '',
+        stripePaymentType: StripePaymentType.OneTime,
       })
     } catch (error) {
       console.error('Failed to create product:', error)

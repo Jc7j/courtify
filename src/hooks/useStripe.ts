@@ -33,11 +33,11 @@ export function useStripe(): UseStripeReturn {
   const [checking, setChecking] = useState(false)
 
   const checkStripeStatus = useCallback(async (): Promise<StripeStatus> => {
+    if (!user?.company_id) {
+      throw new Error('No company found')
+    }
     try {
       setChecking(true)
-      if (!user?.company_id) {
-        throw new Error('No company found')
-      }
 
       const response = await fetch('/api/stripe/accounts/status', {
         method: 'POST',

@@ -142,7 +142,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   if (!company) {
     notFound()
   }
-  console.log('guestInfo', guestInfo)
+
   return (
     <div className="flex min-h-screen">
       {/* Left side - Info */}

@@ -7,7 +7,7 @@ import { useCompanyMembers } from '@/hooks/useUser'
 export default function MembersPage() {
   const { user } = useUserStore()
   const { members, loading } = useCompanyMembers(user?.company_id ?? '')
-  console.log('members', members)
+
   if (!user?.company_id) {
     return (
       <div className="p-8 text-center">

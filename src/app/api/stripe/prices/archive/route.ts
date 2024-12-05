@@ -34,12 +34,6 @@ export async function POST(req: Request) {
       { stripeAccount: company.stripe_account_id }
     )
 
-    await stripe.products.update(
-      body.stripe_product_id,
-      { active: body.active },
-      { stripeAccount: company.stripe_account_id }
-    )
-
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[stripe/products/archive] Error:', error)

@@ -103,6 +103,11 @@ export enum ProductType {
   // Event = 'event',
 }
 
+export enum StripePaymentType {
+  Recurring = 'recurring',
+  OneTime = 'one_time',
+}
+
 export interface CompanyProduct {
   id: string
   company_id: string
@@ -113,6 +118,7 @@ export interface CompanyProduct {
   currency: string
   stripe_price_id: string | null
   stripe_product_id: string | null
+  stripe_payment_type: StripePaymentType | null
   metadata: Record<string, unknown>
   is_active: boolean
   created_at: string

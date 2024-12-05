@@ -3,8 +3,7 @@
 import { CompanyProduct } from '@/types/graphql'
 import { formatCurrency } from '@/lib/utils/format-currency'
 import { CreateProductDialog } from './CreateProductDialog'
-import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, Loader2 } from 'lucide-react'
+import { MoreHorizontal, Archive, Loader2, RefreshCw } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,19 +13,23 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Badge,
   Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui'
-
-import { useState, useMemo } from 'react'
-import { useCompanyProducts } from '@/hooks/useCompanyProducts'
+import { useState } from 'react'
 import cn from '@/lib/utils/cn'
 
 interface ProductListProps {
   products: CompanyProduct[]
+  loading?: boolean
+  syncNeeded?: boolean
+  onSync: () => void
+  onArchive: (productId: string) => Promise<void>
+  onEdit: (product: CompanyProduct) => void
 }
 
 type ActionType = 'archive'
@@ -36,23 +39,15 @@ interface ProductAction {
   product: CompanyProduct
 }
 
-export function ProductList({ products }: ProductListProps) {
-  const { archiveProduct } = useCompanyProducts()
+export function ProductList({
+  products,
+  loading,
+  syncNeeded,
+  onSync,
+  onArchive,
+  onEdit,
+}: ProductListProps) {
   const [productAction, setProductAction] = useState<ProductAction | null>(null)
-
-  const sortedProducts = useMemo(() => {
-    return [...products].sort((a, b) => {
-      if (a.is_active !== b.is_active) {
-        return a.is_active ? -1 : 1
-      }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-  }, [products])
-
-  const handleEdit = (product: CompanyProduct) => {
-    // TODO: Implement edit functionality
-    console.log('Edit product:', product.id)
-  }
 
   const handleActionClick = (type: ActionType, product: CompanyProduct) => {
     setProductAction({ type, product })
@@ -62,15 +57,10 @@ export function ProductList({ products }: ProductListProps) {
     if (!productAction) return
 
     const { type, product } = productAction
-    let response
-
     if (type === 'archive') {
-      response = await archiveProduct(product.id)
+      await onArchive(product.id)
     }
-
-    if (!response?.error) {
-      setProductAction(null)
-    }
+    setProductAction(null)
   }
 
   const getActionContent = () => {
@@ -93,12 +83,37 @@ export function ProductList({ products }: ProductListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Products</h2>
-        <CreateProductDialog />
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Products</h2>
+          <CreateProductDialog />
+        </div>
+
+        {syncNeeded && (
+          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/50">
+            <p className="text-sm text-red-700 dark:text-red-400">
+              Your database products are not in sync with your Stripe account. Could you be using a
+              different Stripe account than the one connected to your company? Please contact
+              support if you need help before clicking sync to update.
+            </p>
+            <Button onClick={onSync} variant="outline" size="sm" className="ml-4 shrink-0">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Sync Products
+            </Button>
+          </div>
+        )}
       </div>
 
-      {products.length === 0 ? (
+      {loading ? (
+        <div className="divide-y rounded-lg border">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-4 animate-pulse">
+              <div className="h-5 w-32 bg-muted rounded mb-2" />
+              <div className="h-4 w-24 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      ) : products.length === 0 ? (
         <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-sm text-muted-foreground">No products yet</p>
           <p className="text-xs text-muted-foreground">
@@ -107,17 +122,21 @@ export function ProductList({ products }: ProductListProps) {
         </div>
       ) : (
         <div className="divide-y rounded-lg border">
-          {sortedProducts.map((product) => (
+          {products.map((product) => (
             <div key={product.id} className="flex items-center justify-between p-4">
-              <div>
+              <div className="space-y-1">
                 <h3 className="font-medium">{product.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary">{product.type.replace('_', ' ')}</Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="capitalize">
+                    {product.type.replace('_', ' ')}
+                  </Badge>
                   <Badge variant={product.is_active ? 'success' : 'secondary'}>
                     {product.is_active ? 'Active' : 'Archived'}
                   </Badge>
+                  <Badge variant="outline">{product.stripe_payment_type || 'one_time '}</Badge>
                 </div>
               </div>
+
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <p className="font-medium">
@@ -139,7 +158,7 @@ export function ProductList({ products }: ProductListProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-[180px]">
-                    <DropdownMenuItem onClick={() => handleEdit(product)} className="gap-2">
+                    <DropdownMenuItem onClick={() => onEdit(product)} className="gap-2">
                       <span className="flex items-center gap-2 flex-1">Edit product</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem

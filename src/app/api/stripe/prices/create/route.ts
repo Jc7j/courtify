@@ -42,11 +42,13 @@ export async function POST(req: Request) {
           metadata: {
             company_id: body.company_id,
             type: body.type,
-            description: body.description || null,
-            ...(body.metadata || {}),
+            ...(typeof body.metadata === 'string'
+              ? JSON.parse(body.metadata)
+              : body.metadata || {}),
           },
         },
         metadata: {
+          product_name: body.name,
           company_id: body.company_id,
           product_type: body.type,
         },
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
       stripe_product_id: price.product as string,
     })
   } catch (error) {
-    console.error('[stripe/products/create] Error:', error)
+    console.error('[stripe/prices/create] Error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create Stripe product' },
       { status: 500 }

@@ -6,6 +6,12 @@ CREATE TYPE product_type AS ENUM (
 --   'event'
 );
 
+CREATE TYPE stripe_payment_type AS ENUM (
+  'recurring',
+  'one_time'
+);
+
+
 CREATE TABLE company_products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
@@ -15,7 +21,8 @@ CREATE TABLE company_products (
     price_amount INTEGER NOT NULL, -- stored in cents
     currency TEXT NOT NULL DEFAULT 'USD',
     stripe_price_id TEXT,
-    stripe_product_id TEXT, -- Added this field for Stripe integration
+    stripe_product_id TEXT,
+    stripe_payment_type stripe_payment_type,
     metadata JSONB DEFAULT '{}', -- Flexible field for type-specific data
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
