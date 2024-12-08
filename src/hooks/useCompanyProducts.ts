@@ -13,7 +13,7 @@ interface CreateProductInput {
   name: string
   description?: string | null
   type: ProductType
-  priceAmount: number // in cents
+  priceAmount: number
   stripePaymentType: StripePaymentType
   currency?: string
   metadata?: Record<string, unknown>
@@ -86,6 +86,7 @@ export function useCompanyProducts() {
   async function createProduct(input: CreateProductInput): Promise<CreateProductResponse> {
     try {
       setError(null)
+      console.log('🚀 Creating product with input:', input)
 
       if (!user?.company_id) {
         throw new Error('No company found')
@@ -93,9 +94,7 @@ export function useCompanyProducts() {
 
       const stripeResponse = await fetch('/api/stripe/prices/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...input,
           company_id: user.company_id,
@@ -104,12 +103,12 @@ export function useCompanyProducts() {
 
       if (!stripeResponse.ok) {
         const error = await stripeResponse.json()
-        console.error('[useCompanyProducts] Stripe API error:', error)
         throw new Error(error.message || 'Failed to create Stripe product')
       }
 
       const stripeData = await stripeResponse.json()
-
+      console.log('🚀 Stripe data received:', stripeData)
+      console.log('🚀 input:', input)
       const result = await createProductMutation({
         variables: {
           input: {
@@ -117,14 +116,21 @@ export function useCompanyProducts() {
             name: input.name,
             description: input.description || null,
             type: input.type,
-            price_amount: stripeData.unitAmount,
+            price_amount: stripeData.unit_amount,
             currency: stripeData.currency,
-            stripe_price_id: stripeData.priceId,
-            stripe_product_id: stripeData.id,
-            metadata: input.metadata || {},
+            stripe_price_id: stripeData.id,
+            stripe_product_id: stripeData.product,
+            stripe_payment_type: stripeData.type as StripePaymentType,
+            metadata: JSON.stringify({
+              stripe_metadata: stripeData.metadata,
+              created_at: new Date().toISOString(),
+              price_details: {
+                currency: stripeData.currency,
+                original_amount: input.priceAmount,
+                unit_amount: stripeData.unit_amount,
+              },
+            }),
             is_active: true,
-            updated_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
           },
         },
       })

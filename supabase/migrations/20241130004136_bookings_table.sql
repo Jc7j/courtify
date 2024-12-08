@@ -1,13 +1,15 @@
 CREATE TYPE booking_status AS ENUM (
     'confirmed',  
     'cancelled',  
-    'completed'
+    'pending'
 );
 
 CREATE TYPE payment_status AS ENUM (  
     'paid',      
     'refunded',  
-    'failed'     
+    'failed',
+    'processing',
+    'pending'
 );
 
 CREATE SEQUENCE bookings_id_seq;

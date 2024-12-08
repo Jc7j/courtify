@@ -6,7 +6,11 @@ import { UPDATE_COURT_AVAILABILITY } from '@/gql/mutations/court-availability'
 import { useUserStore } from '@/stores/useUserStore'
 import type { Booking } from '@/types/graphql'
 import { GuestInfo } from '@/components/booking/GuestInfoForm'
-import { AvailabilityStatus } from '@/types/graphql'
+import { AvailabilityStatus, BookingStatus, PaymentStatus } from '@/types/graphql'
+import { CREATE_BOOKING } from '@/gql/mutations/booking'
+
+import { useBookingStore } from '@/stores/useBookingStore'
+import dayjs from 'dayjs'
 
 interface CreateBookingInput {
   companyId: string
@@ -29,7 +33,7 @@ interface UseBookingsReturn {
     clientSecret: string
     amount: number
   }>
-  confirmPaymentItentAndBook: () => Promise<void>
+  confirmPaymentIntentAndBook: () => Promise<void>
 }
 
 export function useBookings(): UseBookingsReturn {
@@ -47,6 +51,7 @@ export function useBookings(): UseBookingsReturn {
   })
 
   const [updateCourtAvailability] = useMutation(UPDATE_COURT_AVAILABILITY)
+  const [createBooking] = useMutation(CREATE_BOOKING)
 
   const completedBookings =
     data?.bookingsCollection?.edges?.map((edge: { node: Booking }) => edge.node) || []
@@ -106,10 +111,101 @@ export function useBookings(): UseBookingsReturn {
   }
 
   async function confirmPaymentIntentAndBook() {
+    const state = useBookingStore.getState()
+    if (!state.selectedAvailability || !state.guestInfo || !state.paymentIntentSecret) {
+      throw new Error('Missing booking information')
+    }
+
     try {
-      console.log('💳 Confirming payment intent and booking...')
+      // 1. Update court availability to booked
+      await updateCourtAvailability({
+        variables: {
+          company_id: state.selectedAvailability.company_id,
+          court_number: state.selectedAvailability.court_number,
+          start_time: state.selectedAvailability.start_time,
+          set: {
+            status: AvailabilityStatus.Booked,
+          },
+        },
+      })
+
+      // 2. Create booking record
+      const { data: bookingData } = await createBooking({
+        variables: {
+          input: {
+            // Required fields from schema
+            company_id: state.selectedAvailability.company_id,
+            court_number: state.selectedAvailability.court_number,
+            start_time: state.selectedAvailability.start_time,
+            customer_email: state.guestInfo.email,
+            customer_name: state.guestInfo.name,
+            customer_phone: state.guestInfo.phone || null,
+            status: BookingStatus.Pending,
+            payment_status: PaymentStatus.Processing,
+            stripe_payment_intent_id: state.paymentIntentSecret,
+            amount_total: 0, // Will be updated by webhook
+            currency: 'usd',
+
+            // Comprehensive metadata
+            metadata: JSON.stringify({
+              // Court details
+              court_details: {
+                end_time: state.selectedAvailability.end_time,
+                duration_hours: dayjs(state.selectedAvailability.end_time).diff(
+                  dayjs(state.selectedAvailability.start_time),
+                  'hour',
+                  true
+                ),
+              },
+              // Customer preferences
+              customer_preferences: {
+                net_height: state.guestInfo.net_height,
+              },
+              // Product details
+              products: {
+                court_product: state.guestInfo.selectedCourtProduct,
+                equipment: state.guestInfo.selectedEquipment,
+              },
+              // Booking flow data
+              booking_flow: {
+                created_from: 'guest_checkout',
+                created_at: new Date().toISOString(),
+                ip_address: null, // Optional: Could add if needed
+                user_agent: null, // Optional: Could add if needed
+              },
+            }),
+
+            // Timestamps
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        },
+      })
+
+      if (!bookingData?.insertIntobookingsCollection?.records?.[0]) {
+        throw new Error('Failed to create booking record')
+      }
+
+      return bookingData.insertIntobookingsCollection.records[0]
     } catch (err) {
       console.error('❌ Error in confirmPaymentIntentAndBook:', err)
+
+      // If booking fails, try to revert court availability
+      try {
+        await updateCourtAvailability({
+          variables: {
+            company_id: state.selectedAvailability.company_id,
+            court_number: state.selectedAvailability.court_number,
+            start_time: state.selectedAvailability.start_time,
+            set: {
+              status: AvailabilityStatus.Available,
+            },
+          },
+        })
+      } catch (revertError) {
+        console.error('Failed to revert court availability:', revertError)
+      }
+
       throw err instanceof Error ? err : new Error('Failed to confirm payment intent and book')
     }
   }

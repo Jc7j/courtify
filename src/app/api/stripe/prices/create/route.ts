@@ -57,10 +57,13 @@ export async function POST(req: Request) {
         stripeAccount: company.stripe_account_id,
       }
     )
-
     return NextResponse.json({
-      stripe_price_id: price.id,
-      stripe_product_id: price.product as string,
+      id: price.id,
+      product: price.product as string,
+      currency: price.currency,
+      unit_amount: price.unit_amount,
+      type: price.type,
+      metadata: price.metadata,
     })
   } catch (error) {
     console.error('[stripe/prices/create] Error:', error)

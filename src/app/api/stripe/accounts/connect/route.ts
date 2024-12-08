@@ -50,8 +50,8 @@ export async function POST(req: Request) {
 
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PRODUCTS}?refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PRODUCTS}?stripe=success`,
+      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}?refresh=true`,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}?stripe=success`,
       type: accountLinkType,
     })
 

@@ -19,7 +19,6 @@ export function SetupRequirements({
   onComplete,
 }: SetupRequirementsProps) {
   const hasRequirements = requirements.currently_due.length > 0
-
   return (
     <div className="space-y-6">
       {hasRequirements && (

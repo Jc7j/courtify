@@ -19,6 +19,7 @@ import {
 } from '@/components/ui'
 import { ProductType, StripePaymentType } from '@/types/graphql'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
+import { Plus } from 'lucide-react'
 
 const PRODUCT_TYPES: { value: ProductType; label: string }[] = [
   { value: ProductType.CourtRental, label: 'Court Rental' },
@@ -33,20 +34,31 @@ export function CreateProductDialog() {
     description: '',
     type: 'court_rental' as ProductType,
     priceAmount: '',
-    stripePaymentType: StripePaymentType.OneTime,
+    stripePaymentType: 'one_time' as StripePaymentType,
   })
 
-  const handleSubmit = async (e: FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    console.log('🚀 Starting form submission with data:', formData)
 
     try {
+      console.log('📤 Calling createProduct with:', {
+        name: formData.name,
+        description: formData.description || undefined,
+        type: formData.type,
+        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
+        stripePaymentType: 'one_time' as StripePaymentType,
+      })
+
       const response = await createProduct({
         name: formData.name,
-        description: formData.description,
+        description: formData.description || undefined,
         type: formData.type,
-        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100), // Convert to cents
-        stripePaymentType: formData.stripePaymentType,
+        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
+        stripePaymentType: 'one_time' as StripePaymentType,
       })
+
+      console.log('📥 Create product response:', response)
 
       if (response.error) {
         throw new Error(response.error)
@@ -56,19 +68,29 @@ export function CreateProductDialog() {
       setFormData({
         name: '',
         description: '',
-        type: ProductType.CourtRental,
+        type: 'court_rental' as ProductType,
         priceAmount: '',
-        stripePaymentType: StripePaymentType.OneTime,
+        stripePaymentType: 'one_time' as StripePaymentType,
       })
     } catch (error) {
-      console.error('Failed to create product:', error)
+      console.error('❌ Form submission error:', {
+        error,
+        formData,
+        stack: error instanceof Error ? error.stack : undefined,
+      })
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create a Product</Button>
+        <Button
+          variant="outline"
+          className="text-primary hover:text-primary-foreground hover:bg-primary"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create Product
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, use, useRef, useEffect } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, useRouter } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { GuestInfoForm } from '@/components/booking/GuestInfoForm'
@@ -49,6 +49,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   } = useBookingStore()
   const { createPaymentIntent } = useBookings()
   const { updateAvailability } = useCourtAvailability()
+  const router = useRouter()
 
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
@@ -78,6 +79,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   function handlePaymentSuccess() {
     useBookingStore.getState().clearBooking()
+    router.push(`/book/${resolvedParams.slug}/success`)
   }
 
   async function handleGuestInfoSubmit(data: GuestInfo) {
@@ -124,7 +126,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     }
   }
 
-  const handleBack = async () => {
+  async function handleBack() {
     if (currentStep === 'payment') {
       if (selectedAvailability) {
         try {
@@ -157,12 +159,10 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     }
   }
 
-  // Single effect to handle countdown
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval>
 
     if (currentStep === 'payment' && selectedAvailability) {
-      // Start the hold when entering payment step
       startHold()
 
       // Update countdown every second
@@ -175,7 +175,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           clearInterval(intervalId)
           setRemainingTime('0:00')
 
-          // Release the hold
           updateAvailability({
             courtNumber: selectedAvailability.court_number,
             startTime: selectedAvailability.start_time,
@@ -236,8 +235,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
               Book Your Court at {company.name}
             </h2>
             <p className="text-secondary-foreground/80 text-center text-base leading-relaxed">
-              Select your preferred court and time slot. Our easy booking system ensures a seamless
-              experience for securing your next game or practice session.
+              Select your preferred court and time slot.
             </p>
             <p className="text-center text-sm text-muted-foreground">
               © {new Date().getFullYear()} Powered by Courtify. All rights reserved.

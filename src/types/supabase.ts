@@ -152,6 +152,9 @@ export type Database = {
           metadata: Json | null
           name: string
           price_amount: number
+          stripe_payment_type:
+            | Database["public"]["Enums"]["stripe_payment_type"]
+            | null
           stripe_price_id: string | null
           stripe_product_id: string | null
           type: Database["public"]["Enums"]["product_type"]
@@ -167,6 +170,9 @@ export type Database = {
           metadata?: Json | null
           name: string
           price_amount: number
+          stripe_payment_type?:
+            | Database["public"]["Enums"]["stripe_payment_type"]
+            | null
           stripe_price_id?: string | null
           stripe_product_id?: string | null
           type: Database["public"]["Enums"]["product_type"]
@@ -182,6 +188,9 @@ export type Database = {
           metadata?: Json | null
           name?: string
           price_amount?: number
+          stripe_payment_type?:
+            | Database["public"]["Enums"]["stripe_payment_type"]
+            | null
           stripe_price_id?: string | null
           stripe_product_id?: string | null
           type?: Database["public"]["Enums"]["product_type"]
@@ -681,10 +690,11 @@ export type Database = {
     }
     Enums: {
       availability_status: "available" | "held" | "booked" | "past"
-      booking_status: "confirmed" | "cancelled" | "completed"
+      booking_status: "confirmed" | "cancelled" | "pending"
       member_role: "owner" | "admin" | "member"
-      payment_status: "paid" | "refunded" | "failed"
+      payment_status: "paid" | "refunded" | "failed" | "processing" | "pending"
       product_type: "court_rental" | "equipment"
+      stripe_payment_type: "recurring" | "one_time"
     }
     CompositeTypes: {
       [_ in never]: never

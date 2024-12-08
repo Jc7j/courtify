@@ -84,19 +84,17 @@ export function ProductList({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Products</h2>
-          <CreateProductDialog />
-        </div>
-
         {syncNeeded && (
-          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/50">
-            <p className="text-sm text-red-700 dark:text-red-400">
-              Your database products are not in sync with your Stripe account. Could you be using a
-              different Stripe account than the one connected to your company? Please contact
-              support if you need help before clicking sync to update.
+          <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50/50 px-4 py-3 dark:border-yellow-900/50 dark:bg-yellow-950/20">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
+              Products need to be synced with Stripe. Please review and sync to update.
             </p>
-            <Button onClick={onSync} variant="outline" size="sm" className="ml-4 shrink-0">
+            <Button
+              onClick={onSync}
+              variant="outline"
+              size="sm"
+              className="text-primary hover:text-primary-foreground hover:bg-primary"
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Sync Products
             </Button>

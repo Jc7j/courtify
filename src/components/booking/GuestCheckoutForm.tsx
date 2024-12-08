@@ -5,10 +5,8 @@ import { Card, Button, Separator } from '@/components/ui'
 import { Clock, Calendar, DollarSign } from 'lucide-react'
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { GuestInfo } from './GuestInfoForm'
+import { useBookings } from '@/hooks/useBookings'
 
-// @TODO when user presses back, we'll need to put availability back to "available"
-// Lets leave a quick message in the UI to let them know they'll leave it open for guests
-// Or the timer will indicate it's still held
 interface ProductDetail {
   name: string
   type: string
@@ -39,6 +37,7 @@ export function GuestCheckoutForm({
 }: GuestCheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
+  const { confirmPaymentIntentAndBook } = useBookings()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
 
@@ -58,20 +57,10 @@ export function GuestCheckoutForm({
         throw new Error(submitError.message)
       }
 
-      console.log('💳 Processing payment...')
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/booking/confirmation`,
-        },
-      })
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
+      await confirmPaymentIntentAndBook()
       onSuccess()
     } catch (error) {
+      console.error('Payment failed:', error)
       setPaymentError(error instanceof Error ? error.message : 'Payment failed')
     } finally {
       setIsProcessing(false)

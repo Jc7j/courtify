@@ -23,14 +23,10 @@ CREATE TABLE company_products (
     stripe_price_id TEXT,
     stripe_product_id TEXT,
     stripe_payment_type stripe_payment_type,
-    metadata JSONB DEFAULT '{}', -- Flexible field for type-specific data
+    metadata JSONB DEFAULT '{}',
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    
-    -- Add unique constraint for Stripe IDs
-    CONSTRAINT unique_stripe_price_id UNIQUE (stripe_price_id),
-    CONSTRAINT unique_stripe_product_id UNIQUE (stripe_product_id)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Example metadata structure for court_rental type:

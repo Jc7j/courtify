@@ -55,6 +55,7 @@ export interface CourtAvailability {
   created_at: string
   updated_at: string
 }
+// @TODO possibly remove 'past' status. We'll have ui to show its past by comparing to current date. This removes the functionality to handle updating to past availability.
 
 export enum AvailabilityStatus {
   Available = 'available',
@@ -64,12 +65,14 @@ export enum AvailabilityStatus {
 }
 
 export enum BookingStatus {
+  Pending = 'pending',
   Confirmed = 'confirmed',
   Cancelled = 'cancelled',
-  Completed = 'completed',
 }
 
 export enum PaymentStatus {
+  Pending = 'pending',
+  Processing = 'processing',
   Paid = 'paid',
   Refunded = 'refunded',
   Failed = 'failed',

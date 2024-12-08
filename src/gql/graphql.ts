@@ -576,8 +576,8 @@ export type Availability_StatusFilter = {
 
 export enum Booking_Status {
   Cancelled = 'cancelled',
-  Completed = 'completed',
-  Confirmed = 'confirmed'
+  Confirmed = 'confirmed',
+  Pending = 'pending'
 }
 
 /** Boolean expression comparing fields on type "booking_status" */
@@ -593,7 +593,7 @@ export type Bookings = Node & {
   amount_paid?: Maybe<Scalars['Int']['output']>;
   amount_total: Scalars['Int']['output'];
   company_id: Scalars['UUID']['output'];
-  court_availabilities: Court_Availabilities;
+  court_availabilities?: Maybe<Court_Availabilities>;
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
   currency: Scalars['String']['output'];
@@ -891,7 +891,7 @@ export type CompaniesUpdateResponse = {
 
 export type Company_Products = Node & {
   __typename?: 'company_products';
-  companies: Companies;
+  companies?: Maybe<Companies>;
   company_id: Scalars['UUID']['output'];
   created_at: Scalars['Datetime']['output'];
   currency: Scalars['String']['output'];
@@ -903,6 +903,7 @@ export type Company_Products = Node & {
   /** Globally Unique Record Identifier */
   nodeId: Scalars['ID']['output'];
   price_amount: Scalars['Int']['output'];
+  stripe_payment_type?: Maybe<Stripe_Payment_Type>;
   stripe_price_id?: Maybe<Scalars['String']['output']>;
   stripe_product_id?: Maybe<Scalars['String']['output']>;
   type: Product_Type;
@@ -945,6 +946,7 @@ export type Company_ProductsFilter = {
   /** Returns true if at least one of its inner filters is true, otherwise returns false */
   or?: InputMaybe<Array<Company_ProductsFilter>>;
   price_amount?: InputMaybe<IntFilter>;
+  stripe_payment_type?: InputMaybe<Stripe_Payment_TypeFilter>;
   stripe_price_id?: InputMaybe<StringFilter>;
   stripe_product_id?: InputMaybe<StringFilter>;
   type?: InputMaybe<Product_TypeFilter>;
@@ -961,6 +963,7 @@ export type Company_ProductsInsertInput = {
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   price_amount?: InputMaybe<Scalars['Int']['input']>;
+  stripe_payment_type?: InputMaybe<Stripe_Payment_Type>;
   stripe_price_id?: InputMaybe<Scalars['String']['input']>;
   stripe_product_id?: InputMaybe<Scalars['String']['input']>;
   type?: InputMaybe<Product_Type>;
@@ -984,6 +987,7 @@ export type Company_ProductsOrderBy = {
   is_active?: InputMaybe<OrderByDirection>;
   name?: InputMaybe<OrderByDirection>;
   price_amount?: InputMaybe<OrderByDirection>;
+  stripe_payment_type?: InputMaybe<OrderByDirection>;
   stripe_price_id?: InputMaybe<OrderByDirection>;
   stripe_product_id?: InputMaybe<OrderByDirection>;
   type?: InputMaybe<OrderByDirection>;
@@ -1000,6 +1004,7 @@ export type Company_ProductsUpdateInput = {
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   price_amount?: InputMaybe<Scalars['Int']['input']>;
+  stripe_payment_type?: InputMaybe<Stripe_Payment_Type>;
   stripe_price_id?: InputMaybe<Scalars['String']['input']>;
   stripe_product_id?: InputMaybe<Scalars['String']['input']>;
   type?: InputMaybe<Product_Type>;
@@ -1016,11 +1021,11 @@ export type Company_ProductsUpdateResponse = {
 
 export type Court_Availabilities = Node & {
   __typename?: 'court_availabilities';
-  bookingsCollection: BookingsConnection;
-  companies: Companies;
+  bookingsCollection?: Maybe<BookingsConnection>;
+  companies?: Maybe<Companies>;
   company_id: Scalars['UUID']['output'];
   court_number: Scalars['Int']['output'];
-  courts: Courts;
+  courts?: Maybe<Courts>;
   created_at: Scalars['Datetime']['output'];
   end_time: Scalars['Datetime']['output'];
   /** Globally Unique Record Identifier */
@@ -1126,9 +1131,9 @@ export type Court_AvailabilitiesUpdateResponse = {
 
 export type Courts = Node & {
   __typename?: 'courts';
-  companies: Companies;
+  companies?: Maybe<Companies>;
   company_id: Scalars['UUID']['output'];
-  court_availabilitiesCollection: Court_AvailabilitiesConnection;
+  court_availabilitiesCollection?: Maybe<Court_AvailabilitiesConnection>;
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
   name: Scalars['String']['output'];
@@ -1240,6 +1245,8 @@ export type Member_RoleFilter = {
 export enum Payment_Status {
   Failed = 'failed',
   Paid = 'paid',
+  Pending = 'pending',
+  Processing = 'processing',
   Refunded = 'refunded'
 }
 
@@ -1262,6 +1269,19 @@ export type Product_TypeFilter = {
   in?: InputMaybe<Array<Product_Type>>;
   is?: InputMaybe<FilterIs>;
   neq?: InputMaybe<Product_Type>;
+};
+
+export enum Stripe_Payment_Type {
+  OneTime = 'one_time',
+  Recurring = 'recurring'
+}
+
+/** Boolean expression comparing fields on type "stripe_payment_type" */
+export type Stripe_Payment_TypeFilter = {
+  eq?: InputMaybe<Stripe_Payment_Type>;
+  in?: InputMaybe<Array<Stripe_Payment_Type>>;
+  is?: InputMaybe<FilterIs>;
+  neq?: InputMaybe<Stripe_Payment_Type>;
 };
 
 export type Users = Node & {

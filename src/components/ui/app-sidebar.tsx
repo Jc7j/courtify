@@ -33,7 +33,7 @@ const items = [
     exact: true,
   },
   {
-    title: 'Courts',
+    title: 'Courts & Products',
     url: ROUTES.DASHBOARD.COURTS,
     icon: Calendar,
     exact: false,
@@ -61,9 +61,12 @@ export function AppSidebar({ companyName }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarHeader className="border-b border-sidebar-border">
             <div className="flex items-center gap-3 p-4">
-              <Logo size="sm" href="/dashboard" clickable />
+              {/* <Logo size="sm" href="/dashboard" clickable /> */}
               <div className="flex items-baseline gap-2">
                 <span className="font-semibold  text-sidebar-foreground">{companyName}</span>
+                {/* <p className="text-xs text-sidebar-foreground/50">
+                  v{process.env.NEXT_PUBLIC_APP_VERSION}
+                </p> */}
               </div>
             </div>
           </SidebarHeader>
