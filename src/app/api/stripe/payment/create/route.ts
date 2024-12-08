@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/stripe'
 import { createAdminClient } from '@/lib/supabase/server'
+import dayjs from 'dayjs'
 
 interface RequestBody {
   companyId: string
   courtNumber: number
   startTime: string
+  endTime: string
   guestInfo: {
     name: string
     email: string
@@ -21,37 +23,22 @@ interface RequestBody {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody
-    console.log(' Received payment intent request:', {
-      companyId: body.companyId,
-      courtNumber: body.courtNumber,
-      startTime: body.startTime,
-      products: {
-        court: body.selectedProducts.courtProductId,
-        equipment: body.selectedProducts.equipmentProductIds,
-      },
-    })
 
-    // Get company and verify Stripe setup
+    const startTime = dayjs(body.startTime)
+    const endTime = dayjs(body.endTime)
+    const durationInHours = endTime.diff(startTime, 'hour', true) // Use true for floating point
+
     const supabase = createAdminClient()
-    console.log('🔍 Fetching company details...')
     const { data: company, error: companyError } = await supabase
       .from('companies')
       .select('stripe_account_id, stripe_currency')
       .eq('id', body.companyId)
       .single()
 
-    if (companyError) {
-      console.error('❌ Error fetching company:', companyError)
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+    if (companyError || !company?.stripe_account_id) {
+      return NextResponse.json({ error: 'Company not setup for payments' }, { status: 400 })
     }
 
-    if (!company?.stripe_account_id) {
-      console.error('❌ Company has no Stripe account:', body.companyId)
-      return NextResponse.json({ error: 'Company is not setup for payments' }, { status: 400 })
-    }
-
-    // Get selected products with prices
-    console.log('🔍 Fetching product details...')
     const { data: products, error: productsError } = await supabase
       .from('company_products')
       .select('id, price_amount, name, type')
@@ -60,29 +47,21 @@ export async function POST(req: Request) {
         ...body.selectedProducts.equipmentProductIds,
       ])
 
-    if (productsError) {
-      console.error('❌ Error fetching products:', productsError)
-      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
-    }
-
-    if (!products?.length) {
-      console.error('❌ No products found for IDs:', {
-        court: body.selectedProducts.courtProductId,
-        equipment: body.selectedProducts.equipmentProductIds,
-      })
+    if (productsError || !products?.length) {
       return NextResponse.json({ error: 'Products not found' }, { status: 400 })
     }
 
-    // Calculate total amount
-    const amount = products.reduce((sum, product) => sum + product.price_amount, 0)
-    console.log('💰 Calculated total amount:', {
-      amount,
-      currency: company.stripe_currency,
-      products: products.map((p) => ({ id: p.id, name: p.name, price: p.price_amount })),
-    })
+    const amount = products.reduce((sum, product) => {
+      if (product.type === 'court_rental') {
+        // For court rentals, multiply hourly rate by duration
+        const hourlyRate = product.price_amount
+        const courtAmount = Math.round(hourlyRate * durationInHours)
+        return sum + courtAmount
+      }
+      // Equipment prices are flat rate
+      return sum + product.price_amount
+    }, 0)
 
-    // Create payment intent
-    console.log('💳 Creating Stripe payment intent...')
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
@@ -90,10 +69,13 @@ export async function POST(req: Request) {
         automatic_payment_methods: {
           enabled: true,
         },
+        payment_method_types: ['card'],
         metadata: {
           companyId: body.companyId,
           courtNumber: body.courtNumber,
           startTime: body.startTime,
+          endTime: body.endTime,
+          bookingDuration: `${durationInHours} hours`,
           customerEmail: body.guestInfo.email,
           customerName: body.guestInfo.name,
           customerPhone: body.guestInfo.phone,
@@ -107,17 +89,13 @@ export async function POST(req: Request) {
       }
     )
 
-    console.log('✅ Payment intent created:', {
-      id: paymentIntent.id,
-      amount: paymentIntent.amount,
-      status: paymentIntent.status,
-    })
-
+    console.log('💳 ROUTE.TS == Payment intent created:', paymentIntent)
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
+      amount: paymentIntent.amount,
     })
   } catch (error) {
-    console.error('❌ [stripe/create-payment-intent] Error:', error)
+    console.error('[stripe/create-payment-intent] Error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create payment intent' },
       { status: 500 }

@@ -13,7 +13,7 @@ import type { CompanyProduct } from '@/types/graphql'
 export default function ProductsPage() {
   const { company } = useCompany()
   const { checkStripeStatus, checking } = useStripe()
-  const { listProducts, archiveProduct, syncProducts, databaseProducts, loadingProducts } =
+  const { listProducts, archiveProduct, syncProducts, products, loadingProducts } =
     useCompanyProducts()
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)
@@ -90,7 +90,7 @@ export default function ProductsPage() {
         <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
         {stripeStatus?.isConnected && stripeStatus.isEnabled && (
           <ProductList
-            products={databaseProducts}
+            products={products}
             loading={loadingProducts}
             syncNeeded={syncNeeded}
             onSync={handleSync}

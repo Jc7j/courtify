@@ -10,14 +10,14 @@ interface BookingState {
   weekStartDate: Date
   selectedAvailability?: CourtAvailability
   guestInfo?: GuestInfo
-  bookingId?: string
+  paymentIntentSecret?: string | null
   currentStep: BookingStep
   isLoading: boolean
   setSelectedDate: (date: Date) => void
   setWeekStartDate: (date: Date) => void
   setSelectedAvailability: (availability?: CourtAvailability) => void
   setGuestInfo: (info: GuestInfo) => void
-  setBookingId: (id: string) => void
+  setPaymentIntentSecret: (secret: string) => void
   setCurrentStep: (step: BookingStep) => void
   setLoading: (loading: boolean) => void
   clearBooking: () => void
@@ -35,7 +35,7 @@ const initialState = {
 
 export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
-  bookingId: undefined,
+  paymentIntentSecret: undefined,
 
   setSelectedDate: (date: Date) =>
     set({
@@ -52,14 +52,14 @@ export const useBookingStore = create<BookingState>((set) => ({
 
   setGuestInfo: (info: GuestInfo) => set({ guestInfo: info }),
 
-  setBookingId: (id: string) => set({ bookingId: id }),
+  setPaymentIntentSecret: (secret: string) => set({ paymentIntentSecret: secret }),
 
   setCurrentStep: (step: BookingStep) => set({ currentStep: step }),
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
 
   clearBooking: () =>
-    set({ bookingId: undefined, guestInfo: undefined, selectedAvailability: undefined }),
+    set({ paymentIntentSecret: undefined, guestInfo: undefined, selectedAvailability: undefined }),
 
   reset: () => set(initialState),
 }))

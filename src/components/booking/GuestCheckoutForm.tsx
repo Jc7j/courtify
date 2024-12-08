@@ -1,31 +1,81 @@
 'use client'
 
+import { FormEvent, useState } from 'react'
 import { Card, Button, Separator } from '@/components/ui'
-import { useBookingStore } from '@/stores/useBookingStore'
-import dayjs from 'dayjs'
 import { Clock, Calendar, DollarSign } from 'lucide-react'
-import type { FormEvent } from 'react'
-import { PaymentElement } from '@stripe/react-stripe-js'
+import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { GuestInfo } from './GuestInfoForm'
+
+// @TODO when user presses back, we'll need to put availability back to "available"
+// Lets leave a quick message in the UI to let them know they'll leave it open for guests
+// Or the timer will indicate it's still held
+interface ProductDetail {
+  name: string
+  type: string
+  price: number
+  isHourly: boolean
+}
+
+interface BookingDetails {
+  date: string
+  time: string
+  duration: number
+  guestInfo: GuestInfo
+  products: ProductDetail[]
+}
 
 interface GuestCheckoutFormProps {
-  onSubmit: (e: FormEvent) => Promise<void>
+  onSuccess: () => void
   onBack?: () => void
-  isProcessing: boolean
-  error: string | null
   amount: number
+  bookingDetails: BookingDetails
 }
 
 export function GuestCheckoutForm({
-  onSubmit,
+  onSuccess,
   onBack,
-  isProcessing,
-  error,
   amount,
+  bookingDetails,
 }: GuestCheckoutFormProps) {
-  const { selectedAvailability, guestInfo } = useBookingStore()
+  const stripe = useStripe()
+  const elements = useElements()
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
 
-  if (!selectedAvailability || !guestInfo) {
-    return null
+  async function handlePaymentSubmit(e: FormEvent) {
+    e.preventDefault()
+
+    if (!stripe || !elements) {
+      return
+    }
+
+    setIsProcessing(true)
+    setPaymentError(null)
+
+    try {
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        throw new Error(submitError.message)
+      }
+
+      console.log('💳 Processing payment...')
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/booking/confirmation`,
+        },
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      onSuccess()
+    } catch (error) {
+      setPaymentError(error instanceof Error ? error.message : 'Payment failed')
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -43,20 +93,15 @@ export function GuestCheckoutForm({
                 <Calendar className="h-4 w-4" />
                 <span className="text-sm font-medium">Date</span>
               </div>
-              <p className="text-lg">
-                {dayjs(selectedAvailability.start_time).format('dddd, MMMM D, YYYY')}
-              </p>
+              <p className="text-lg">{bookingDetails.date}</p>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span className="text-sm font-medium">Time</span>
+                <span className="text-sm font-medium">Time ({bookingDetails.duration} hours)</span>
               </div>
-              <p className="text-lg">
-                {dayjs(selectedAvailability.start_time).format('h:mm A')} -{' '}
-                {dayjs(selectedAvailability.end_time).format('h:mm A')}
-              </p>
+              <p className="text-lg">{bookingDetails.time}</p>
             </div>
           </div>
 
@@ -66,19 +111,48 @@ export function GuestCheckoutForm({
           <div className="space-y-2">
             <h4 className="font-medium">Customer Information</h4>
             <div className="grid gap-1 text-sm">
-              <p>{guestInfo.name}</p>
-              <p>{guestInfo.email}</p>
-              <p>{guestInfo.phone}</p>
-              <p>Net Height: {guestInfo.net_height}</p>
+              <p>Name: {bookingDetails.guestInfo.name}</p>
+              <p>Email: {bookingDetails.guestInfo.email}</p>
+              <p>Phone: {bookingDetails.guestInfo.phone}</p>
+              <p>Net Height: {bookingDetails.guestInfo.net_height}</p>
             </div>
           </div>
 
           <Separator />
 
           {/* Price Summary */}
-          <div className="space-y-2">
+          <div className="space-y-4">
+            <h4 className="font-medium">Price Breakdown</h4>
+
+            {/* Individual Items */}
+            <div className="space-y-2 text-sm">
+              {bookingDetails.products.map((product) => (
+                <div key={product.name} className="flex justify-between items-center">
+                  <div>
+                    <span className="font-medium">{product.name}</span>
+                    {product.isHourly && (
+                      <span className="text-muted-foreground">
+                        {' '}
+                        (${(product.price / 100).toFixed(2)}/hour × {bookingDetails.duration} hours)
+                      </span>
+                    )}
+                  </div>
+                  <span>
+                    $
+                    {(
+                      (product.isHourly ? product.price * bookingDetails.duration : product.price) /
+                      100
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            {/* Total */}
             <div className="flex justify-between items-center font-medium">
-              <span>Total</span>
+              <span>Total ({bookingDetails.duration} hours)</span>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4" />
                 <span>{(amount / 100).toFixed(2)}</span>
@@ -93,22 +167,24 @@ export function GuestCheckoutForm({
         <div className="bg-primary/5 border-b p-4">
           <h3 className="text-lg font-semibold text-primary">Payment Details</h3>
         </div>
-        <form onSubmit={onSubmit} className="p-6 space-y-6">
+        <form onSubmit={handlePaymentSubmit} className="p-6 space-y-6">
           <PaymentElement
             options={{
               layout: 'tabs',
               defaultValues: {
                 billingDetails: {
-                  name: guestInfo.name,
-                  email: guestInfo.email,
-                  phone: guestInfo.phone,
+                  name: bookingDetails.guestInfo.name,
+                  email: bookingDetails.guestInfo.email,
+                  phone: bookingDetails.guestInfo.phone,
                 },
               },
             }}
           />
 
-          {error && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">{error}</div>
+          {paymentError && (
+            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+              {paymentError}
+            </div>
           )}
 
           <div className="flex items-center justify-between pt-4 border-t">

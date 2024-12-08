@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, use, useRef } from 'react'
+import { useState, use, useRef, useEffect } from 'react'
 import { notFound } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
 import { BookingForm } from '@/components/booking/BookingForm'
@@ -11,12 +11,17 @@ import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
 import type { GuestInfo } from '@/components/booking/GuestInfoForm'
 import dayjs from 'dayjs'
-import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
+import { Elements } from '@stripe/react-stripe-js'
 import { useBookings } from '@/hooks/useBookings'
-import { PaymentWrapper } from '@/components/booking/PaymentWrapper'
+import { GuestCheckoutForm } from '@/components/booking/GuestCheckoutForm'
+import { CompanyProduct } from '@/types/graphql'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+function getStripePromise(accountId: string) {
+  return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
+    stripeAccount: accountId,
+  })
+}
 
 export default function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params)
@@ -28,15 +33,24 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     slug: resolvedParams.slug,
   })
   const { products } = useCompanyProducts()
-  const { selectedAvailability, guestInfo, currentStep, setCurrentStep, isLoading, setLoading } =
-    useBookingStore()
-  const { createBookingWithIntent } = useBookings()
+  const {
+    selectedAvailability,
+    guestInfo,
+    currentStep,
+    setCurrentStep,
+    isLoading,
+    setLoading,
+    paymentIntentSecret,
+    setPaymentIntentSecret,
+  } = useBookingStore()
+  const { createPaymentIntent } = useBookings()
 
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
-  const [clientSecret, setClientSecret] = useState<string | null>(null)
   const formRef = useRef<{ submit: () => void }>(null)
+  const [amount, setAmount] = useState<number>(0)
+  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null)
 
   const {
     availabilities,
@@ -50,6 +64,15 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   const loading = companyLoading || availabilitiesLoading || isLoading
   const error = companyError || availabilitiesError
 
+  useEffect(() => {
+    if (company?.stripe_account_id) {
+      console.log('Initializing Stripe with account:', company.stripe_account_id)
+      const promise = getStripePromise(company.stripe_account_id)
+      console.log('Stripe Promise created:', !!promise)
+      setStripePromise(promise)
+    }
+  }, [company?.stripe_account_id])
+
   function handlePaymentSuccess() {
     useBookingStore.getState().clearBooking()
   }
@@ -61,10 +84,11 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       setLoading(true)
       useBookingStore.getState().setGuestInfo(data)
 
-      const { clientSecret } = await createBookingWithIntent({
+      const { clientSecret, amount } = await createPaymentIntent({
         companyId: company.id,
         courtNumber: selectedAvailability.court_number,
         startTime: selectedAvailability.start_time,
+        endTime: selectedAvailability.end_time,
         guestInfo: {
           name: data.name,
           email: data.email,
@@ -78,8 +102,9 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           equipmentProductIds: data.selectedEquipment,
         },
       })
-
-      setClientSecret(clientSecret)
+      console.log('💳 UI CLIENT == with intent data:', { clientSecret, amount })
+      setPaymentIntentSecret(clientSecret)
+      setAmount(amount)
       setCurrentStep('payment')
     } catch (error) {
       console.error('Error creating booking:', error)
@@ -116,6 +141,14 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
         return false
     }
   }
+
+  console.log('Payment Step Debug:', {
+    currentStep,
+    hasClientSecret: !!paymentIntentSecret,
+    stripeAccountId: company?.stripe_account_id,
+    stripePromise: !!stripePromise,
+    amount,
+  })
 
   if (loading) {
     return (
@@ -206,28 +239,53 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
               />
             )}
 
-            {currentStep === 'payment' && clientSecret && (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      colorPrimary: '#6366F1',
-                      colorBackground: '#ffffff',
-                      colorText: '#1f2937',
-                    },
-                  },
-                }}
-              >
-                <PaymentWrapper
-                  onSuccess={handlePaymentSuccess}
-                  onBack={() => setCurrentStep('guest-info')}
-                  amount={0}
-                />
-              </Elements>
-            )}
+            {currentStep === 'payment' &&
+              paymentIntentSecret &&
+              company?.stripe_account_id &&
+              stripePromise && (
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: paymentIntentSecret,
+                    appearance: { theme: 'stripe' },
+                  }}
+                >
+                  <GuestCheckoutForm
+                    onSuccess={handlePaymentSuccess}
+                    // @TODO when user presses back, we'll need to put availability back to "available"
+                    // Lets leave a quick message in the UI to let them know they'll leave it open for guests
+                    // Or the timer will indicate it's still held
+                    // Lets also add a "confirm" button to let them confirm they want to leave it open
+                    onBack={() => setCurrentStep('guest-info')}
+                    amount={amount}
+                    bookingDetails={{
+                      date: dayjs(selectedAvailability?.start_time).format('dddd, MMMM D, YYYY'),
+                      time: `${dayjs(selectedAvailability?.start_time).format('h:mm A')} - ${dayjs(
+                        selectedAvailability?.end_time
+                      ).format('h:mm A')}`,
+                      duration: dayjs(selectedAvailability?.end_time).diff(
+                        dayjs(selectedAvailability?.start_time),
+                        'hour',
+                        true
+                      ),
+                      guestInfo: guestInfo!,
+                      products: products
+                        .filter((p: CompanyProduct) =>
+                          [
+                            guestInfo?.selectedCourtProduct,
+                            ...(guestInfo?.selectedEquipment || []),
+                          ].includes(p.id)
+                        )
+                        .map((p: CompanyProduct) => ({
+                          name: p.name,
+                          type: p.type,
+                          price: p.price_amount,
+                          isHourly: p.type === 'court_rental',
+                        })),
+                    }}
+                  />
+                </Elements>
+              )}
           </div>
         </BottomBarContent>
 

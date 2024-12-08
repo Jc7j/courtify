@@ -12,6 +12,7 @@ interface CreateBookingInput {
   companyId: string
   courtNumber: number
   startTime: string
+  endTime: string
   guestInfo: GuestInfo
   selectedProducts: {
     courtProductId: string
@@ -24,7 +25,11 @@ interface UseBookingsReturn {
   loading: boolean
   error: Error | null
   refetch: () => Promise<void>
-  createBookingWithIntent: (input: CreateBookingInput) => Promise<{ clientSecret: string }>
+  createPaymentIntent: (input: CreateBookingInput) => Promise<{
+    clientSecret: string
+    amount: number
+  }>
+  confirmPaymentItentAndBook: () => Promise<void>
 }
 
 export function useBookings(): UseBookingsReturn {
@@ -46,25 +51,14 @@ export function useBookings(): UseBookingsReturn {
   const completedBookings =
     data?.bookingsCollection?.edges?.map((edge: { node: Booking }) => edge.node) || []
 
-  async function createBookingWithIntent(input: CreateBookingInput) {
-    console.log(' Starting createBookingWithIntent:', {
-      companyId: input.companyId,
-      courtNumber: input.courtNumber,
-      startTime: input.startTime,
-      products: {
-        court: input.selectedProducts.courtProductId,
-        equipment: input.selectedProducts.equipmentProductIds,
-      },
-    })
-
+  async function createPaymentIntent(input: CreateBookingInput) {
     try {
-      // Log before updating court availability
-      console.log('📝 Updating court availability to HELD...')
       const { errors: availabilityError } = await updateCourtAvailability({
         variables: {
           company_id: input.companyId,
           court_number: input.courtNumber,
           start_time: input.startTime,
+          end_time: input.endTime,
           set: {
             status: AvailabilityStatus.Held,
           },
@@ -75,10 +69,8 @@ export function useBookings(): UseBookingsReturn {
         console.error('❌ Court availability update failed:', availabilityError)
         throw new Error('Court is no longer available')
       }
-      console.log('✅ Court availability updated successfully')
 
-      console.log('💳 Creating payment intent...')
-      const response = await fetch('/api/stripe/create-payment-intent', {
+      const response = await fetch('/api/stripe/payment/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,13 +81,12 @@ export function useBookings(): UseBookingsReturn {
       if (!response.ok) {
         console.error('❌ Payment intent creation failed:', response.status)
 
-        // Log reversion attempt
-        console.log('🔄 Reverting court availability to AVAILABLE...')
         await updateCourtAvailability({
           variables: {
             company_id: input.companyId,
             court_number: input.courtNumber,
             start_time: input.startTime,
+            end_time: input.endTime,
             set: {
               status: AvailabilityStatus.Available,
             },
@@ -107,11 +98,19 @@ export function useBookings(): UseBookingsReturn {
       }
 
       const data = await response.json()
-      console.log('✅ Payment intent created successfully')
-      return { clientSecret: data.clientSecret }
+      return { clientSecret: data.clientSecret, amount: data.amount }
     } catch (err) {
-      console.error('❌ Error in createBookingWithIntent:', err)
+      console.error('❌ Error in createPaymentIntent:', err)
       throw err instanceof Error ? err : new Error('Failed to create booking')
+    }
+  }
+
+  async function confirmPaymentIntentAndBook() {
+    try {
+      console.log('💳 Confirming payment intent and booking...')
+    } catch (err) {
+      console.error('❌ Error in confirmPaymentIntentAndBook:', err)
+      throw err instanceof Error ? err : new Error('Failed to confirm payment intent and book')
     }
   }
 
@@ -128,6 +127,7 @@ export function useBookings(): UseBookingsReturn {
     loading: isLoading || queryLoading,
     error: error ? new Error(error.message) : null,
     refetch,
-    createBookingWithIntent,
+    createPaymentIntent,
+    confirmPaymentIntentAndBook,
   }
 }

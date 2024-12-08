@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 import { Button } from '@/components/ui'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import cn from '@/lib/utils/cn'
-import { CourtAvailability } from '@/types/graphql'
+import { AvailabilityStatus, CourtAvailability } from '@/types/graphql'
 
 interface WeeklyCalendarProps {
   startDate?: Date
@@ -33,8 +33,13 @@ export function WeeklyCalendar({
     const now = dayjs()
 
     availabilities.forEach((availability) => {
-      // Only add to available dates if the time hasn't passed yet
-      if (dayjs(availability.start_time).isAfter(now)) {
+      // Only add to available dates if:
+      // 1. The time hasn't passed yet
+      // 2. The status is 'available'
+      if (
+        dayjs(availability.start_time).isAfter(now) &&
+        availability.status === AvailabilityStatus.Available
+      ) {
         const date = dayjs(availability.start_time).format('YYYY-MM-DD')
         dates.add(date)
       }
@@ -115,7 +120,7 @@ export function WeeklyCalendar({
                 {date.format('D')}
               </span>
               {!hasAvailability && (
-                <span className="text-xs text-muted-foreground mt-1">No availability</span>
+                <span className="text-xs text-muted-foreground mt-1">No courts</span>
               )}
               {hasAvailability && !isDisabled && (
                 <span className="text-xs text-primary mt-1">Available</span>

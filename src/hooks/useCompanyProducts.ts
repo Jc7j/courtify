@@ -80,7 +80,7 @@ export function useCompanyProducts() {
     },
   })
 
-  const databaseProducts =
+  const products =
     data?.company_productsCollection?.edges?.map((edge: CompanyProductEdge) => edge.node) ?? []
 
   async function createProduct(input: CreateProductInput): Promise<CreateProductResponse> {
@@ -153,7 +153,7 @@ export function useCompanyProducts() {
 
   async function archiveProduct(productId: string): Promise<ArchiveProductResponse> {
     try {
-      const product = databaseProducts.find((p: CompanyProduct) => p.id === productId)
+      const product = products.find((p: CompanyProduct) => p.id === productId)
       if (!product) {
         throw new Error('Product not found')
       }
@@ -254,7 +254,7 @@ export function useCompanyProducts() {
 
       return {
         prices: stripePrices,
-        databaseProducts: currentDatabaseProducts,
+        products: currentDatabaseProducts,
         syncNeeded: activeDbProducts.length > 0 && hasMismatch,
         error: null,
       }
@@ -353,7 +353,7 @@ export function useCompanyProducts() {
   }
 
   return {
-    databaseProducts,
+    products,
     loadingProducts,
     createProduct,
     creating,

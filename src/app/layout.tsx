@@ -1,8 +1,7 @@
+import { ReactNode, Suspense } from 'react'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
 import { Toaster } from '@/components/ui'
-import { ReactNode } from 'react'
-import { SessionDebug } from '@/components/debug/SessionDebug'
 import { AuthProvider } from '../providers/AuthProvider'
 import { Open_Sans } from 'next/font/google'
 
@@ -15,10 +14,7 @@ const openSans = Open_Sans({
 })
 
 export const metadata = {
-  title:
-    process.env.NODE_ENV === 'development'
-      ? 'localhost:3000'
-      : 'Courtify | Court rental booking system',
+  title: process.env.NODE_ENV === 'development' ? 'localhost:3000' : 'Courtify',
   description: 'Court rental booking system',
 }
 
@@ -31,7 +27,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ThemeProvider>
               {children}
               <Toaster />
-              {/* {process.env.NODE_ENV === 'development' && <SessionDebug />} */}
             </ThemeProvider>
           </ApolloProvider>
         </AuthProvider>

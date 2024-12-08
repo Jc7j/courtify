@@ -17,6 +17,7 @@ interface UseStripeReturn {
     options?: ConnectStripeOptions
   ) => Promise<{ url: string | null; error: string | null }>
   checkStripeStatus: () => Promise<StripeStatus>
+  getAccountSession: () => Promise<string | undefined>
   connecting: boolean
   checking: boolean
 }
@@ -124,9 +125,22 @@ export function useStripe(): UseStripeReturn {
     }
   }
 
+  async function getAccountSession() {
+    try {
+      const response = await fetch('/api/stripe/accounts/session', {
+        method: 'POST',
+      })
+      const data = await response.json()
+      return data.client_secret
+    } catch (err) {
+      console.error('Error getting account session:', err)
+    }
+  }
+
   return {
     connectStripe,
     checkStripeStatus,
+    getAccountSession,
     connecting,
     checking,
   }
