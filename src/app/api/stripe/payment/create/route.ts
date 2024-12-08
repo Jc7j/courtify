@@ -66,9 +66,6 @@ export async function POST(req: Request) {
       {
         amount,
         currency: company.stripe_currency?.toLowerCase() ?? 'usd',
-        automatic_payment_methods: {
-          enabled: true,
-        },
         payment_method_types: ['card'],
         metadata: {
           companyId: body.companyId,
@@ -89,7 +86,6 @@ export async function POST(req: Request) {
       }
     )
 
-    console.log('💳 ROUTE.TS == Payment intent created:', paymentIntent)
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       amount: paymentIntent.amount,

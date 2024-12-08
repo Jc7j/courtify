@@ -7,7 +7,7 @@ import { BookingForm } from '@/components/booking/BookingForm'
 import { GuestInfoForm } from '@/components/booking/GuestInfoForm'
 import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
 import { useBookingStore } from '@/stores/useBookingStore'
-import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
+import { useCompanyAvailabilities, useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
 import type { GuestInfo } from '@/components/booking/GuestInfoForm'
 import dayjs from 'dayjs'
@@ -15,7 +15,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
 import { useBookings } from '@/hooks/useBookings'
 import { GuestCheckoutForm } from '@/components/booking/GuestCheckoutForm'
-import { CompanyProduct } from '@/types/graphql'
+import { CompanyProduct, AvailabilityStatus } from '@/types/graphql'
 
 function getStripePromise(accountId: string) {
   return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
@@ -42,8 +42,13 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     setLoading,
     paymentIntentSecret,
     setPaymentIntentSecret,
+    setRemainingTime,
+    clearHold,
+    remainingTime,
+    startHold,
   } = useBookingStore()
   const { createPaymentIntent } = useBookings()
+  const { updateAvailability } = useCourtAvailability()
 
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
@@ -66,9 +71,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   useEffect(() => {
     if (company?.stripe_account_id) {
-      console.log('Initializing Stripe with account:', company.stripe_account_id)
       const promise = getStripePromise(company.stripe_account_id)
-      console.log('Stripe Promise created:', !!promise)
       setStripePromise(promise)
     }
   }, [company?.stripe_account_id])
@@ -102,7 +105,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           equipmentProductIds: data.selectedEquipment,
         },
       })
-      console.log('💳 UI CLIENT == with intent data:', { clientSecret, amount })
+      console.log('UI CLIENT == with intent data:', { clientSecret, amount })
       setPaymentIntentSecret(clientSecret)
       setAmount(amount)
       setCurrentStep('payment')
@@ -121,11 +124,23 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     }
   }
 
-  const handleBack = () => {
-    if (currentStep === 'guest-info') {
-      setCurrentStep('select-time')
-    } else if (currentStep === 'payment') {
+  const handleBack = async () => {
+    if (currentStep === 'payment') {
+      if (selectedAvailability) {
+        try {
+          await updateAvailability({
+            courtNumber: selectedAvailability.court_number,
+            startTime: selectedAvailability.start_time,
+            update: { status: AvailabilityStatus.Available },
+          })
+          clearHold()
+        } catch (error) {
+          console.error('Failed to release hold:', error)
+        }
+      }
       setCurrentStep('guest-info')
+    } else if (currentStep === 'guest-info') {
+      setCurrentStep('select-time')
     }
   }
 
@@ -142,13 +157,48 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     }
   }
 
-  console.log('Payment Step Debug:', {
-    currentStep,
-    hasClientSecret: !!paymentIntentSecret,
-    stripeAccountId: company?.stripe_account_id,
-    stripePromise: !!stripePromise,
-    amount,
-  })
+  // Single effect to handle countdown
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>
+
+    if (currentStep === 'payment' && selectedAvailability) {
+      // Start the hold when entering payment step
+      startHold()
+
+      // Update countdown every second
+      intervalId = setInterval(() => {
+        const endTime = useBookingStore.getState().holdEndTime
+        if (!endTime) return
+
+        const remaining = endTime - Date.now()
+        if (remaining <= 0) {
+          clearInterval(intervalId)
+          setRemainingTime('0:00')
+
+          // Release the hold
+          updateAvailability({
+            courtNumber: selectedAvailability.court_number,
+            startTime: selectedAvailability.start_time,
+            update: { status: AvailabilityStatus.Available },
+          }).catch(console.error)
+
+          setCurrentStep('select-time')
+          return
+        }
+
+        const minutes = Math.floor(remaining / 60000)
+        const seconds = Math.floor((remaining % 60000) / 1000)
+        setRemainingTime(`${minutes}:${seconds.toString().padStart(2, '0')}`)
+      }, 1000)
+    }
+
+    return () => {
+      clearInterval(intervalId)
+      if (currentStep === 'payment') {
+        clearHold()
+      }
+    }
+  }, [currentStep, selectedAvailability, setRemainingTime, setCurrentStep, startHold, clearHold])
 
   if (loading) {
     return (
@@ -256,7 +306,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                     // Lets leave a quick message in the UI to let them know they'll leave it open for guests
                     // Or the timer will indicate it's still held
                     // Lets also add a "confirm" button to let them confirm they want to leave it open
-                    onBack={() => setCurrentStep('guest-info')}
+                    onBack={handleBack}
                     amount={amount}
                     bookingDetails={{
                       date: dayjs(selectedAvailability?.start_time).format('dddd, MMMM D, YYYY'),
@@ -286,6 +336,12 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                   />
                 </Elements>
               )}
+
+            {currentStep === 'payment' && remainingTime && (
+              <div className="text-sm text-muted-foreground mb-4">
+                Time remaining to complete payment: {remainingTime}
+              </div>
+            )}
           </div>
         </BottomBarContent>
 

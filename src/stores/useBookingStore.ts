@@ -13,6 +13,8 @@ interface BookingState {
   paymentIntentSecret?: string | null
   currentStep: BookingStep
   isLoading: boolean
+  holdEndTime?: number
+  remainingTime: string | null
   setSelectedDate: (date: Date) => void
   setWeekStartDate: (date: Date) => void
   setSelectedAvailability: (availability?: CourtAvailability) => void
@@ -20,6 +22,9 @@ interface BookingState {
   setPaymentIntentSecret: (secret: string) => void
   setCurrentStep: (step: BookingStep) => void
   setLoading: (loading: boolean) => void
+  startHold: () => void
+  clearHold: () => void
+  setRemainingTime: (time: string | null) => void
   clearBooking: () => void
   reset: () => void
 }
@@ -31,7 +36,11 @@ const initialState = {
   guestInfo: undefined,
   currentStep: 'select-time' as BookingStep,
   isLoading: false,
+  holdEndTime: undefined,
+  remainingTime: null,
 }
+
+export const HOLD_DURATION_MS = 10 * 60 * 1000 // 10 minutes
 
 export const useBookingStore = create<BookingState>((set) => ({
   ...initialState,
@@ -58,8 +67,29 @@ export const useBookingStore = create<BookingState>((set) => ({
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
 
-  clearBooking: () =>
-    set({ paymentIntentSecret: undefined, guestInfo: undefined, selectedAvailability: undefined }),
+  startHold: () => {
+    const endTime = Date.now() + HOLD_DURATION_MS
+    set({ holdEndTime: endTime })
+  },
+
+  clearHold: () => {
+    set({
+      holdEndTime: undefined,
+      remainingTime: null,
+    })
+  },
+
+  setRemainingTime: (time: string | null) => set({ remainingTime: time }),
+
+  clearBooking: () => {
+    set({
+      paymentIntentSecret: undefined,
+      guestInfo: undefined,
+      selectedAvailability: undefined,
+      holdEndTime: undefined,
+      remainingTime: null,
+    })
+  },
 
   reset: () => set(initialState),
 }))
