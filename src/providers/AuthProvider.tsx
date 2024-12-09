@@ -160,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: data.user.id,
             email,
             name,
+            role: 'member',
             is_active: true,
           },
         ])
