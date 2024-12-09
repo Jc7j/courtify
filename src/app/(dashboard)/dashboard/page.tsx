@@ -49,12 +49,9 @@ function DashboardContent({
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Welcome back, {user?.name}! Here&apos;s what&apos;s happening at {company.name}.
-          </p>
+          <p className="text-muted-foreground mt-2">Welcome back, {user?.name}!</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <p className="text-sm text-muted-foreground">Share your booking page</p>
           <Button
             variant="outline"
             size="sm"
