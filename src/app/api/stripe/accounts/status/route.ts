@@ -21,13 +21,11 @@ export async function POST(req: Request) {
     }
 
     try {
-      // Check account status in a try-catch block
       const account = await stripe.accounts.retrieve(company.stripe_account_id)
 
       const isEnabled =
         account.charges_enabled && account.payouts_enabled && account.details_submitted
 
-      // Update company status
       await supabaseAdmin
         .from('companies')
         .update({
@@ -43,7 +41,6 @@ export async function POST(req: Request) {
         accountDetails: account,
       })
     } catch (stripeError) {
-      // If we can't retrieve the account, reset the company's Stripe fields
       console.error('Failed to retrieve Stripe account:', stripeError)
 
       await supabaseAdmin

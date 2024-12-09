@@ -39,17 +39,8 @@ export function CreateProductDialog() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    console.log('🚀 Starting form submission with data:', formData)
 
     try {
-      console.log('📤 Calling createProduct with:', {
-        name: formData.name,
-        description: formData.description || undefined,
-        type: formData.type,
-        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
-        stripePaymentType: 'one_time' as StripePaymentType,
-      })
-
       const response = await createProduct({
         name: formData.name,
         description: formData.description || undefined,
@@ -57,8 +48,6 @@ export function CreateProductDialog() {
         priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
         stripePaymentType: 'one_time' as StripePaymentType,
       })
-
-      console.log('📥 Create product response:', response)
 
       if (response.error) {
         throw new Error(response.error)

@@ -10,6 +10,7 @@ import { InviteTeam } from '@/components/onboarding/InviteTeam'
 import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/constants/routes'
 import { Suspense } from 'react'
+import { BaseUser } from '@/types/auth'
 
 const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
   signup: { number: 1, progress: 25 },
@@ -18,15 +19,46 @@ const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
   'invite-team': { number: 4, progress: 100 },
 } as const
 
-function SignUpContent() {
+function SignUpContent({
+  handleStepChange,
+  step,
+}: {
+  handleStepChange: (step: OnboardingStep) => void
+  step: OnboardingStep
+}) {
   const { user } = useUserStore()
-  const { step, handleStepChange } = useOnboarding()
   const router = useRouter()
 
   function handleSignupSuccess() {
     handleStepChange('create-intro')
   }
 
+  return (
+    <Suspense fallback={null}>
+      <OnboardingContent
+        user={user}
+        onSignupSuccess={handleSignupSuccess}
+        router={router}
+        step={step}
+        handleStepChange={handleStepChange}
+      />
+    </Suspense>
+  )
+}
+
+function OnboardingContent({
+  user,
+  onSignupSuccess,
+  router,
+  step,
+  handleStepChange,
+}: {
+  user: BaseUser | null
+  onSignupSuccess: () => void
+  router: ReturnType<typeof useRouter>
+  step: OnboardingStep
+  handleStepChange: (step: OnboardingStep) => void
+}) {
   function handleCreateIntro() {
     handleStepChange('create')
   }
@@ -45,7 +77,7 @@ function SignUpContent() {
           />
         )
       default:
-        return <SignUpForm onSuccess={handleSignupSuccess} />
+        return <SignUpForm onSuccess={onSignupSuccess} />
     }
   }
 
@@ -61,7 +93,7 @@ function SignUpContent() {
             Create your free account
           </h1>
 
-          <SignUpForm onSuccess={handleSignupSuccess} />
+          <SignUpForm onSuccess={onSignupSuccess} />
         </div>
       </div>
     )
@@ -107,9 +139,10 @@ function SignUpContent() {
 }
 
 export default function SignUpPage() {
+  const { step, handleStepChange } = useOnboarding()
   return (
     <Suspense fallback={null}>
-      <SignUpContent />
+      <SignUpContent step={step} handleStepChange={handleStepChange} />
     </Suspense>
   )
 }

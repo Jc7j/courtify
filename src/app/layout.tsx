@@ -1,4 +1,4 @@
-import { ReactNode, Suspense } from 'react'
+import { ReactNode } from 'react'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
 import { Toaster } from '@/components/ui'

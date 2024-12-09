@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       prices: prices.data,
       count: prices.data.length,
-      account_id: company.stripe_account_id, // Include this for debugging
+      account_id: company.stripe_account_id,
     })
   } catch (error) {
     console.error('Error fetching Stripe prices:', error)

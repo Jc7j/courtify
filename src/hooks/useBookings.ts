@@ -9,7 +9,7 @@ import { GuestInfo } from '@/components/booking/GuestInfoForm'
 import { AvailabilityStatus, BookingStatus, PaymentStatus } from '@/types/graphql'
 import { CREATE_BOOKING } from '@/gql/mutations/booking'
 
-import { useBookingStore } from '@/stores/useBookingStore'
+import { useGuestStore } from '@/stores/useGuestStore'
 import dayjs from 'dayjs'
 
 interface CreateBookingInput {
@@ -111,7 +111,7 @@ export function useBookings(): UseBookingsReturn {
   }
 
   async function confirmPaymentIntentAndBook() {
-    const state = useBookingStore.getState()
+    const state = useGuestStore.getState()
     if (!state.selectedAvailability || !state.guestInfo || !state.paymentIntentSecret) {
       throw new Error('Missing booking information')
     }

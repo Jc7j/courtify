@@ -82,7 +82,6 @@ export function CompanyCourtCalendar({
     )
   }
 
-  // Format courts as resources for FullCalendar
   const resources = courts.map((court) => ({
     id: court.court_number.toString().padStart(2, '0'),
     title: court.name || `Court ${court.court_number}`,

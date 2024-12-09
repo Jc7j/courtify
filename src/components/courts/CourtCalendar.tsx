@@ -33,7 +33,6 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
     startTime: currentRange.start,
     endTime: currentRange.end,
   })
-  // Handle calendar range changes
   const handleDatesSet = useCallback((dateInfo: DatesSetArg) => {
     setCurrentRange({
       start: dateInfo.startStr,
@@ -43,7 +42,6 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
 
   const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
 
-  // Add loading state handling
   if (loading) {
     return (
       <div className="mt-8 bg-background border rounded-lg p-6">
@@ -59,7 +57,6 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
     )
   }
 
-  // Add error state handling
   if (error) {
     return (
       <div className="mt-8 bg-background border rounded-lg p-6">

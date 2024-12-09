@@ -25,7 +25,6 @@ export function ProfileSection({ user }: ProfileSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { updateProfile } = useUserOperations()
 
-  // Update form when user data changes
   useEffect(() => {
     if (user) {
       setForm({
@@ -39,7 +38,6 @@ export function ProfileSection({ user }: ProfileSectionProps) {
   const handleChange = (field: keyof ProfileForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
 
-    // Check if any field is different from original
     const isChanged =
       field === 'name'
         ? value !== user?.name || form.email !== user?.email

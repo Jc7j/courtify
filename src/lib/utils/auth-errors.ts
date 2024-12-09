@@ -15,7 +15,6 @@ interface ErrorWithMessage {
   message: string
 }
 
-// Type guard for error with message
 function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
   return (
     typeof error === 'object' &&

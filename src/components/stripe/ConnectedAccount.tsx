@@ -11,9 +11,6 @@ import { BusinessDetails } from './BusinessDetails'
 import { ConnectStripePrompt } from './ConnectStripePrompt'
 import { SetupRequirements } from './SetupRequirements'
 
-// @TODO Figure out right links and right way to handle every case
-// @TODO Ensure syncing with DB products aligns with companes Stripe products
-
 function getStripeCompletionPercentage(requirements: StripeAccountDetails['requirements']): number {
   const totalRequirements = requirements.eventually_due.length
   const completedRequirements = totalRequirements - requirements.currently_due.length

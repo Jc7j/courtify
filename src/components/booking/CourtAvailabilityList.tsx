@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { memo, useMemo } from 'react'
-import { useBookingStore } from '@/stores/useBookingStore'
+import { useGuestStore } from '@/stores/useGuestStore'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -65,7 +65,7 @@ function CourtAvailabilityListComponent({
   availabilities,
   loading,
 }: CourtAvailabilityListProps) {
-  const { selectedAvailability, setSelectedAvailability } = useBookingStore()
+  const { selectedAvailability, setSelectedAvailability } = useGuestStore()
 
   const selectedKey = selectedAvailability
     ? `${selectedAvailability.start_time}-${selectedAvailability.court_number}`

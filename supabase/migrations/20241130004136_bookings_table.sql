@@ -24,7 +24,7 @@ CREATE TABLE bookings (
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
     
-    -- When booking completes, status changes to 'completed'
+    -- When booking completes, status changes to 'confirmed'
     -- Once payment succeeds, payment_status will be updated to 'paid'
     status booking_status NOT NULL DEFAULT 'confirmed',
     payment_status payment_status NOT NULL DEFAULT 'failed',
@@ -59,18 +59,6 @@ CREATE POLICY "Company staff can manage bookings" ON bookings
         )
     );
 
-CREATE POLICY "Customers can view their bookings" ON bookings
-    FOR SELECT
-    USING (
-        customer_email = current_setting('request.jwt.claims')::json->>'email'
-        OR 
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE users.id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Public can create bookings" ON bookings
-    FOR INSERT
+CREATE POLICY "Public can manage bookings" ON bookings
+    FOR ALL
     WITH CHECK (true);

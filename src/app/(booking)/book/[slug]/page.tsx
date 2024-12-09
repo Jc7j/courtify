@@ -6,7 +6,7 @@ import { useCompany } from '@/hooks/useCompany'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { GuestInfoForm } from '@/components/booking/GuestInfoForm'
 import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
-import { useBookingStore } from '@/stores/useBookingStore'
+import { useGuestStore } from '@/stores/useGuestStore'
 import { useCompanyAvailabilities, useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
 import type { GuestInfo } from '@/components/booking/GuestInfoForm'
@@ -46,7 +46,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     clearHold,
     remainingTime,
     startHold,
-  } = useBookingStore()
+  } = useGuestStore()
   const { createPaymentIntent } = useBookings()
   const { updateAvailability } = useCourtAvailability()
   const router = useRouter()
@@ -78,7 +78,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   }, [company?.stripe_account_id])
 
   function handlePaymentSuccess() {
-    useBookingStore.getState().clearBooking()
+    useGuestStore.getState().clearBooking()
     router.push(`/book/${resolvedParams.slug}/success`)
   }
 
@@ -87,7 +87,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
     try {
       setLoading(true)
-      useBookingStore.getState().setGuestInfo(data)
+      useGuestStore.getState().setGuestInfo(data)
 
       const { clientSecret, amount } = await createPaymentIntent({
         companyId: company.id,
@@ -107,7 +107,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           equipmentProductIds: data.selectedEquipment,
         },
       })
-      console.log('UI CLIENT == with intent data:', { clientSecret, amount })
       setPaymentIntentSecret(clientSecret)
       setAmount(amount)
       setCurrentStep('payment')
@@ -165,9 +164,8 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     if (currentStep === 'payment' && selectedAvailability) {
       startHold()
 
-      // Update countdown every second
       intervalId = setInterval(() => {
-        const endTime = useBookingStore.getState().holdEndTime
+        const endTime = useGuestStore.getState().holdEndTime
         if (!endTime) return
 
         const remaining = endTime - Date.now()
@@ -300,10 +298,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                 >
                   <GuestCheckoutForm
                     onSuccess={handlePaymentSuccess}
-                    // @TODO when user presses back, we'll need to put availability back to "available"
-                    // Lets leave a quick message in the UI to let them know they'll leave it open for guests
-                    // Or the timer will indicate it's still held
-                    // Lets also add a "confirm" button to let them confirm they want to leave it open
                     onBack={handleBack}
                     amount={amount}
                     bookingDetails={{

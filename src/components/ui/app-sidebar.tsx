@@ -1,13 +1,9 @@
 'use client'
 
-import { Calendar, Home, Plus } from 'lucide-react'
-import { Logo } from '@/components/ui/logo'
+import { Calendar, Home } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import cn from '@/lib/utils/cn'
-import { useState } from 'react'
-import { CourtAvailabilityDialog } from '@/components/courts/CourtAvailabilityDialog'
-import dayjs from 'dayjs'
 
 import {
   Sidebar,
@@ -20,10 +16,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { Button } from './button'
 import { UserMenu } from '@/components/ui/user-menu'
 import { ROUTES } from '@/constants/routes'
-import { AvailabilityStatus, Company } from '@/types/graphql'
+import { Company } from '@/types/graphql'
 
 const items = [
   {
@@ -46,7 +41,6 @@ interface AppSidebarProps {
 
 export function AppSidebar({ companyName }: AppSidebarProps) {
   const pathname = usePathname()
-  const [showNewAvailabilityDialog, setShowNewAvailabilityDialog] = useState(false)
 
   const isActivePath = (path: string, exact: boolean) => {
     if (exact) {
@@ -72,22 +66,6 @@ export function AppSidebar({ companyName }: AppSidebarProps) {
           </SidebarHeader>
           <SidebarGroupContent className="p-4">
             <SidebarMenu>
-              <Button
-                variant="outline"
-                onClick={() => setShowNewAvailabilityDialog(true)}
-                className={cn(
-                  'w-full mb-6',
-                  'bg-sidebar-accent text-sidebar-accent-foreground',
-                  'hover:bg-sidebar-accent/90',
-                  'border-sidebar-border',
-                  'shadow-sm',
-                  'h-10',
-                  'justify-start gap-3'
-                )}
-              >
-                <Plus className="h-4 w-4" />
-                New Court Time
-              </Button>
               <div className="space-y-1">
                 {items.map((item) => {
                   const isActive = isActivePath(item.url, item.exact)
@@ -135,21 +113,6 @@ export function AppSidebar({ companyName }: AppSidebarProps) {
           </div>
         </div> */}
       </SidebarFooter>
-      <CourtAvailabilityDialog
-        isOpen={showNewAvailabilityDialog}
-        onClose={() => setShowNewAvailabilityDialog(false)}
-        availability={{
-          nodeId: '',
-          company_id: '',
-          court_number: 1, // Default to first court
-          start_time: dayjs().startOf('hour').add(1, 'hour').toISOString(),
-          end_time: dayjs().startOf('hour').add(2, 'hour').toISOString(),
-          status: AvailabilityStatus.Available,
-          created_at: '',
-          updated_at: '',
-        }}
-        isNew={true}
-      />
     </Sidebar>
   )
 }

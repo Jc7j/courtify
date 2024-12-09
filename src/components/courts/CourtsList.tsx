@@ -24,13 +24,7 @@ interface CourtsListProps {
   onCourtClick: (courtNumber: number) => void
 }
 
-export function CourtsList({
-  courts,
-  loading,
-  creating,
-  onCreateCourt,
-  onCourtClick,
-}: CourtsListProps) {
+export function CourtsList({ courts, loading, onCreateCourt, onCourtClick }: CourtsListProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-card">

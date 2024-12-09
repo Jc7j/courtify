@@ -86,7 +86,6 @@ export function useCompanyProducts() {
   async function createProduct(input: CreateProductInput): Promise<CreateProductResponse> {
     try {
       setError(null)
-      console.log('🚀 Creating product with input:', input)
 
       if (!user?.company_id) {
         throw new Error('No company found')
@@ -107,8 +106,6 @@ export function useCompanyProducts() {
       }
 
       const stripeData = await stripeResponse.json()
-      console.log('🚀 Stripe data received:', stripeData)
-      console.log('🚀 input:', input)
       const result = await createProductMutation({
         variables: {
           input: {

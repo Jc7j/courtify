@@ -37,7 +37,6 @@ export function InviteTeam({ onBack, onComplete }: InviteTeamProps) {
     }
 
     // TODO: Implement email invitations
-    console.log('Sending invites to:', validEmails)
     onComplete()
   }
 

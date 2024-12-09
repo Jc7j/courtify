@@ -31,7 +31,6 @@ export default function CourtsPage() {
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)
 
-  // Product management handlers
   const handleSync = useCallback(async () => {
     await syncProducts()
   }, [syncProducts])
@@ -54,7 +53,6 @@ export default function CourtsPage() {
     console.log('Edit product:', product.id)
   }, [])
 
-  // Court management handlers
   async function handleCreateCourt(name: string) {
     try {
       await createCourt(name)
@@ -68,7 +66,6 @@ export default function CourtsPage() {
     router.push(`${ROUTES.DASHBOARD.HOME}/courts/${courtNumber}`)
   }
 
-  // Check Stripe status on mount
   useEffect(() => {
     let mounted = true
 

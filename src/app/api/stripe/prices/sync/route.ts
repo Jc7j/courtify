@@ -21,7 +21,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No Stripe account found' }, { status: 400 })
     }
 
-    // Get all products from Stripe
     const products = await stripe.products.list(
       { limit: 100 },
       { stripeAccount: company.stripe_account_id }

@@ -5,7 +5,7 @@ import type { GuestInfo } from '@/components/booking/GuestInfoForm'
 
 export type BookingStep = 'select-time' | 'guest-info' | 'payment'
 
-interface BookingState {
+interface GuestState {
   selectedDate: Date
   weekStartDate: Date
   selectedAvailability?: CourtAvailability
@@ -42,7 +42,7 @@ const initialState = {
 
 export const HOLD_DURATION_MS = 10 * 60 * 1000 // 10 minutes
 
-export const useBookingStore = create<BookingState>((set) => ({
+export const useGuestStore = create<GuestState>((set) => ({
   ...initialState,
   paymentIntentSecret: undefined,
 

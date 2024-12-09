@@ -3,7 +3,7 @@ import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 import { useUserStore } from '@/stores/useUserStore'
 import { supabase } from '@/lib/supabase/client'
-import type { BaseUser } from '@/types/auth'
+import type { BaseUser, MemberRole } from '@/types/auth'
 
 const cache = new InMemoryCache()
 
@@ -28,7 +28,7 @@ const authLink = setContext(async (_, { headers }) => {
   if (session?.access_token && session.user) {
     const { data: userData } = await supabase
       .from('users')
-      .select('name, company_id')
+      .select('name, company_id, role')
       .eq('id', session.user.id)
       .single()
 
@@ -37,6 +37,7 @@ const authLink = setContext(async (_, { headers }) => {
         ...session.user,
         name: userData.name,
         company_id: userData.company_id,
+        role: userData.role as MemberRole,
       }
 
       useUserStore.getState().setSession({

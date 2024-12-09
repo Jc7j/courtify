@@ -2,7 +2,6 @@
 
 import { CompanyProduct } from '@/types/graphql'
 import { formatCurrency } from '@/lib/utils/format-currency'
-import { CreateProductDialog } from './CreateProductDialog'
 import { MoreHorizontal, Archive, Loader2, RefreshCw } from 'lucide-react'
 import {
   AlertDialog,

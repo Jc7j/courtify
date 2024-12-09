@@ -29,19 +29,8 @@ CREATE TABLE company_products (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Example metadata structure for court_rental type:
--- {
---   "min_players": 1,
---   "max_players": 4,
---   "sport_type": "volleyball",
---   "equipment_included": ["net", "balls"],
---   "court_requirements": ["indoor", "regulation_height"]
--- }
-
--- RLS Policies
 ALTER TABLE company_products ENABLE ROW LEVEL SECURITY;
 
--- Company members can view products
 CREATE POLICY "Company members can view products" ON company_products
     FOR SELECT
     USING (
@@ -53,7 +42,6 @@ CREATE POLICY "Company members can view products" ON company_products
         OR is_active = true
     );
 
--- Only owners/admins can manage products
 CREATE POLICY "Owners and admins can manage products" ON company_products
     FOR ALL
     USING (
