@@ -72,6 +72,9 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
+  headers: {
+    apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  },
 })
 
 const defaultOptions = {
