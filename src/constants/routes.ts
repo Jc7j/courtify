@@ -9,6 +9,7 @@ export const ROUTES = {
     HOME: '/dashboard',
     ACCOUNT: '/dashboard/account',
     COURTS: '/dashboard/courts',
+    HISTORY: '/dashboard/history',
     SETTINGS: {
       HOME: '/dashboard/settings',
       COMPANY: '/dashboard/settings/company',

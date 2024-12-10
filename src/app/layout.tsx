@@ -1,11 +1,12 @@
 import { ReactNode } from 'react'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 import { ApolloProvider } from '@/providers/ApolloProvider'
-import { Toaster } from '@/components/ui'
 import { AuthProvider } from '../providers/AuthProvider'
+import { Toaster } from '@/components/ui'
 import { Open_Sans } from 'next/font/google'
 
 import '@/styles/globals.css'
+import { SessionDebug } from '@/components/debug/SessionDebug'
 
 const openSans = Open_Sans({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <ThemeProvider>
               {children}
               <Toaster />
+              {/* <SessionDebug /> */}
             </ThemeProvider>
           </ApolloProvider>
         </AuthProvider>

@@ -1,32 +1,22 @@
 'use client'
 
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button, Card, CardContent, CardFooter, ConfirmationDialog } from '@/components/ui'
 import { ExternalLink, Loader2 } from 'lucide-react'
 import { useStripe } from '@/hooks/useStripe'
 import { useRouter } from 'next/navigation'
 import type { StripeStatus, StripeAccountDetails } from '@/types/stripe'
 import Link from 'next/link'
-import { BusinessDetails } from './BusinessDetails'
 import { ConnectStripePrompt } from './ConnectStripePrompt'
 import { SetupRequirements } from './SetupRequirements'
+import { useCompany } from '@/hooks/useCompany'
+import { useState } from 'react'
+import { ConnectAccountManagement } from '@stripe/react-connect-js'
 
 function getStripeCompletionPercentage(requirements: StripeAccountDetails['requirements']): number {
   const totalRequirements = requirements.eventually_due.length
   const completedRequirements = totalRequirements - requirements.currently_due.length
   return totalRequirements ? (completedRequirements / totalRequirements) * 100 : 0
-}
-
-function hasBusinessProfile(account: StripeAccountDetails | null): account is StripeAccountDetails {
-  if (!account) return false
-
-  return (
-    typeof account.email === 'string' &&
-    account.business_profile &&
-    typeof account.business_profile === 'object' &&
-    'name' in account.business_profile &&
-    'url' in account.business_profile
-  )
 }
 
 interface ConnectedAccountProps {
@@ -37,6 +27,9 @@ interface ConnectedAccountProps {
 export function ConnectedAccount({ stripeStatus, checking }: ConnectedAccountProps) {
   const router = useRouter()
   const { connectStripe, connecting } = useStripe()
+  const { updateCompany } = useCompany()
+  const [disconnecting, setDisconnecting] = useState(false)
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
 
   const requirements = stripeStatus?.accountDetails?.requirements || {
     currently_due: [],
@@ -64,12 +57,30 @@ export function ConnectedAccount({ stripeStatus, checking }: ConnectedAccountPro
     }
   }
 
+  async function handleDisconnect() {
+    try {
+      setDisconnecting(true)
+      await updateCompany({
+        name: stripeStatus?.accountDetails?.business_profile?.name || '',
+        slug: '', // This will be ignored by the update
+        stripe_account_id: null,
+        stripe_account_enabled: false,
+        stripe_account_details: null,
+      })
+      toast.success('Stripe account disconnected successfully')
+      router.refresh()
+    } catch (err) {
+      console.error('Error disconnecting Stripe:', err)
+      toast.error('Failed to disconnect Stripe account')
+    } finally {
+      setDisconnecting(false)
+      setShowDisconnectDialog(false)
+    }
+  }
+
   if (checking) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Payment Processing</CardTitle>
-        </CardHeader>
         <CardContent className="flex items-center justify-center py-6">
           <Loader2 className="h-6 w-6 animate-spin" />
         </CardContent>
@@ -79,19 +90,6 @@ export function ConnectedAccount({ stripeStatus, checking }: ConnectedAccountPro
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle>Payment Processing</CardTitle>
-        {stripeStatus?.isConnected && (
-          <Link
-            href="https://dashboard.stripe.com/dashboard"
-            target="_blank"
-            className="inline-flex h-8 items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Stripe Dashboard
-          </Link>
-        )}
-      </CardHeader>
       <CardContent className="space-y-6 pt-4">
         {!stripeStatus?.isConnected && (
           <ConnectStripePrompt
@@ -103,7 +101,6 @@ export function ConnectedAccount({ stripeStatus, checking }: ConnectedAccountPro
           <SetupRequirements
             requirements={requirements}
             completionPercentage={completionPercentage}
-            onComplete={() => handleConnect({ reconnect: false, linkType: 'update' })}
           />
         )}
         {stripeStatus?.accountDetails && (
@@ -142,10 +139,37 @@ export function ConnectedAccount({ stripeStatus, checking }: ConnectedAccountPro
             </div>
           </div>
         )}
-        {stripeStatus?.accountDetails && hasBusinessProfile(stripeStatus.accountDetails) && (
-          <BusinessDetails accountDetails={stripeStatus.accountDetails} />
-        )}
       </CardContent>
+      <CardFooter className="flex flex-col">
+        {stripeStatus?.isConnected && (
+          <>
+            <ConnectAccountManagement />
+            <div className="flex gap-2 mt-8">
+              <Button variant="outline-destructive" onClick={() => setShowDisconnectDialog(true)}>
+                Disconnect
+              </Button>
+              <ConfirmationDialog
+                open={showDisconnectDialog}
+                onOpenChange={setShowDisconnectDialog}
+                title="Disconnect Stripe Account"
+                description="Are you sure you want to disconnect your Stripe account? This will disable all payment processing capabilities until you reconnect."
+                actionLabel={disconnecting ? 'Disconnecting...' : 'Disconnect'}
+                onConfirm={handleDisconnect}
+                loading={disconnecting}
+                variant="destructive"
+              />
+              <Link
+                href="https://dashboard.stripe.com/dashboard"
+                target="_blank"
+                className="inline-flex h-8 items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Stripe Dashboard
+              </Link>
+            </div>
+          </>
+        )}
+      </CardFooter>
     </Card>
   )
 }

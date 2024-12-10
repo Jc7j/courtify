@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui'
 import { Progress } from '@/components/ui/progress'
 import { ExternalLink } from 'lucide-react'
 import type { StripeAccountDetails } from '@/types/stripe'
+import Link from 'next/link'
 
 function getRequirementCategories(requirements: string[]): string[] {
   return Array.from(new Set(requirements.map((req) => req.split('.')[0])))
@@ -10,14 +10,9 @@ function getRequirementCategories(requirements: string[]): string[] {
 interface SetupRequirementsProps {
   requirements: StripeAccountDetails['requirements']
   completionPercentage: number
-  onComplete: () => void
 }
 
-export function SetupRequirements({
-  requirements,
-  completionPercentage,
-  onComplete,
-}: SetupRequirementsProps) {
+export function SetupRequirements({ requirements, completionPercentage }: SetupRequirementsProps) {
   const hasRequirements = requirements.currently_due.length > 0
   return (
     <div className="space-y-6">
@@ -41,20 +36,6 @@ export function SetupRequirements({
           </div>
         </>
       )}
-
-      <div className="rounded-lg border bg-yellow-50 dark:bg-yellow-950/50 p-4">
-        <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-          Complete Your Stripe Setup
-        </h4>
-        <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-          Additional information is needed before you can start accepting payments.
-        </p>
-      </div>
-
-      <Button onClick={onComplete} className="w-full sm:w-auto">
-        <ExternalLink className="mr-2 h-4 w-4" />
-        Complete Setup in Stripe
-      </Button>
     </div>
   )
 }

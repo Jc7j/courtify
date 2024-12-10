@@ -49,16 +49,7 @@ CREATE TABLE bookings (
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Company staff can manage bookings" ON bookings
-    FOR ALL TO authenticated
-    USING (
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE users.id = auth.uid()
-        )
-    );
-
 CREATE POLICY "Public can manage bookings" ON bookings
     FOR ALL
+    USING (true)
     WITH CHECK (true);

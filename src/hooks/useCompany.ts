@@ -28,6 +28,9 @@ interface UseCompanyProps {
 interface UpdateCompanyInput {
   name: string
   slug: string
+  stripe_account_id?: string | null
+  stripe_account_enabled?: boolean
+  stripe_account_details?: any | null
 }
 
 export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {

@@ -68,50 +68,6 @@ function DashboardContent({
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-8">
-        <Card className="p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Today&apos;s Bookings</p>
-              <p className="text-2xl font-bold mt-2">12</p>
-              <p className="text-xs text-muted-foreground mt-1">4 courts booked</p>
-            </div>
-            <CalendarDays className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </Card>
-        <Card className="p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Members</p>
-              <p className="text-2xl font-bold mt-2">48</p>
-              <p className="text-xs text-muted-foreground mt-1">+5 this week</p>
-            </div>
-            <Users className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </Card>
-        <Card className="p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Revenue</p>
-              <p className="text-2xl font-bold mt-2">$1,234</p>
-              <p className="text-xs text-muted-foreground mt-1">+12% from last week</p>
-            </div>
-            <DollarSign className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </Card>
-        <Card className="p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Avg. Session</p>
-              <p className="text-2xl font-bold mt-2">1.5h</p>
-              <p className="text-xs text-muted-foreground mt-1">Per booking</p>
-            </div>
-            <Clock className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </Card>
-      </div>
-
       {/* Calendar Section */}
       <Card className="p-6 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-6">

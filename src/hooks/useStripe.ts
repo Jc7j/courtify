@@ -17,7 +17,7 @@ interface UseStripeReturn {
     options?: ConnectStripeOptions
   ) => Promise<{ url: string | null; error: string | null }>
   checkStripeStatus: () => Promise<StripeStatus>
-  getAccountSession: () => Promise<string | undefined>
+  getAccountSession: (companyId?: string) => Promise<string>
   connecting: boolean
   checking: boolean
 }
@@ -125,15 +125,44 @@ export function useStripe(): UseStripeReturn {
     }
   }
 
-  async function getAccountSession() {
+  async function getAccountSession(companyId?: string): Promise<string> {
     try {
-      const response = await fetch('/api/stripe/accounts/session', {
+      // Use absolute URL instead of relative
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+      const url = `${baseUrl}/api/stripe/accounts/session`
+
+      const response = await fetch(url, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId,
+        }),
       })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Response error:', errorData)
+        throw new Error(`Failed to get account session: ${errorData.error || response.statusText}`)
+      }
+
       const data = await response.json()
+
+      if (!data.client_secret) {
+        throw new Error('No client secret returned')
+      }
+
       return data.client_secret
     } catch (err) {
-      console.error('Error getting account session:', err)
+      console.error('❌ Error getting account session:', {
+        error: err,
+        companyId,
+        env: {
+          hasAppUrl: !!process.env.NEXT_PUBLIC_APP_URL,
+        },
+      })
+      throw new Error('Failed to get account session')
     }
   }
 

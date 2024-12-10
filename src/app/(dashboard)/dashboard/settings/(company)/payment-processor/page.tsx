@@ -6,6 +6,7 @@ import { useStripe } from '@/hooks/useStripe'
 import { useEffect, useState } from 'react'
 import { StripeStatus } from '@/types/stripe'
 import { toast } from 'sonner'
+import StripeConnectProvider from '@/providers/StripeConnectProvider'
 
 export default function PaymentProcessorPage() {
   const { company } = useCompany()
@@ -43,17 +44,19 @@ export default function PaymentProcessorPage() {
   if (!company) return null
 
   return (
-    <div className="p-8">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Payment Processor</h1>
-        <p className="text-sm text-muted-foreground">
-          Connect your Stripe account to accept payments
-        </p>
-      </div>
+    <StripeConnectProvider companyId={company.id}>
+      <div className="p-8">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Payment Processor</h1>
+          <p className="text-sm text-muted-foreground">
+            Connect your Stripe account to accept payments
+          </p>
+        </div>
 
-      <div className="grid gap-8 mt-8">
-        <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
+        <div className="grid gap-8 mt-8">
+          <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
+        </div>
       </div>
-    </div>
+    </StripeConnectProvider>
   )
 }

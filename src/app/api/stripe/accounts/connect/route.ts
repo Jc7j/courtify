@@ -72,6 +72,11 @@ export async function POST(req: Request) {
         code: updateError.code,
         message: updateError.message,
         details: updateError.details,
+        data: {
+          ...updateData,
+          stripe_account_details: 'REDACTED', // Don't log sensitive data
+        },
+        company_id,
       })
       throw new Error(`Failed to update company: ${updateError.message}`)
     }
