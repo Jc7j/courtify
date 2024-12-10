@@ -9,6 +9,7 @@ import { useOnboarding } from './useOnboarding'
 import { useUserStore } from '@/stores/useUserStore'
 import type { Company } from '@/types/graphql'
 import { useEffect } from 'react'
+import { BaseUser } from '@/types/auth'
 
 interface UseCompanyReturn {
   company: Company | null
@@ -71,6 +72,22 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   async function createCompany(name: string) {
     try {
+      // First ensure we have a valid session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('No valid session found')
+      }
+
+      // Update the user store with the token if needed
+      if (!useUserStore.getState().accessToken) {
+        useUserStore.getState().setSession({
+          user: useUserStore.getState().user as BaseUser,
+          accessToken: session.access_token,
+        })
+      }
+
       const now = new Date().toISOString()
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
