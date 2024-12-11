@@ -29,7 +29,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
   const { createCompany, creating } = useCompany()
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: 'AIzaSyBUOAc3qcm3cYv0qUQKfZRcMMkvwFuJU0M',
+    googleMapsApiKey: process.env.GOOGLE_MAP_API_KEY,
     libraries: ['places'],
   })
   const inputRef = useRef(null)

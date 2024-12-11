@@ -73,8 +73,6 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
 
   async function createCompany(name: string, address: string, sports: string) {
-    console.log('PRPRPRPR:', address)
-
     try {
       // First ensure we have a valid session
       const {
