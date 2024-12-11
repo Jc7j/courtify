@@ -22,7 +22,7 @@ const labelVariants = cva(
 
 interface LabelProps
   extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>,
-    VariantProps<typeof labelVariants> {
+  VariantProps<typeof labelVariants> {
   error?: boolean
 }
 

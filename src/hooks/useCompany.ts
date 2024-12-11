@@ -73,12 +73,16 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
 
-  async function createCompany(name: string) {
+  async function createCompany(
+    name: string,
+    address: string,
+    sports: string,
+    businessinfo: string
+  ) {
     try {
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
         variables: {
-          objects: [{ name, slug }],
           objects: [
             {
               name,
