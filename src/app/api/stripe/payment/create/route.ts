@@ -67,6 +67,7 @@ export async function POST(req: Request) {
         amount,
         currency: company.stripe_currency?.toLowerCase() ?? 'usd',
         payment_method_types: ['card'],
+        // payment_method: 'card',
         metadata: {
           companyId: body.companyId,
           courtNumber: body.courtNumber,
@@ -87,6 +88,7 @@ export async function POST(req: Request) {
     )
 
     return NextResponse.json({
+      paymentIntentId: paymentIntent.id,
       clientSecret: paymentIntent.client_secret,
       amount: paymentIntent.amount,
     })

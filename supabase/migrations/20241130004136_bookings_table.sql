@@ -31,7 +31,7 @@ CREATE TABLE bookings (
     
     stripe_payment_intent_id TEXT UNIQUE,
     
-    amount_total INTEGER NOT NULL,
+    amount_total INTEGER,
     amount_paid INTEGER,
     currency TEXT NOT NULL DEFAULT 'usd',
     
@@ -44,7 +44,6 @@ CREATE TABLE bookings (
         REFERENCES court_availabilities(company_id, court_number, start_time) 
         ON DELETE CASCADE,
         
-    CONSTRAINT valid_amount CHECK (amount_total > 0)
 );
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;

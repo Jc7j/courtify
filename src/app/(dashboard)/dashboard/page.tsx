@@ -3,7 +3,7 @@
 import { useUserStore } from '@/stores/useUserStore'
 import { Button, Card } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
-import { Copy, Check, CalendarDays, Users, DollarSign, Clock } from 'lucide-react'
+import { Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 import { BaseUser } from '@/types/auth'
 import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'

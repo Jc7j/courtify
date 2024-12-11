@@ -18,6 +18,7 @@ interface BookingDetails {
   date: string
   time: string
   duration: number
+  companyId: string
   guestInfo: GuestInfo
   products: ProductDetail[]
 }
@@ -57,7 +58,19 @@ export function GuestCheckoutForm({
         throw new Error(submitError.message)
       }
 
-      await confirmPaymentIntentAndBook()
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/book/success`,
+        },
+        redirect: 'if_required',
+      })
+
+      if (confirmError) {
+        throw new Error(confirmError.message)
+      }
+
+      await confirmPaymentIntentAndBook(bookingDetails.companyId)
       onSuccess()
     } catch (error) {
       console.error('Payment failed:', error)

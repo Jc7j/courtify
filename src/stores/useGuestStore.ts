@@ -10,7 +10,11 @@ interface GuestState {
   weekStartDate: Date
   selectedAvailability?: CourtAvailability
   guestInfo?: GuestInfo
-  paymentIntentSecret?: string | null
+  paymentIntent?: {
+    clientSecret: string
+    paymentIntentId: string
+    amount: number
+  }
   currentStep: BookingStep
   isLoading: boolean
   holdEndTime?: number
@@ -19,7 +23,11 @@ interface GuestState {
   setWeekStartDate: (date: Date) => void
   setSelectedAvailability: (availability?: CourtAvailability) => void
   setGuestInfo: (info: GuestInfo) => void
-  setPaymentIntentSecret: (secret: string) => void
+  setPaymentIntent: (paymentIntent: {
+    clientSecret: string
+    paymentIntentId: string
+    amount: number
+  }) => void
   setCurrentStep: (step: BookingStep) => void
   setLoading: (loading: boolean) => void
   startHold: () => void
@@ -38,13 +46,13 @@ const initialState = {
   isLoading: false,
   holdEndTime: undefined,
   remainingTime: null,
+  paymentIntent: undefined,
 }
 
 export const HOLD_DURATION_MS = 10 * 60 * 1000 // 10 minutes
 
 export const useGuestStore = create<GuestState>((set) => ({
   ...initialState,
-  paymentIntentSecret: undefined,
 
   setSelectedDate: (date: Date) =>
     set({
@@ -61,7 +69,11 @@ export const useGuestStore = create<GuestState>((set) => ({
 
   setGuestInfo: (info: GuestInfo) => set({ guestInfo: info }),
 
-  setPaymentIntentSecret: (secret: string) => set({ paymentIntentSecret: secret }),
+  setPaymentIntent: (paymentIntent: {
+    clientSecret: string
+    paymentIntentId: string
+    amount: number
+  }) => set({ paymentIntent }),
 
   setCurrentStep: (step: BookingStep) => set({ currentStep: step }),
 
@@ -83,7 +95,7 @@ export const useGuestStore = create<GuestState>((set) => ({
 
   clearBooking: () => {
     set({
-      paymentIntentSecret: undefined,
+      paymentIntent: undefined,
       guestInfo: undefined,
       selectedAvailability: undefined,
       holdEndTime: undefined,

@@ -132,7 +132,6 @@ function CourtAvailabilityListComponent({
         <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
         {slots.map(([key, slot]) => {
           const slotKey = `${slot.firstAvailability.start_time}-${slot.firstAvailability.court_number}`
-
           return (
             <AvailabilitySlot
               key={key}
@@ -140,7 +139,12 @@ function CourtAvailabilityListComponent({
               endTime={slot.endTime}
               courtCount={slot.courtCount}
               selected={slotKey === selectedKey}
-              onClick={() => setSelectedAvailability(slot.firstAvailability)}
+              onClick={() => {
+                console.log('slotKey', slotKey)
+                console.log('selectedKey', selectedKey)
+                console.log('slot.firstAvailability', slot.firstAvailability)
+                setSelectedAvailability(slot.firstAvailability)
+              }}
             />
           )
         })}

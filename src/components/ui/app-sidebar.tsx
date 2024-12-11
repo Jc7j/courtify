@@ -33,12 +33,6 @@ const items = [
     icon: Calendar,
     exact: false,
   },
-  {
-    title: 'History',
-    url: ROUTES.DASHBOARD.HISTORY,
-    icon: Clock,
-    exact: false,
-  },
 ]
 
 interface AppSidebarProps {

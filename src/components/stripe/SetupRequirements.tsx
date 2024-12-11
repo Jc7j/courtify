@@ -1,7 +1,5 @@
 import { Progress } from '@/components/ui/progress'
-import { ExternalLink } from 'lucide-react'
 import type { StripeAccountDetails } from '@/types/stripe'
-import Link from 'next/link'
 
 function getRequirementCategories(requirements: string[]): string[] {
   return Array.from(new Set(requirements.map((req) => req.split('.')[0])))

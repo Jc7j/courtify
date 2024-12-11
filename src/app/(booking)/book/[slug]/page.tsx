@@ -40,8 +40,8 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     setCurrentStep,
     isLoading,
     setLoading,
-    paymentIntentSecret,
-    setPaymentIntentSecret,
+    paymentIntent,
+    setPaymentIntent,
     setRemainingTime,
     clearHold,
     remainingTime,
@@ -73,13 +73,14 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   useEffect(() => {
     if (company?.stripe_account_id) {
       const promise = getStripePromise(company.stripe_account_id)
+
       setStripePromise(promise)
     }
   }, [company?.stripe_account_id])
 
   function handlePaymentSuccess() {
     useGuestStore.getState().clearBooking()
-    router.push(`/book/${resolvedParams.slug}/success`)
+    router.push(`/book/success`)
   }
 
   async function handleGuestInfoSubmit(data: GuestInfo) {
@@ -89,7 +90,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       setLoading(true)
       useGuestStore.getState().setGuestInfo(data)
 
-      const { clientSecret, amount } = await createPaymentIntent({
+      const { paymentIntentId, clientSecret, amount } = await createPaymentIntent({
         companyId: company.id,
         courtNumber: selectedAvailability.court_number,
         startTime: selectedAvailability.start_time,
@@ -107,7 +108,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           equipmentProductIds: data.selectedEquipment,
         },
       })
-      setPaymentIntentSecret(clientSecret)
+      setPaymentIntent({ clientSecret, paymentIntentId, amount })
       setAmount(amount)
       setCurrentStep('payment')
     } catch (error) {
@@ -286,13 +287,13 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
             )}
 
             {currentStep === 'payment' &&
-              paymentIntentSecret &&
+              paymentIntent?.clientSecret &&
               company?.stripe_account_id &&
               stripePromise && (
                 <Elements
                   stripe={stripePromise}
                   options={{
-                    clientSecret: paymentIntentSecret,
+                    clientSecret: paymentIntent?.clientSecret,
                     appearance: { theme: 'stripe' },
                   }}
                 >
@@ -310,6 +311,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                         'hour',
                         true
                       ),
+                      companyId: company.id,
                       guestInfo: guestInfo!,
                       products: products
                         .filter((p: CompanyProduct) =>
