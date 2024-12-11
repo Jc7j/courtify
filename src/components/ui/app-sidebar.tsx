@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, Clock, Home } from 'lucide-react'
+import { Calendar, Home } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import cn from '@/lib/utils/cn'
