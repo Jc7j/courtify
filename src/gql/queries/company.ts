@@ -27,6 +27,8 @@ export const COMPANY_FIELDS = gql`
   fragment CompanyFields on companies {
     id
     name
+    address
+    sports
     slug
     stripe_account_id
     stripe_account_enabled

@@ -3,6 +3,8 @@ CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
 CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
+    address TEXT NOT NULL,
+    sports TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
     
     stripe_account_id TEXT UNIQUE,

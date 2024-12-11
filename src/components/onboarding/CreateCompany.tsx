@@ -6,12 +6,17 @@ import { z } from 'zod'
 import { Input, Button, success, error } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
 import { useUserStore } from '@/stores/useUserStore'
-
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { GoogleMap, useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
+import { useRef } from 'react'
 const createCompanySchema = z.object({
   name: z
     .string()
     .min(2, 'Company name must be at least 2 characters')
     .max(50, 'Company name must be less than 50 characters'),
+  sports: z.string(),
+  address: z.string(),
 })
 
 type CreateCompanyFormData = z.infer<typeof createCompanySchema>
@@ -22,7 +27,12 @@ interface CreateCompanyProps {
 
 export function CreateCompany({ onBack }: CreateCompanyProps) {
   const { createCompany, creating } = useCompany()
-
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.GOOGLE_MAP_API_KEY,
+    libraries: ['places'],
+  })
+  const inputRef = useRef(null)
   const {
     register,
     handleSubmit,
@@ -31,12 +41,14 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
     resolver: zodResolver(createCompanySchema),
     defaultValues: {
       name: '',
+      address: '',
+      sports: 'volleyball',
     },
   })
 
   async function onSubmit(data: CreateCompanyFormData) {
     try {
-      await createCompany(data.name.trim())
+      await createCompany(data.name.trim(), data.address, data.sports)
 
       const updatedUser = useUserStore.getState().user
       if (!updatedUser?.company_id) {
@@ -57,6 +69,11 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
         error('Failed to create company')
       }
     }
+  }
+
+  const handleonPlacesChanged = () => {
+    const address = inputRef.current.getPlaces()
+    console.log('address:', address)
   }
 
   return (
@@ -89,7 +106,41 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             </p>
           )}
         </div>
-
+        {/* Sports */}
+        <div className="space-y-2">
+          <label htmlFor="address" className="text-sm font-medium">
+            Sports category
+          </label>
+          <RadioGroup defaultValue="sports" {...register('sports')}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="volleyball" id="volleyball" />
+              <Label htmlFor="volleyball">Volleyball</Label>
+            </div>
+          </RadioGroup>
+        </div>
+        {/* Address */}
+        <div className="space-y-2">
+          <label htmlFor="address" className="text-sm font-medium">
+            Address
+          </label>
+          {isLoaded && (
+            <StandaloneSearchBox
+              onLoad={(ref) => (inputRef.current = ref)}
+              onPlacesChanged={handleonPlacesChanged}
+            >
+              <Input
+                id="address"
+                placeholder="Enter Address"
+                className={errors.address ? 'border-destructive' : ''}
+                disabled={creating}
+                {...register('address')}
+                aria-invalid={errors.address ? 'true' : 'false'}
+              />
+            </StandaloneSearchBox>
+          )}
+          {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
+        </div>
+        {/* back and create buttons */}
         <div className="flex gap-3 pt-4">
           {onBack && (
             <Button

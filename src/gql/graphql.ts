@@ -199,7 +199,6 @@ export type Mutation = {
   deleteFromcourtsCollection: CourtsDeleteResponse;
   /** Deletes zero or more records from the `users` collection */
   deleteFromusersCollection: UsersDeleteResponse;
-  get_court_availabilities?: Maybe<Court_AvailabilitiesConnection>;
   /** Adds one or more `bookings` records to the collection */
   insertIntobookingsCollection?: Maybe<BookingsInsertResponse>;
   /** Adds one or more `companies` records to the collection */
@@ -266,21 +265,6 @@ export type MutationDeleteFromcourtsCollectionArgs = {
 export type MutationDeleteFromusersCollectionArgs = {
   atMost?: Scalars['Int']['input'];
   filter?: InputMaybe<UsersFilter>;
-};
-
-
-/** The root type for creating and mutating data */
-export type MutationGet_Court_AvailabilitiesArgs = {
-  after?: InputMaybe<Scalars['Cursor']['input']>;
-  before?: InputMaybe<Scalars['Cursor']['input']>;
-  filter?: InputMaybe<Court_AvailabilitiesFilter>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  last?: InputMaybe<Scalars['Int']['input']>;
-  offset?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<Array<Court_AvailabilitiesOrderBy>>;
-  p_company_id: Scalars['UUID']['input'];
-  p_end_time: Scalars['Datetime']['input'];
-  p_start_time: Scalars['Datetime']['input'];
 };
 
 
@@ -593,7 +577,7 @@ export type Bookings = Node & {
   amount_paid?: Maybe<Scalars['Int']['output']>;
   amount_total: Scalars['Int']['output'];
   company_id: Scalars['UUID']['output'];
-  court_availabilities?: Maybe<Court_Availabilities>;
+  court_availabilities: Court_Availabilities;
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
   currency: Scalars['String']['output'];
@@ -730,6 +714,7 @@ export type BookingsUpdateResponse = {
 
 export type Companies = Node & {
   __typename?: 'companies';
+  address: Scalars['String']['output'];
   company_productsCollection?: Maybe<Company_ProductsConnection>;
   court_availabilitiesCollection?: Maybe<Court_AvailabilitiesConnection>;
   courtsCollection?: Maybe<CourtsConnection>;
@@ -739,6 +724,7 @@ export type Companies = Node & {
   /** Globally Unique Record Identifier */
   nodeId: Scalars['ID']['output'];
   slug: Scalars['String']['output'];
+  sports: Scalars['String']['output'];
   stripe_account_details?: Maybe<Scalars['JSON']['output']>;
   stripe_account_enabled?: Maybe<Scalars['Boolean']['output']>;
   stripe_account_id?: Maybe<Scalars['String']['output']>;
@@ -814,6 +800,7 @@ export type CompaniesEdge = {
 };
 
 export type CompaniesFilter = {
+  address?: InputMaybe<StringFilter>;
   /** Returns true only if all its inner filters are true, otherwise returns false */
   and?: InputMaybe<Array<CompaniesFilter>>;
   created_at?: InputMaybe<DatetimeFilter>;
@@ -825,6 +812,7 @@ export type CompaniesFilter = {
   /** Returns true if at least one of its inner filters is true, otherwise returns false */
   or?: InputMaybe<Array<CompaniesFilter>>;
   slug?: InputMaybe<StringFilter>;
+  sports?: InputMaybe<StringFilter>;
   stripe_account_enabled?: InputMaybe<BooleanFilter>;
   stripe_account_id?: InputMaybe<StringFilter>;
   stripe_currency?: InputMaybe<StringFilter>;
@@ -834,10 +822,12 @@ export type CompaniesFilter = {
 };
 
 export type CompaniesInsertInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
   id?: InputMaybe<Scalars['UUID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
+  sports?: InputMaybe<Scalars['String']['input']>;
   stripe_account_details?: InputMaybe<Scalars['JSON']['input']>;
   stripe_account_enabled?: InputMaybe<Scalars['Boolean']['input']>;
   stripe_account_id?: InputMaybe<Scalars['String']['input']>;
@@ -856,10 +846,12 @@ export type CompaniesInsertResponse = {
 };
 
 export type CompaniesOrderBy = {
+  address?: InputMaybe<OrderByDirection>;
   created_at?: InputMaybe<OrderByDirection>;
   id?: InputMaybe<OrderByDirection>;
   name?: InputMaybe<OrderByDirection>;
   slug?: InputMaybe<OrderByDirection>;
+  sports?: InputMaybe<OrderByDirection>;
   stripe_account_enabled?: InputMaybe<OrderByDirection>;
   stripe_account_id?: InputMaybe<OrderByDirection>;
   stripe_currency?: InputMaybe<OrderByDirection>;
@@ -868,10 +860,12 @@ export type CompaniesOrderBy = {
 };
 
 export type CompaniesUpdateInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
   created_at?: InputMaybe<Scalars['Datetime']['input']>;
   id?: InputMaybe<Scalars['UUID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
+  sports?: InputMaybe<Scalars['String']['input']>;
   stripe_account_details?: InputMaybe<Scalars['JSON']['input']>;
   stripe_account_enabled?: InputMaybe<Scalars['Boolean']['input']>;
   stripe_account_id?: InputMaybe<Scalars['String']['input']>;
@@ -891,7 +885,7 @@ export type CompaniesUpdateResponse = {
 
 export type Company_Products = Node & {
   __typename?: 'company_products';
-  companies?: Maybe<Companies>;
+  companies: Companies;
   company_id: Scalars['UUID']['output'];
   created_at: Scalars['Datetime']['output'];
   currency: Scalars['String']['output'];
@@ -1021,11 +1015,11 @@ export type Company_ProductsUpdateResponse = {
 
 export type Court_Availabilities = Node & {
   __typename?: 'court_availabilities';
-  bookingsCollection?: Maybe<BookingsConnection>;
-  companies?: Maybe<Companies>;
+  bookingsCollection: BookingsConnection;
+  companies: Companies;
   company_id: Scalars['UUID']['output'];
   court_number: Scalars['Int']['output'];
-  courts?: Maybe<Courts>;
+  courts: Courts;
   created_at: Scalars['Datetime']['output'];
   end_time: Scalars['Datetime']['output'];
   /** Globally Unique Record Identifier */
@@ -1131,9 +1125,9 @@ export type Court_AvailabilitiesUpdateResponse = {
 
 export type Courts = Node & {
   __typename?: 'courts';
-  companies?: Maybe<Companies>;
+  companies: Companies;
   company_id: Scalars['UUID']['output'];
-  court_availabilitiesCollection?: Maybe<Court_AvailabilitiesConnection>;
+  court_availabilitiesCollection: Court_AvailabilitiesConnection;
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
   name: Scalars['String']['output'];

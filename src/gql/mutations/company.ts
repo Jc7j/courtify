@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client'
+
 import { COMPANY_FIELDS } from '../queries/company'
 
 export const CREATE_COMPANY = gql`
