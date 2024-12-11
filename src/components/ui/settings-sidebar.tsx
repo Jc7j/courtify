@@ -29,8 +29,8 @@ const workspaceSettings = [
     path: ROUTES.DASHBOARD.SETTINGS.MEMBERS,
   },
   {
-    title: 'Products',
-    path: ROUTES.DASHBOARD.SETTINGS.PRODUCTS,
+    title: 'Payment Processor',
+    path: ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR,
   },
 ]
 

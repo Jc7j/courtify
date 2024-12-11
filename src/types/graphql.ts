@@ -19,8 +19,6 @@ export interface User {
   is_active: boolean
   invited_by?: string | null
   joined_at?: string
-  email_verified_at?: string | null
-  last_login_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -60,9 +58,11 @@ export interface CourtAvailability {
   created_at: string
   updated_at: string
 }
+// @TODO possibly remove 'past' status. We'll have ui to show its past by comparing to current date. This removes the functionality to handle updating to past availability.
 
 export enum AvailabilityStatus {
   Available = 'available',
+  Held = 'held',
   Booked = 'booked',
   Past = 'past',
 }
@@ -71,12 +71,11 @@ export enum BookingStatus {
   Pending = 'pending',
   Confirmed = 'confirmed',
   Cancelled = 'cancelled',
-  Completed = 'completed',
-  NoShow = 'no_show',
 }
 
 export enum PaymentStatus {
   Pending = 'pending',
+  Processing = 'processing',
   Paid = 'paid',
   Refunded = 'refunded',
   Failed = 'failed',
@@ -110,6 +109,11 @@ export enum ProductType {
   // Event = 'event',
 }
 
+export enum StripePaymentType {
+  Recurring = 'recurring',
+  OneTime = 'one_time',
+}
+
 export interface CompanyProduct {
   id: string
   company_id: string
@@ -120,6 +124,7 @@ export interface CompanyProduct {
   currency: string
   stripe_price_id: string | null
   stripe_product_id: string | null
+  stripe_payment_type: StripePaymentType | null
   metadata: Record<string, unknown>
   is_active: boolean
   created_at: string

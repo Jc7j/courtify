@@ -192,20 +192,21 @@ export function useCourtAvailability({
     }
 
     // Validate time constraints
-    const startTime = dayjs(input.startTime)
-    const endTime = dayjs(input.endTime)
-    const now = dayjs()
+    const startDateTime = dayjs(input.startTime)
+    const endDateTime = dayjs(input.endTime)
+    const currentTime = dayjs()
 
     // Allow creating availability if it's today or in the future
-    if (startTime.isBefore(now.startOf('day'))) {
+    if (startDateTime.isBefore(currentTime.startOf('day'))) {
       throw new Error('Cannot create availability for past dates')
     }
 
     // Check if the end time is before start time
-    if (endTime.isBefore(startTime)) {
+    if (endDateTime.isBefore(startDateTime)) {
       throw new Error('End time must be after start time')
     }
 
+    const timestamp = new Date().toISOString()
     const newAvailability: CourtAvailability = {
       nodeId: `temp-${Date.now()}`,
       company_id: user.company_id,
@@ -213,8 +214,8 @@ export function useCourtAvailability({
       start_time: input.startTime,
       end_time: input.endTime,
       status: input.status as AvailabilityStatus.Available,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: timestamp,
+      updated_at: timestamp,
     }
 
     // Optimistic update
@@ -230,6 +231,8 @@ export function useCourtAvailability({
               start_time: input.startTime,
               end_time: input.endTime,
               status: input.status as AvailabilityStatus.Available,
+              created_at: timestamp,
+              updated_at: timestamp,
             },
           ],
         },
@@ -252,22 +255,16 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
-    // Find the availability to update
-    const existingAvailability = localAvailabilities.find(
-      (a) => a.court_number === input.courtNumber && a.start_time === input.startTime
-    )
-
-    if (!existingAvailability) {
-      throw new Error('Availability not found')
-    }
-
     try {
       const { data } = await updateAvailabilityMutation({
         variables: {
           company_id: user.company_id,
           court_number: input.courtNumber,
           start_time: input.startTime,
-          set: input.update,
+          set: {
+            ...input.update,
+            updated_at: new Date().toISOString(),
+          },
         },
       })
 

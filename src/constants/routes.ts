@@ -9,6 +9,7 @@ export const ROUTES = {
     HOME: '/dashboard',
     ACCOUNT: '/dashboard/account',
     COURTS: '/dashboard/courts',
+    HISTORY: '/dashboard/history',
     SETTINGS: {
       HOME: '/dashboard/settings',
       COMPANY: '/dashboard/settings/company',
@@ -17,7 +18,7 @@ export const ROUTES = {
       BILLING: '/dashboard/settings/billing',
       ACCOUNT: '/dashboard/settings/account',
       PREFERENCES: '/dashboard/settings/preferences',
-      PRODUCTS: '/dashboard/settings/products',
+      PAYMENT_PROCESSOR: '/dashboard/settings/payment-processor',
     },
   },
   UNAUTHORIZED: '/unauthorized',

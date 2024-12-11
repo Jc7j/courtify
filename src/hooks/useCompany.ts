@@ -9,6 +9,7 @@ import { useOnboarding } from './useOnboarding'
 import { useUserStore } from '@/stores/useUserStore'
 import type { Company } from '@/types/graphql'
 import { useEffect } from 'react'
+import { BaseUser } from '@/types/auth'
 
 interface UseCompanyReturn {
   company: Company | null
@@ -31,6 +32,9 @@ interface UseCompanyProps {
 interface UpdateCompanyInput {
   name: string
   slug: string
+  stripe_account_id?: string | null
+  stripe_account_enabled?: boolean
+  stripe_account_details?: any | null
 }
 
 export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
@@ -80,6 +84,23 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
     businessinfo: string
   ) {
     try {
+      // First ensure we have a valid session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        throw new Error('No valid session found')
+      }
+
+      // Update the user store with the token if needed
+      if (!useUserStore.getState().accessToken) {
+        useUserStore.getState().setSession({
+          user: useUserStore.getState().user as BaseUser,
+          accessToken: session.access_token,
+        })
+      }
+
+      const now = new Date().toISOString()
       const slug = generateSlug(name)
       const result = await createCompanyMutation({
         variables: {
@@ -90,8 +111,8 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
               sports,
               businessinfo,
               slug: generateSlug(name),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+              created_at: now,
+              updated_at: now,
             },
           ],
         },
@@ -129,7 +150,10 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
       const result = await updateCompanyMutation({
         variables: {
           id: user.company_id,
-          set: data,
+          set: {
+            ...data,
+            updated_at: new Date().toISOString(),
+          },
         },
       })
 

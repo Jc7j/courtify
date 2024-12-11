@@ -1,10 +1,12 @@
 import { useUserStore } from '@/stores/useUserStore'
 import { supabase } from '@/lib/supabase/client'
-import type { UserProfile } from '@/types/auth'
+import type { MemberRole, UserProfile } from '@/types/auth'
 
 interface UpdateUserInput {
   name?: string
   email?: string
+  role?: MemberRole
+  is_active?: boolean
   currentEmail: string
 }
 
@@ -12,7 +14,7 @@ export function useUserOperations() {
   const { updateUser } = useUserStore()
 
   const updateProfile = async (input: UpdateUserInput): Promise<UserProfile> => {
-    const { name, email, currentEmail } = input
+    const { name, email, role, is_active, currentEmail } = input
 
     try {
       // Update auth email if changed
@@ -27,10 +29,12 @@ export function useUserOperations() {
         .update({
           ...(name && { name }),
           ...(email && { email }),
+          ...(role && { role }),
+          ...(is_active && { is_active }),
           updated_at: new Date().toISOString(),
         })
         .eq('email', currentEmail)
-        .select('id, email, name, company_id')
+        .select('id, email, name, company_id, role, is_active')
         .single()
 
       if (updateError || !userData) {

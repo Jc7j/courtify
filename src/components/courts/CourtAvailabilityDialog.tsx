@@ -52,23 +52,6 @@ export function CourtAvailabilityDialog({
     setHasTimeChanges(false)
   }, [availability])
 
-  // const handleStatusChange = async (newStatus: AvailabilityStatus) => {
-  //   try {
-  //     setIsUpdating(true)
-  //     await updateAvailability({
-  //       courtNumber: availability.court_number,
-  //       startTime: availability.start_time,
-  //       update: { status: newStatus },
-  //     })
-  //     success(`Status updated to ${newStatus.toLowerCase()}`)
-  //     onClose()
-  //   } catch (error) {
-  //     ToastError(error instanceof Error ? error.message : 'Failed to update status')
-  //   } finally {
-  //     setIsUpdating(false)
-  //   }
-  // }
-
   async function handleTimeChange() {
     try {
       setIsUpdating(true)
@@ -135,6 +118,7 @@ export function CourtAvailabilityDialog({
     [AvailabilityStatus.Available]: 'text-green-600 dark:text-green-400',
     [AvailabilityStatus.Booked]: 'text-red-600 dark:text-red-400',
     [AvailabilityStatus.Past]: 'text-neutral-500 dark:text-neutral-400',
+    [AvailabilityStatus.Held]: 'text-yellow-600 dark:text-yellow-400',
   }
 
   async function handleCreate() {

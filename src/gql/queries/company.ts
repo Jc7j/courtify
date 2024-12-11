@@ -5,6 +5,8 @@ export const COMPANY_BY_SLUG_FIELDS = gql`
     id
     name
     slug
+    stripe_account_id
+    stripe_currency
   }
 `
 

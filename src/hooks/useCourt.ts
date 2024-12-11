@@ -59,12 +59,13 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
     }
 
     try {
+      const now = new Date().toISOString()
       const courtInput = {
         company_id: user.company_id,
         court_number: getNextCourtNumber(),
         name,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       }
 
       const { data } = await createCourtMutation({

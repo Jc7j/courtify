@@ -1,4 +1,3 @@
--- Create enum for member roles
 CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
 
 CREATE TABLE companies (
@@ -9,7 +8,6 @@ CREATE TABLE companies (
     businessinfo TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
     
-    -- Stripe Integration Fields
     stripe_account_id TEXT UNIQUE,
     stripe_account_enabled BOOLEAN DEFAULT false,
     stripe_account_details JSONB,
@@ -17,12 +15,10 @@ CREATE TABLE companies (
     stripe_payment_methods TEXT[] DEFAULT ARRAY['card']::TEXT[],
     stripe_currency TEXT DEFAULT 'usd',
     
-    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Add comment to explain JSONB field
 COMMENT ON COLUMN companies.stripe_account_details IS 'Stores Stripe account metadata like business type, capabilities, etc.';
 
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
@@ -33,22 +29,19 @@ CREATE TABLE users (
     name TEXT NOT NULL,
     company_id UUID REFERENCES companies(id),
     
-    -- Member management fields
     role member_role NOT NULL DEFAULT 'member',
     invited_by UUID REFERENCES auth.users(id),
     joined_at TIMESTAMPTZ DEFAULT NOW(),
     is_active BOOLEAN NOT NULL DEFAULT true,
     
-    -- Authentication fields
-    last_login_at TIMESTAMPTZ,
-    email_verified_at TIMESTAMPTZ,
+    -- -- Authentication fields
+    -- last_login_at TIMESTAMPTZ,
+    -- email_verified_at TIMESTAMPTZ,
     
     -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-CREATE INDEX idx_users_company_members ON users(company_id, role, is_active);
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 

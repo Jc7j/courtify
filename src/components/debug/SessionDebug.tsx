@@ -30,7 +30,6 @@ export function SessionDebug() {
     sessionError: null,
   })
 
-  // Check localStorage availability and content
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setStorageState({
@@ -40,7 +39,6 @@ export function SessionDebug() {
     }
   }, [])
 
-  // Monitor session details and expiry
   useEffect(() => {
     async function checkSession() {
       const {

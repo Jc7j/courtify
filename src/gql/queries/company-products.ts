@@ -10,6 +10,7 @@ export const COMPANY_PRODUCT_FIELDS = gql`
     currency
     stripe_price_id
     stripe_product_id
+    stripe_payment_type
     metadata
     is_active
     created_at

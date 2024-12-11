@@ -42,7 +42,6 @@ export type Database = {
           id: number
           metadata: Json | null
           payment_status: Database['public']['Enums']['payment_status']
-          product_id: string | null
           start_time: string
           status: Database['public']['Enums']['booking_status']
           stripe_payment_intent_id: string | null
@@ -61,7 +60,6 @@ export type Database = {
           id?: number
           metadata?: Json | null
           payment_status?: Database['public']['Enums']['payment_status']
-          product_id?: string | null
           start_time: string
           status?: Database['public']['Enums']['booking_status']
           stripe_payment_intent_id?: string | null
@@ -80,7 +78,6 @@ export type Database = {
           id?: number
           metadata?: Json | null
           payment_status?: Database['public']['Enums']['payment_status']
-          product_id?: string | null
           start_time?: string
           status?: Database['public']['Enums']['booking_status']
           stripe_payment_intent_id?: string | null
@@ -93,13 +90,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'court_availabilities'
             referencedColumns: ['company_id', 'court_number', 'start_time']
-          },
-          {
-            foreignKeyName: 'bookings_product_id_fkey'
-            columns: ['product_id']
-            isOneToOne: false
-            referencedRelation: 'company_products'
-            referencedColumns: ['id']
           },
         ]
       }
@@ -156,6 +146,7 @@ export type Database = {
           metadata: Json | null
           name: string
           price_amount: number
+          stripe_payment_type: Database['public']['Enums']['stripe_payment_type'] | null
           stripe_price_id: string | null
           stripe_product_id: string | null
           type: Database['public']['Enums']['product_type']
@@ -171,6 +162,7 @@ export type Database = {
           metadata?: Json | null
           name: string
           price_amount: number
+          stripe_payment_type?: Database['public']['Enums']['stripe_payment_type'] | null
           stripe_price_id?: string | null
           stripe_product_id?: string | null
           type: Database['public']['Enums']['product_type']
@@ -186,6 +178,7 @@ export type Database = {
           metadata?: Json | null
           name?: string
           price_amount?: number
+          stripe_payment_type?: Database['public']['Enums']['stripe_payment_type'] | null
           stripe_price_id?: string | null
           stripe_product_id?: string | null
           type?: Database['public']['Enums']['product_type']
@@ -283,12 +276,10 @@ export type Database = {
           company_id: string | null
           created_at: string
           email: string
-          email_verified_at: string | null
           id: string
           invited_by: string | null
           is_active: boolean
           joined_at: string | null
-          last_login_at: string | null
           name: string
           role: Database['public']['Enums']['member_role']
           updated_at: string
@@ -297,12 +288,10 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           email: string
-          email_verified_at?: string | null
           id?: string
           invited_by?: string | null
           is_active?: boolean
           joined_at?: string | null
-          last_login_at?: string | null
           name: string
           role?: Database['public']['Enums']['member_role']
           updated_at?: string
@@ -311,12 +300,10 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           email?: string
-          email_verified_at?: string | null
           id?: string
           invited_by?: string | null
           is_active?: boolean
           joined_at?: string | null
-          last_login_at?: string | null
           name?: string
           role?: Database['public']['Enums']['member_role']
           updated_at?: string
@@ -672,17 +659,30 @@ export type Database = {
         }
         Returns: unknown
       }
-      update_past_availabilities: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      get_court_availabilities: {
+        Args: {
+          p_company_id: string
+          p_start_time: string
+          p_end_time: string
+        }
+        Returns: {
+          company_id: string
+          court_number: number
+          created_at: string
+          end_time: string
+          start_time: string
+          status: Database['public']['Enums']['availability_status']
+          updated_at: string
+        }[]
       }
     }
     Enums: {
-      availability_status: 'available' | 'booked' | 'past'
-      booking_status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+      availability_status: 'available' | 'held' | 'booked' | 'past'
+      booking_status: 'confirmed' | 'cancelled' | 'pending'
       member_role: 'owner' | 'admin' | 'member'
-      payment_status: 'pending' | 'paid' | 'refunded' | 'failed'
-      product_type: 'court_rental' | 'equipment' | 'membership' | 'class' | 'event'
+      payment_status: 'paid' | 'refunded' | 'failed' | 'processing' | 'pending'
+      product_type: 'court_rental' | 'equipment'
+      stripe_payment_type: 'recurring' | 'one_time'
     }
     CompositeTypes: {
       [_ in never]: never

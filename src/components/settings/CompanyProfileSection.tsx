@@ -25,7 +25,6 @@ export function CompanyProfileSection({ company }: CompanyProfileSectionProps) {
   }))
   const [isDirty, setIsDirty] = useState(false)
 
-  // Update form when company data changes
   useEffect(() => {
     if (company) {
       setForm({
@@ -39,7 +38,6 @@ export function CompanyProfileSection({ company }: CompanyProfileSectionProps) {
   const handleChange = (field: keyof CompanyForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
 
-    // Check if any field is different from original
     const isChanged =
       field === 'name'
         ? value !== company?.name || form.slug !== company?.slug

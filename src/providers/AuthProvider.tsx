@@ -30,13 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSession = useCallback(
     async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
       if (!session) {
-        console.log('[Auth] No session, resetting state')
         await reset()
         return
       }
 
       try {
-        // Fetch user data first
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id, email, name, company_id, role, is_active')
@@ -47,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!userData) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
         if (!userData.is_active) throw new Error(AUTH_ERRORS.ACCOUNT_INACTIVE)
 
-        // Set session with user data
         setSession({
           user: {
             ...session.user,
@@ -61,9 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           expiresAt: session.expires_at,
         })
 
-        // Only redirect after we've confirmed valid user data
         if (pathname === ROUTES.AUTH.SIGNIN) {
-          console.log('[Auth] Valid user session, redirecting to dashboard')
           router.replace(ROUTES.DASHBOARD.HOME)
         }
       } catch (error) {
@@ -74,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await reset()
 
         if (!options.skipRedirect && !isSignupPage) {
-          console.log('[Auth] Invalid user data, redirecting to signin')
           router.replace(ROUTES.AUTH.SIGNIN)
         }
       }
@@ -82,13 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [reset, router, setSession, pathname, isSignupPage]
   )
 
-  // Initialize and monitor auth state
   useEffect(() => {
-    // console.log('[Auth] Initializing auth state', {
-    //   isSignupPage,
-    //   pathname,
-    // })
-
     // Skip session check on signup page
     if (isSignupPage) {
       setIsLoading(false)
@@ -98,11 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('[Auth] Initial session check:', {
-        hasSession: !!session,
-        error: error?.message,
-      })
+    supabase.auth.getSession().then(({ data: { session } }) => {
       handleSession(session).finally(() => setIsLoading(false))
     })
 
@@ -110,11 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] Auth state changed:', {
-        event,
-        hasSession: !!session,
-      })
-
       switch (event) {
         case 'SIGNED_IN':
           handleSession(session, { skipRedirect: isSignupPage })
@@ -129,20 +108,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           break
         default:
-          console.log('[Auth] Unhandled auth event:', event)
       }
     })
 
     return () => {
-      console.log('[Auth] Cleaning up auth subscriptions')
       subscription.unsubscribe()
     }
   }, [handleSession, reset, router, setIsLoading, isSignupPage])
 
-  // Sign in function with enhanced error handling
   async function signIn(email: string, password: string) {
     try {
-      console.log('[Auth] Attempting sign in:', { email })
       setIsLoading(true)
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -163,10 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Sign up function with enhanced error handling
   async function signUp(email: string, password: string, name: string) {
     try {
-      console.log('[Auth] Attempting sign up:', { email, name })
       setIsLoading(true)
 
       const { data, error } = await supabase.auth.signUp({
@@ -180,7 +153,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error
       if (!data.user?.id) throw new Error('No user ID returned from signup')
 
-      console.log('[Auth] Creating user profile')
       const { data: userData, error: profileError } = await supabase
         .from('users')
         .insert([
@@ -188,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: data.user.id,
             email,
             name,
+            role: 'member',
             is_active: true,
           },
         ])
@@ -200,7 +173,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw profileError
       }
 
-      console.log('[Auth] Setting initial session')
       setSession({
         user: {
           ...data.user,
@@ -228,10 +200,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Sign out function with enhanced error handling
   async function signOut() {
     try {
-      console.log('[Auth] Signing out')
       setIsLoading(true)
       await clearApolloCache()
       await reset()

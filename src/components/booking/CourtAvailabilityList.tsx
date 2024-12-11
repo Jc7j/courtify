@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import { memo, useMemo } from 'react'
-import { useBookingStore } from '@/stores/useBookingStore'
+import { useGuestStore } from '@/stores/useGuestStore'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -49,11 +49,6 @@ const AvailabilitySlot = memo(function AvailabilitySlot({
             {courtCount} {courtCount === 1 ? 'court' : 'courts'} available
           </span>
         </div>
-        <span
-          className={cn('text-sm font-medium', selected ? 'text-primary' : 'text-muted-foreground')}
-        >
-          $30/hr
-        </span>
       </div>
     </div>
   )
@@ -70,7 +65,7 @@ function CourtAvailabilityListComponent({
   availabilities,
   loading,
 }: CourtAvailabilityListProps) {
-  const { selectedAvailability, setSelectedAvailability } = useBookingStore()
+  const { selectedAvailability, setSelectedAvailability } = useGuestStore()
 
   const selectedKey = selectedAvailability
     ? `${selectedAvailability.start_time}-${selectedAvailability.court_number}`
@@ -82,7 +77,11 @@ function CourtAvailabilityListComponent({
 
     const filteredAvailabilities = availabilities.filter((availability) => {
       const availabilityStart = dayjs(availability.start_time).utc()
-      return availabilityStart.isSame(selectedDateUtc, 'day') && availabilityStart.isAfter(now)
+      return (
+        availability.status === 'available' &&
+        availabilityStart.isSame(selectedDateUtc, 'day') &&
+        availabilityStart.isAfter(now)
+      )
     })
 
     const slots = filteredAvailabilities.reduce(

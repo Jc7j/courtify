@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useUserStore } from '@/stores/useUserStore'
-import { CompanyProduct, CompanyProductEdge, ProductType } from '@/types/graphql'
+import { CompanyProduct, CompanyProductEdge, ProductType, StripePaymentType } from '@/types/graphql'
 import { useMutation, useQuery } from '@apollo/client'
-import { CREATE_PRODUCT, DELETE_PRODUCT, UPDATE_PRODUCT } from '@/gql/mutations/company-product'
+import { CREATE_PRODUCT, UPDATE_PRODUCT } from '@/gql/mutations/company-product'
 import { GET_COMPANY_PRODUCTS } from '@/gql/queries/company-products'
 import { useCompany } from './useCompany'
 import { toast } from 'sonner'
@@ -13,7 +13,8 @@ interface CreateProductInput {
   name: string
   description?: string | null
   type: ProductType
-  priceAmount: number // in cents
+  priceAmount: number
+  stripePaymentType: StripePaymentType
   currency?: string
   metadata?: Record<string, unknown>
 }
@@ -23,27 +24,31 @@ interface CreateProductResponse {
   error: string | null
 }
 
-interface DeleteProductResponse {
+interface ArchiveProductResponse {
   success?: boolean
   error?: string
 }
 
-interface ArchiveProductResponse {
-  success?: boolean
-  error?: string
+interface StripeProduct {
+  id: string
+  product: string
+  active: boolean
+  currency: string
+  unit_amount: number
+  metadata: Record<string, unknown>
+  type: string
+  recurring?: {
+    interval: string
+    interval_count: number
+  }
 }
 
 export function useCompanyProducts() {
   const { user } = useUserStore()
   const { company } = useCompany()
   const [error, setError] = useState<string | null>(null)
+  const [syncNeeded, setSyncNeeded] = useState(false)
 
-  console.log('[useCompanyProducts] User context:', {
-    userId: user?.id,
-    companyId: user?.company_id,
-  })
-
-  // Query products
   const {
     data,
     loading: loadingProducts,
@@ -53,12 +58,6 @@ export function useCompanyProducts() {
     skip: !company?.id,
   })
 
-  console.log('[useCompanyProducts] Query result:', {
-    loading: loadingProducts,
-    productsCount: data?.company_productsCollection?.edges?.length,
-  })
-
-  // Create product mutation
   const [createProductMutation, { loading: creating }] = useMutation(CREATE_PRODUCT, {
     update(cache, { data }) {
       const newProduct = data?.insertIntocompany_productsCollection?.records?.[0]
@@ -69,16 +68,22 @@ export function useCompanyProducts() {
     },
   })
 
-  const [deleteProductMutation, { loading: deleting }] = useMutation(DELETE_PRODUCT)
-
   const [archiveProductMutation] = useMutation(UPDATE_PRODUCT)
+
+  const [updateProductMutation] = useMutation(UPDATE_PRODUCT, {
+    update(cache, { data }) {
+      const updatedProduct = data?.updatecompany_productsCollection?.records?.[0]
+      if (updatedProduct) {
+        cache.evict({ fieldName: 'company_productsCollection' })
+        cache.gc()
+      }
+    },
+  })
 
   const products =
     data?.company_productsCollection?.edges?.map((edge: CompanyProductEdge) => edge.node) ?? []
 
-  const createProduct = async (input: CreateProductInput): Promise<CreateProductResponse> => {
-    console.log('[useCompanyProducts] Creating product:', input)
-
+  async function createProduct(input: CreateProductInput): Promise<CreateProductResponse> {
     try {
       setError(null)
 
@@ -86,13 +91,9 @@ export function useCompanyProducts() {
         throw new Error('No company found')
       }
 
-      // 1. Create Stripe product and price
-      console.log('[useCompanyProducts] Calling Stripe API...')
-      const stripeResponse = await fetch('/api/stripe/products/create', {
+      const stripeResponse = await fetch('/api/stripe/prices/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...input,
           company_id: user.company_id,
@@ -101,23 +102,10 @@ export function useCompanyProducts() {
 
       if (!stripeResponse.ok) {
         const error = await stripeResponse.json()
-        console.error('[useCompanyProducts] Stripe API error:', error)
         throw new Error(error.message || 'Failed to create Stripe product')
       }
 
       const stripeData = await stripeResponse.json()
-      console.log('[useCompanyProducts] Stripe product created:', stripeData)
-
-      // 2. Create product in database
-      console.log('[useCompanyProducts] Creating product in database with input:', {
-        company_id: user.company_id,
-        name: input.name,
-        type: input.type,
-        price_amount: input.priceAmount,
-        stripe_data: stripeData,
-        metadata: input.metadata || {},
-      })
-
       const result = await createProductMutation({
         variables: {
           input: {
@@ -125,11 +113,20 @@ export function useCompanyProducts() {
             name: input.name,
             description: input.description || null,
             type: input.type,
-            price_amount: input.priceAmount,
-            currency: input.currency || 'USD',
-            stripe_price_id: stripeData.stripe_price_id,
-            stripe_product_id: stripeData.stripe_product_id,
-            metadata: JSON.stringify(input.metadata || {}),
+            price_amount: stripeData.unit_amount,
+            currency: stripeData.currency,
+            stripe_price_id: stripeData.id,
+            stripe_product_id: stripeData.product,
+            stripe_payment_type: stripeData.type as StripePaymentType,
+            metadata: JSON.stringify({
+              stripe_metadata: stripeData.metadata,
+              created_at: new Date().toISOString(),
+              price_details: {
+                currency: stripeData.currency,
+                original_amount: input.priceAmount,
+                unit_amount: stripeData.unit_amount,
+              },
+            }),
             is_active: true,
           },
         },
@@ -140,9 +137,6 @@ export function useCompanyProducts() {
         throw new Error('Failed to create product in database')
       }
 
-      console.log('[useCompanyProducts] Product created in database:', newProduct)
-
-      // After successful creation, refetch the products
       await refetch()
 
       return {
@@ -160,9 +154,8 @@ export function useCompanyProducts() {
     }
   }
 
-  const deleteProduct = async (productId: string): Promise<DeleteProductResponse> => {
+  async function archiveProduct(productId: string): Promise<ArchiveProductResponse> {
     try {
-      // 1. Get the product details first
       const product = products.find((p: CompanyProduct) => p.id === productId)
       if (!product) {
         throw new Error('Product not found')
@@ -176,9 +169,9 @@ export function useCompanyProducts() {
         throw new Error('Invalid Stripe product data')
       }
 
-      // 2. Delete from Stripe first
-      console.log('[useCompanyProducts] Deleting product from Stripe...')
-      const stripeResponse = await fetch('/api/stripe/products/delete', {
+      const newActiveStatus = !product.is_active
+
+      const stripeResponse = await fetch('/api/stripe/prices/archive', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -187,96 +180,178 @@ export function useCompanyProducts() {
           stripe_product_id: product.stripe_product_id,
           stripe_price_id: product.stripe_price_id,
           company_id: user.company_id,
+          active: newActiveStatus,
         }),
       })
 
       if (!stripeResponse.ok) {
         const error = await stripeResponse.json()
-        throw new Error(error.message || 'Failed to delete Stripe product')
+        throw new Error(error.message || 'Failed to update Stripe product status')
       }
 
-      // 3. Delete from database
-      const response = await deleteProductMutation({
-        variables: { id: productId },
-      })
-
-      if (!response.data) {
-        throw new Error('Failed to delete product from database')
-      }
-
-      // 4. Refetch products list
-      await refetch()
-
-      toast.success('Product deleted successfully')
-      return { success: true }
-    } catch (error) {
-      console.error('[useCompanyProducts] Error deleting product:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete product'
-      toast.error(errorMessage)
-      return { error: errorMessage }
-    }
-  }
-
-  const archiveProduct = async (productId: string): Promise<ArchiveProductResponse> => {
-    try {
-      // 1. Get the product details first
-      const product = products.find((p: CompanyProduct) => p.id === productId)
-      if (!product) {
-        throw new Error('Product not found')
-      }
-
-      if (!user?.company_id) {
-        throw new Error('No company found')
-      }
-
-      if (!product.stripe_price_id || !product.stripe_product_id) {
-        throw new Error('Invalid Stripe product data')
-      }
-
-      // 2. Archive in Stripe first
-      console.log('[useCompanyProducts] Archiving product in Stripe...')
-      const stripeResponse = await fetch('/api/stripe/products/archive', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          stripe_product_id: product.stripe_product_id,
-          stripe_price_id: product.stripe_price_id,
-          company_id: user.company_id,
-        }),
-      })
-
-      if (!stripeResponse.ok) {
-        const error = await stripeResponse.json()
-        throw new Error(error.message || 'Failed to archive Stripe product')
-      }
-
-      // 3. Archive in database using UPDATE_PRODUCT
       const response = await archiveProductMutation({
         variables: {
           id: productId,
           set: {
-            is_active: false,
+            is_active: newActiveStatus,
             updated_at: new Date().toISOString(),
           },
         },
       })
 
       if (!response.data?.updatecompany_productsCollection?.records?.[0]) {
-        throw new Error('Failed to archive product in database')
+        throw new Error('Failed to update product status')
       }
 
-      // 4. Refetch products list
       await refetch()
 
-      toast.success('Product archived successfully')
+      toast.success(`Product ${newActiveStatus ? 'restored' : 'archived'} successfully`)
       return { success: true }
     } catch (error) {
-      console.error('[useCompanyProducts] Error archiving product:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to archive product'
+      console.error('[useCompanyProducts] Error updating product status:', error)
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to update product status'
       toast.error(errorMessage)
       return { error: errorMessage }
+    }
+  }
+
+  // @TODO return products from database since it should be in sync with stripe
+  async function listProducts() {
+    try {
+      if (!user?.company_id) {
+        throw new Error('No company found')
+      }
+
+      const response = await fetch('/api/stripe/prices/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: user.company_id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to list Stripe prices')
+      }
+
+      const { data: queryData } = await refetch()
+      const currentDatabaseProducts =
+        queryData?.company_productsCollection?.edges?.map(
+          (edge: CompanyProductEdge) => edge.node
+        ) || []
+
+      const stripePrices = data.prices || []
+      const activeDbProducts = currentDatabaseProducts.filter((p: CompanyProduct) => p.is_active)
+      const hasMismatch = activeDbProducts.some((dbProduct: CompanyProduct) => {
+        const existsInStripe = stripePrices.some(
+          (price: StripeProduct) => price.product === dbProduct.stripe_product_id
+        )
+        return !existsInStripe
+      })
+
+      if (hasMismatch) {
+        setSyncNeeded(true)
+        toast.warning('Products are out of sync with Stripe. Click "Sync Products" to update.')
+      }
+
+      return {
+        prices: stripePrices,
+        products: currentDatabaseProducts,
+        syncNeeded: activeDbProducts.length > 0 && hasMismatch,
+        error: null,
+      }
+    } catch (error) {
+      console.error('Error listing products:', error)
+      return {
+        prices: null,
+        databaseProducts: [],
+        syncNeeded: false,
+        error: error instanceof Error ? error.message : 'Failed to list products',
+      }
+    }
+  }
+
+  async function syncProducts() {
+    try {
+      if (!user?.company_id) {
+        throw new Error('No company found')
+      }
+
+      const { data: queryData } = await refetch()
+      const databaseProducts =
+        queryData?.company_productsCollection?.edges?.map(
+          (edge: CompanyProductEdge) => edge.node
+        ) || []
+
+      const stripeResponse = await fetch('/api/stripe/prices/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: user.company_id }),
+      })
+
+      if (!stripeResponse.ok) {
+        throw new Error('Failed to fetch Stripe prices')
+      }
+
+      const { prices: stripePrices } = await stripeResponse.json()
+
+      const productsToCreate = databaseProducts.filter((dbProduct: CompanyProduct) => {
+        const isActive = dbProduct.is_active
+        const existsInStripe = stripePrices.some(
+          (price: StripeProduct) => price.product === dbProduct.stripe_product_id
+        )
+
+        return isActive && !existsInStripe
+      })
+
+      for (const product of productsToCreate) {
+        const response = await fetch('/api/stripe/prices/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: user.company_id,
+            name: product.name,
+            description: product.description,
+            type: product.type,
+            priceAmount: product.price_amount,
+            currency: product.currency,
+            metadata: product.metadata,
+          }),
+        })
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || 'Failed to create Stripe product')
+        }
+
+        const { stripe_price_id, stripe_product_id } = await response.json()
+
+        // Update database
+        const updateResult = await updateProductMutation({
+          variables: {
+            id: product.id,
+            set: {
+              stripe_price_id,
+              stripe_product_id,
+              updated_at: new Date().toISOString(),
+            },
+          },
+        })
+
+        if (!updateResult.data?.updatecompany_productsCollection?.records?.[0]) {
+          console.error('Failed to update product in database:', updateResult)
+          throw new Error('Failed to update product in database')
+        }
+      }
+
+      await refetch()
+      setSyncNeeded(false)
+      toast.success('Products synced to Stripe successfully')
+    } catch (error) {
+      console.error('[useCompanyProducts] Error syncing products:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sync products'
+      toast.error(errorMessage)
+      setError(errorMessage)
     }
   }
 
@@ -287,8 +362,9 @@ export function useCompanyProducts() {
     creating,
     error,
     refetch,
-    deleting,
-    deleteProduct,
     archiveProduct,
+    listProducts,
+    syncProducts,
+    syncNeeded,
   }
 }
