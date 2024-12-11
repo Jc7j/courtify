@@ -5,7 +5,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import cn from '@/lib/utils/cn'
 
-interface DialogProps extends DialogPrimitive.DialogProps {
+interface DialogProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> {
   loading?: boolean
 }
 

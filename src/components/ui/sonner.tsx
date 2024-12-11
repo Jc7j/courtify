@@ -1,5 +1,6 @@
 'use client'
 
+import { ReactNode } from 'react'
 import { useTheme } from 'next-themes'
 import { Toaster as Sonner, toast, ToasterProps as SonnerToasterProps } from 'sonner'
 import { CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react'
@@ -18,7 +19,7 @@ interface ExtendedToastOptions {
     info?: string
   }
   duration?: number
-  icon?: React.ReactNode
+  icon?: ReactNode
 }
 
 // Define our custom props

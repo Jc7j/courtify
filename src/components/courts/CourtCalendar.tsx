@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import type { DateSelectArg, EventClickArg } from '@fullcalendar/core'
+import { useRef, useState, useCallback } from 'react'
+import type { DateSelectArg, EventClickArg, DatesSetArg } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -21,21 +21,54 @@ interface CourtCalendarProps {
 export function CourtCalendar({ court }: CourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const isMobile = useIsMobile()
-
-  const [currentRange] = useState(() => ({
+  const [currentRange, setCurrentRange] = useState(() => ({
     start: dayjs().startOf('week').toISOString(),
     end: isMobile
       ? dayjs().startOf('day').add(3, 'days').endOf('day').toISOString()
       : dayjs().endOf('week').toISOString(),
   }))
 
-  const { availabilities, createAvailability } = useCourtAvailability({
+  const { availabilities, createAvailability, loading, error } = useCourtAvailability({
     courtNumber: court.court_number,
     startTime: currentRange.start,
     endTime: currentRange.end,
   })
+  // Handle calendar range changes
+  const handleDatesSet = useCallback((dateInfo: DatesSetArg) => {
+    setCurrentRange({
+      start: dateInfo.startStr,
+      end: dateInfo.endStr,
+    })
+  }, [])
 
   const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
+
+  // Add loading state handling
+  if (loading) {
+    return (
+      <div className="mt-8 bg-background border rounded-lg p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 bg-muted rounded w-full" />
+          <div className="grid grid-cols-7 gap-2">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="h-96 bg-muted rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Add error state handling
+  if (error) {
+    return (
+      <div className="mt-8 bg-background border rounded-lg p-6">
+        <div className="text-destructive">
+          Failed to load calendar data. Please try again later.
+        </div>
+      </div>
+    )
+  }
 
   async function handleSelect(selectInfo: DateSelectArg) {
     const selectedStart = dayjs(selectInfo.startStr)
@@ -76,6 +109,7 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
           ref={calendarRef}
           plugins={[timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
+          datesSet={handleDatesSet}
           duration={{ days: isMobile ? 4 : 7 }}
           firstDay={0}
           headerToolbar={{

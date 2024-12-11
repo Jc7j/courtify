@@ -3,7 +3,7 @@
 import { useState, use } from 'react'
 import { notFound } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
-import { Skeleton, Card } from '@/components/ui'
+import { Card } from '@/components/ui'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { GuestInfoForm, type GuestInfo } from '@/components/booking/GuestInfoForm'
 import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
@@ -42,18 +42,29 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   if (loading) {
     return (
-      <div className="flex min-h-screen">
-        <div className="hidden lg:flex flex-1 bg-secondary" />
-        <div className="w-full lg:w-1/2 p-8 space-y-4">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-12 w-[250px]" />
-          <Skeleton className="h-[400px] w-full" />
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="space-y-2 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">Loading company details...</p>
         </div>
       </div>
     )
   }
 
-  if (error || !company) {
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="max-w-md p-6 text-center space-y-2">
+          <p className="text-destructive font-medium">Unable to load company details</p>
+          <p className="text-sm text-muted-foreground">
+            The company you&apos;re looking for might not exist or is currently unavailable.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!company) {
     notFound()
   }
 

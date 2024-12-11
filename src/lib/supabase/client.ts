@@ -8,49 +8,35 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-{
-  /*
-  Uses the public anon key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
-  Meant for client-side operations
-  Has restricted permissions based on Row Level Security (RLS) policies
-  Safe to use in browser code
-  Used in components and hooks like useUser.ts
-*/
-}
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  db: {
-    schema: 'public',
-  },
-})
-
-{
-  /* 
-  Uses the service role key (SUPABASE_SERVICE_ROLE_KEY)
-  Strictly for server-side operations
-  Bypasses Row Level Security
-  Has full database access
-  Perfect for background jobs, webhooks, or API routes
-  Never exposed to the client
-*/
-}
-// Admin client with elevated privileges (only use server-side)
-export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient<Database>(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: true,
+      storageKey: 'courtify-auth',
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+    },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'courtify-web',
       },
-      db: {
-        schema: 'public',
-      },
-    })
-  : null
+    },
+  }
+)
+
+// Setup cross-tab session sync
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'courtify-auth') {
+      // Reload the page to sync auth state
+      window.location.reload()
+    }
+  })
+}

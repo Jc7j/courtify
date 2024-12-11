@@ -32,7 +32,7 @@ export function useCourt(courtNumber?: number): UseCourtReturn {
   } = useQuery(GET_COURT, {
     variables: {
       company_id: user?.company_id,
-      court_number: courtNumber,
+      court_number: courtNumber ? Number(courtNumber) : 0,
     },
     skip: !isAuthenticated || !user?.company_id || !courtNumber,
     fetchPolicy: 'network-only',

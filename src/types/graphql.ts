@@ -4,12 +4,21 @@ export interface Node {
   nodeId: string
 }
 
+export enum MemberRole {
+  Owner = 'owner',
+  Admin = 'admin',
+  Member = 'member',
+}
+
 export interface User {
   id: string
   email: string
   name: string
   company_id?: string | null
-  active: boolean
+  role: MemberRole
+  is_active: boolean
+  invited_by?: string | null
+  joined_at?: string
   email_verified_at?: string | null
   last_login_at?: string | null
   created_at: string
@@ -81,19 +90,49 @@ export interface Booking {
   customer_email: string
   customer_name: string
   customer_phone?: string | null
-  booking_status: BookingStatus
+  status: BookingStatus
   payment_status: PaymentStatus
-  stripe_customer_id?: string | null
   stripe_payment_intent_id?: string | null
-  stripe_session_id?: string | null
+  product_id?: string | null
   amount_total: number
   amount_paid?: number | null
   currency: string
-  booking_info?: Record<string, unknown> | null
-  notes?: string | null
+  metadata?: Record<string, unknown> | null
   created_at: string
   updated_at: string
-  cancelled_at?: string | null
+}
+
+export enum ProductType {
+  CourtRental = 'court_rental',
+  Equipment = 'equipment',
+  // Membership = 'membership',
+  // Class = 'class',
+  // Event = 'event',
+}
+
+export interface CompanyProduct {
+  id: string
+  company_id: string
+  name: string
+  description?: string | null
+  type: ProductType
+  price_amount: number
+  currency: string
+  stripe_price_id: string | null
+  stripe_product_id: string | null
+  metadata: Record<string, unknown>
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UserEdge {
+  node: User
+  __typename: 'UserEdge'
+}
+export interface UsersConnection {
+  edges: UserEdge[]
+  __typename: 'UsersConnection'
 }
 
 export interface CourtsEdge {
@@ -134,4 +173,14 @@ export interface BookingEdge {
 export interface BookingConnection {
   edges: BookingEdge[]
   __typename: 'BookingConnection'
+}
+
+export interface CompanyProductEdge {
+  node: CompanyProduct
+  __typename: 'CompanyProductEdge'
+}
+
+export interface CompanyProductConnection {
+  edges: CompanyProductEdge[]
+  __typename: 'CompanyProductConnection'
 }

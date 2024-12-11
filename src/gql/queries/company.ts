@@ -1,5 +1,26 @@
 import { gql } from '@apollo/client'
 
+export const COMPANY_BY_SLUG_FIELDS = gql`
+  fragment CompanyBySlugFields on companies {
+    id
+    name
+    slug
+  }
+`
+
+export const GET_COMPANY_BY_SLUG = gql`
+  ${COMPANY_BY_SLUG_FIELDS}
+  query GetCompanyBySlug($slug: String!) {
+    companiesCollection(filter: { slug: { eq: $slug } }, first: 1) {
+      edges {
+        node {
+          ...CompanyBySlugFields
+        }
+      }
+    }
+  }
+`
+
 export const COMPANY_FIELDS = gql`
   fragment CompanyFields on companies {
     id
@@ -8,21 +29,14 @@ export const COMPANY_FIELDS = gql`
     sports
     businessinfo
     slug
+    stripe_account_id
+    stripe_account_enabled
+    stripe_account_details
+    stripe_webhook_secret
+    stripe_payment_methods
+    stripe_currency
     created_at
     updated_at
-  }
-`
-
-export const GET_COMPANY_BY_SLUG = gql`
-  ${COMPANY_FIELDS}
-  query GetCompanyBySlug($slug: String!) {
-    companiesCollection(filter: { slug: { eq: $slug } }, first: 1) {
-      edges {
-        node {
-          ...CompanyFields
-        }
-      }
-    }
   }
 `
 

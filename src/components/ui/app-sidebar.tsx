@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, Home, ListChecks, Settings, Plus } from 'lucide-react'
+import { Calendar, Home, Plus } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -37,18 +37,6 @@ const items = [
     url: ROUTES.DASHBOARD.COURTS,
     icon: Calendar,
     exact: false,
-  },
-  {
-    title: 'Bookings',
-    url: ROUTES.DASHBOARD.BOOKINGS,
-    icon: ListChecks,
-    exact: true,
-  },
-  {
-    title: 'Settings',
-    url: ROUTES.DASHBOARD.SETTINGS,
-    icon: Settings,
-    exact: true,
   },
 ]
 
