@@ -95,10 +95,12 @@ export type Database = {
       }
       companies: {
         Row: {
+          address: string
           created_at: string
           id: string
           name: string
           slug: string
+          sports: string
           stripe_account_details: Json | null
           stripe_account_enabled: boolean | null
           stripe_account_id: string | null
@@ -108,10 +110,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address: string
           created_at?: string
           id?: string
           name: string
           slug: string
+          sports: string
           stripe_account_details?: Json | null
           stripe_account_enabled?: boolean | null
           stripe_account_id?: string | null
@@ -121,10 +125,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string
           created_at?: string
           id?: string
           name?: string
           slug?: string
+          sports?: string
           stripe_account_details?: Json | null
           stripe_account_enabled?: boolean | null
           stripe_account_id?: string | null
@@ -658,22 +664,6 @@ export type Database = {
           '': unknown
         }
         Returns: unknown
-      }
-      get_court_availabilities: {
-        Args: {
-          p_company_id: string
-          p_start_time: string
-          p_end_time: string
-        }
-        Returns: {
-          company_id: string
-          court_number: number
-          created_at: string
-          end_time: string
-          start_time: string
-          status: Database['public']['Enums']['availability_status']
-          updated_at: string
-        }[]
       }
     }
     Enums: {

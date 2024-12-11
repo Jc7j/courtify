@@ -5,7 +5,6 @@ CREATE TABLE companies (
     name TEXT NOT NULL,
     address TEXT NOT NULL,
     sports TEXT NOT NULL,
-    businessinfo TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
     
     stripe_account_id TEXT UNIQUE,

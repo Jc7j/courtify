@@ -17,7 +17,6 @@ const createCompanySchema = z.object({
     .max(50, 'Company name must be less than 50 characters'),
   sports: z.string(),
   address: z.string(),
-  businessinfo: z.string(),
 })
 
 type CreateCompanyFormData = z.infer<typeof createCompanySchema>
@@ -39,13 +38,12 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
       name: '',
       address: '',
       sports: 'volleyball',
-      businessinfo: 'businessinfo',
     },
   })
 
   async function onSubmit(data: CreateCompanyFormData) {
     try {
-      await createCompany(data.name.trim(), data.address, data.sports, data.businessinfo)
+      await createCompany(data.name.trim(), data.address, data.sports)
 
       const updatedUser = useUserStore.getState().user
       if (!updatedUser?.company_id) {
@@ -124,23 +122,6 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             aria-invalid={errors.address ? 'true' : 'false'}
           />
           {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
-        </div>
-        {/* Company info import from google maps api */}
-        <div className="space-y-2">
-          <div className="items-top flex space-x-2">
-            <Checkbox id="businessinfo" {...register('businessinfo')} />
-            <div className="grid gap-1.5 leading-none">
-              <label
-                htmlFor="businessinfo"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Would you like to import business information from google?
-              </label>
-              <p className="text-sm text-muted-foreground">
-                You agree to our Terms of Service and Privacy Policy.
-              </p>
-            </div>
-          </div>
         </div>
         {/* back and create buttons */}
         <div className="flex gap-3 pt-4">

@@ -17,12 +17,7 @@ interface UseCompanyReturn {
   error: Error | null
   creating: boolean
   updating: boolean
-  createCompany: (
-    name: string,
-    address: string,
-    sports: string,
-    businessinfo: string
-  ) => Promise<void>
+  createCompany: (name: string, address: string, sports: string) => Promise<void>
   updateCompany: (data: UpdateCompanyInput) => Promise<void>
 }
 interface UseCompanyProps {
@@ -77,12 +72,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
 
-  async function createCompany(
-    name: string,
-    address: string,
-    sports: string,
-    businessinfo: string
-  ) {
+  async function createCompany(name: string, address: string, sports: string) {
     try {
       // First ensure we have a valid session
       const {
@@ -109,7 +99,6 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
               name,
               address,
               sports,
-              businessinfo,
               slug: generateSlug(name),
               created_at: now,
               updated_at: now,

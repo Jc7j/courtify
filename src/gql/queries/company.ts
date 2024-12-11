@@ -29,7 +29,6 @@ export const COMPANY_FIELDS = gql`
     name
     address
     sports
-    businessinfo
     slug
     stripe_account_id
     stripe_account_enabled
