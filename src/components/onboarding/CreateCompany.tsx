@@ -8,8 +8,8 @@ import { useCompany } from '@/hooks/useCompany'
 import { useUserStore } from '@/stores/useUserStore'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Checkbox } from '@/components/ui/checkbox'
-
+import { GoogleMap, useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
+import { useRef } from 'react'
 const createCompanySchema = z.object({
   name: z
     .string()
@@ -27,7 +27,12 @@ interface CreateCompanyProps {
 
 export function CreateCompany({ onBack }: CreateCompanyProps) {
   const { createCompany, creating } = useCompany()
-
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: 'AIzaSyBUOAc3qcm3cYv0qUQKfZRcMMkvwFuJU0M',
+    libraries: ['places'],
+  })
+  const inputRef = useRef(null)
   const {
     register,
     handleSubmit,
@@ -64,6 +69,11 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
         error('Failed to create company')
       }
     }
+  }
+
+  const handleonPlacesChanged = () => {
+    const address = inputRef.current.getPlaces()
+    console.log('address:', address)
   }
 
   return (
@@ -113,14 +123,21 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
           <label htmlFor="address" className="text-sm font-medium">
             Address
           </label>
-          <Input
-            id="address"
-            placeholder="Enter Address"
-            className={errors.address ? 'border-destructive' : ''}
-            disabled={creating}
-            {...register('address')}
-            aria-invalid={errors.address ? 'true' : 'false'}
-          />
+          {isLoaded && (
+            <StandaloneSearchBox
+              onLoad={(ref) => (inputRef.current = ref)}
+              onPlacesChanged={handleonPlacesChanged}
+            >
+              <Input
+                id="address"
+                placeholder="Enter Address"
+                className={errors.address ? 'border-destructive' : ''}
+                disabled={creating}
+                {...register('address')}
+                aria-invalid={errors.address ? 'true' : 'false'}
+              />
+            </StandaloneSearchBox>
+          )}
           {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
         </div>
         {/* back and create buttons */}
