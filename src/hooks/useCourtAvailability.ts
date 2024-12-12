@@ -16,24 +16,11 @@ import type {
   CourtAvailability,
   CourtAvailabilityConnection,
   AvailabilityStatus,
+  Courts,
+  EnhancedAvailability,
 } from '@/types/graphql'
 import { useState } from 'react'
 import dayjs from 'dayjs'
-
-interface UseCourtAvailabilityProps {
-  courtNumber?: number
-  startTime?: string
-  endTime?: string
-}
-
-interface UseCourtAvailabilityReturn {
-  availabilities: CourtAvailability[]
-  loading: boolean
-  error: Error | null
-  createAvailability: (input: CreateAvailabilityInput) => Promise<CourtAvailability>
-  updateAvailability: (input: UpdateAvailabilityInput) => Promise<CourtAvailability>
-  deleteAvailability: (input: DeleteAvailabilityInput) => Promise<void>
-}
 
 interface CreateAvailabilityInput {
   courtNumber: number
@@ -70,12 +57,41 @@ interface CompanyAvailabilitiesData {
       }
     }>
   }
-  court_availabilitiesCollection: CourtAvailabilityConnection
+  court_availabilitiesCollection: {
+    edges: Array<{
+      node: {
+        nodeId: string
+        company_id: string
+        court_number: number
+        start_time: string
+        end_time: string
+        status: AvailabilityStatus
+        created_at: string
+        updated_at: string
+        booking?: {
+          edges: Array<{
+            node: {
+              id: string
+              customer_name: string
+              customer_email: string
+              customer_phone: string | null
+              status: string
+              payment_status: string
+              amount_total: number
+              amount_paid: number
+              currency: string
+              metadata: string
+            }
+          }>
+        }
+      }
+    }>
+  }
 }
 
 interface UseCompanyAvailabilitiesReturn {
-  courts: Array<{ court_number: number; name: string }>
-  availabilities: CourtAvailability[]
+  courts: Pick<Courts, 'court_number' | 'name'>[]
+  availabilities: EnhancedAvailability[]
   loading: boolean
   error: Error | null
 }
@@ -85,7 +101,7 @@ export function useCompanyAvailabilities(
   endTime?: string
 ): UseCompanyAvailabilitiesReturn {
   const { user, isAuthenticated, isLoading } = useUserStore()
-  const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
+  const [localAvailabilities, setLocalAvailabilities] = useState<EnhancedAvailability[]>([])
   const [courts, setCourts] = useState<Array<{ court_number: number; name: string }>>([])
 
   const queryOptions = {
@@ -98,16 +114,48 @@ export function useCompanyAvailabilities(
     fetchPolicy: 'network-only' as const,
   }
 
+  const transformBookingMetadata = (metadata: string): Record<string, any> => {
+    try {
+      return JSON.parse(metadata)
+    } catch (e) {
+      console.error('Failed to parse booking metadata:', e)
+      return {}
+    }
+  }
+
   const { loading: queryLoading, error: queryError } = useQuery<CompanyAvailabilitiesData>(
     GET_COMPANY_COURTS_AVAILABILITIES,
     {
       ...queryOptions,
       onCompleted: (data) => {
         const availabilities =
-          data?.court_availabilitiesCollection?.edges?.map(
-            (edge) => edge.node as CourtAvailability
-          ) || []
+          data?.court_availabilitiesCollection?.edges?.map((edge) => {
+            const availability = edge.node
+            const bookingEdge = availability.booking?.edges[0]
+
+            if (!bookingEdge) return { ...availability, booking: null }
+
+            return {
+              ...availability,
+              booking: {
+                ...bookingEdge.node,
+                metadata: transformBookingMetadata(bookingEdge.node.metadata),
+              },
+            }
+          }) || []
+
         const courts = data?.courtsCollection?.edges?.map((edge) => edge.node) || []
+
+        console.log(
+          'Processed availabilities:',
+          availabilities.map((a) => ({
+            court: a.court_number,
+            time: a.start_time,
+            status: a.status,
+            hasBooking: !!a.booking,
+            bookingDetails: a.booking,
+          }))
+        )
 
         setLocalAvailabilities(availabilities)
         setCourts(courts)
@@ -127,9 +175,66 @@ export function useCourtAvailability({
   courtNumber,
   startTime,
   endTime,
-}: UseCourtAvailabilityProps = {}): UseCourtAvailabilityReturn {
-  const { user, isAuthenticated, isLoading } = useUserStore()
+}: {
+  courtNumber?: number
+  startTime?: string
+  endTime?: string
+} = {}) {
+  const { user, isAuthenticated } = useUserStore()
   const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
+
+  const [createAvailabilityMutation] = useMutation(CREATE_COURT_AVAILABILITY, {
+    refetchQueries: ['GetCompanyAvailabilities'],
+    awaitRefetchQueries: true,
+  })
+
+  async function createAvailability(input: CreateAvailabilityInput): Promise<CourtAvailability> {
+    if (!isAuthenticated || !user?.company_id) {
+      throw new Error('Authentication required')
+    }
+
+    const startDateTime = dayjs(input.startTime)
+    const endDateTime = dayjs(input.endTime)
+    const currentTime = dayjs()
+
+    if (startDateTime.isBefore(currentTime.startOf('day'))) {
+      throw new Error('Cannot create availability for past dates')
+    }
+
+    if (endDateTime.isBefore(startDateTime)) {
+      throw new Error('End time must be after start time')
+    }
+
+    const timestamp = new Date().toISOString()
+
+    try {
+      const { data } = await createAvailabilityMutation({
+        variables: {
+          objects: [
+            {
+              company_id: user.company_id,
+              court_number: input.courtNumber,
+              start_time: input.startTime,
+              end_time: input.endTime,
+              status: input.status as AvailabilityStatus,
+              created_at: timestamp,
+              updated_at: timestamp,
+            },
+          ],
+        },
+      })
+
+      const createdAvailability = data?.insertIntocourt_availabilitiesCollection?.records?.[0]
+      if (!createdAvailability) {
+        throw new Error('Failed to create availability')
+      }
+
+      return createdAvailability
+    } catch (err) {
+      console.error('Failed to create availability:', err)
+      throw err instanceof Error ? err : new Error('Failed to create availability')
+    }
+  }
 
   const queryOptions = {
     variables: {
@@ -156,16 +261,6 @@ export function useCourtAvailability({
     }
   )
 
-  const [createAvailabilityMutation] = useMutation(CREATE_COURT_AVAILABILITY, {
-    refetchQueries: [
-      {
-        query: courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
-        variables: queryOptions.variables,
-      },
-    ],
-    awaitRefetchQueries: true,
-  })
-
   const [updateAvailabilityMutation] = useMutation(UPDATE_COURT_AVAILABILITY, {
     refetchQueries: [
       {
@@ -185,70 +280,6 @@ export function useCourtAvailability({
     ],
     awaitRefetchQueries: true,
   })
-
-  async function createAvailability(input: CreateAvailabilityInput): Promise<CourtAvailability> {
-    if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication required')
-    }
-
-    // Validate time constraints
-    const startDateTime = dayjs(input.startTime)
-    const endDateTime = dayjs(input.endTime)
-    const currentTime = dayjs()
-
-    // Allow creating availability if it's today or in the future
-    if (startDateTime.isBefore(currentTime.startOf('day'))) {
-      throw new Error('Cannot create availability for past dates')
-    }
-
-    // Check if the end time is before start time
-    if (endDateTime.isBefore(startDateTime)) {
-      throw new Error('End time must be after start time')
-    }
-
-    const timestamp = new Date().toISOString()
-    const newAvailability: CourtAvailability = {
-      nodeId: `temp-${Date.now()}`,
-      company_id: user.company_id,
-      court_number: input.courtNumber,
-      start_time: input.startTime,
-      end_time: input.endTime,
-      status: input.status as AvailabilityStatus.Available,
-      created_at: timestamp,
-      updated_at: timestamp,
-    }
-
-    // Optimistic update
-    setLocalAvailabilities((prev) => [...prev, newAvailability])
-
-    try {
-      const { data } = await createAvailabilityMutation({
-        variables: {
-          objects: [
-            {
-              company_id: user.company_id,
-              court_number: input.courtNumber,
-              start_time: input.startTime,
-              end_time: input.endTime,
-              status: input.status as AvailabilityStatus.Available,
-              created_at: timestamp,
-              updated_at: timestamp,
-            },
-          ],
-        },
-      })
-
-      const createdAvailability = data?.insertIntocourt_availabilitiesCollection?.records?.[0]
-      if (!createdAvailability) {
-        throw new Error('Failed to create availability')
-      }
-
-      return createdAvailability
-    } catch (err) {
-      setLocalAvailabilities((prev) => prev.filter((a) => a.nodeId !== newAvailability.nodeId))
-      throw err instanceof Error ? err : new Error('Failed to create availability')
-    }
-  }
 
   async function updateAvailability(input: UpdateAvailabilityInput): Promise<CourtAvailability> {
     if (!isAuthenticated || !user?.company_id) {
@@ -333,7 +364,7 @@ export function useCourtAvailability({
 
   return {
     availabilities: localAvailabilities,
-    loading: isLoading || queryLoading,
+    loading: queryLoading,
     error: queryError ? new Error(queryError.message) : null,
     createAvailability,
     updateAvailability,

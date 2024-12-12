@@ -35,10 +35,20 @@ export function CompanyCourtCalendar({
     endTime: selectedDate.endOf('day').toISOString(),
   })
 
+  const handleDatesSet = useCallback(
+    ({ start }: DatesSetArg) => {
+      const newDate = dayjs(start)
+      if (!newDate.isSame(selectedDate, 'day')) {
+        setSelectedDate(newDate)
+        onDateChange(start.toISOString(), dayjs(start).endOf('day').toISOString())
+      }
+    },
+    [selectedDate, onDateChange]
+  )
+
   const handleSelect = useCallback(
     async (selectInfo: DateSelectArg) => {
       const selectedStart = dayjs(selectInfo.startStr)
-      const now = dayjs()
       const resourceId = parseInt(selectInfo.resource?.id || '0', 10)
 
       if (!resourceId) {
@@ -46,7 +56,7 @@ export function CompanyCourtCalendar({
         return
       }
 
-      if (selectedStart.isBefore(now.startOf('day'))) {
+      if (selectedStart.isBefore(dayjs().startOf('day'))) {
         toast.error('Cannot create availability for past dates')
         return
       }
@@ -60,18 +70,44 @@ export function CompanyCourtCalendar({
         })
         toast.success('Availability created')
       } catch (error) {
+        console.error('Failed to create availability:', error)
         toast.error(error instanceof Error ? error.message : 'Failed to create availability')
       }
     },
     [createAvailability]
   )
 
-  if (loading) {
+  const handleEventClick = useCallback(
+    (clickInfo: EventClickArg) => {
+      const availability = availabilities.find(
+        (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
+      )
+      if (availability) setSelectedAvailability(availability)
+    },
+    [availabilities]
+  )
+
+  const getEventContent = useCallback((availability: CourtAvailability & { booking?: any }) => {
+    const isBooked = availability.status === AvailabilityStatus.Booked && availability.booking
+
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-[600px] w-full" />
+      <div className="p-1 text-xs">
+        {dayjs(availability.start_time).format('h:mm A')} -{' '}
+        {dayjs(availability.end_time).format('h:mm A')}
+        {isBooked ? (
+          <>
+            <div className="font-medium">{availability.booking.customer_name}</div>
+            <div className="opacity-75">{availability.booking.customer_email}</div>
+          </>
+        ) : (
+          availability.status
+        )}
       </div>
     )
+  }, [])
+
+  if (loading) {
+    return <Skeleton className="h-[600px] w-full" />
   }
 
   if (!courts.length) {
@@ -87,24 +123,6 @@ export function CompanyCourtCalendar({
     title: court.name || `Court ${court.court_number}`,
     courtNumber: court.court_number,
   }))
-
-  function handleDatesSet({ start, end }: DatesSetArg) {
-    const newDate = dayjs(start)
-    if (!newDate.isSame(selectedDate, 'day')) {
-      setSelectedDate(newDate)
-      onDateChange(start.toISOString(), end.toISOString())
-    }
-  }
-
-  function handleEventClick(clickInfo: EventClickArg) {
-    const availability = availabilities.find(
-      (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
-    )
-
-    if (availability) {
-      setSelectedAvailability(availability)
-    }
-  }
 
   return (
     <div className="bg-background border rounded-lg p-2 sm:p-6 overflow-hidden">
@@ -140,6 +158,7 @@ export function CompanyCourtCalendar({
           background-color: hsl(var(--border));
         }
       `}</style>
+
       <FullCalendar
         ref={calendarRef}
         plugins={[resourceTimeGridPlugin, interactionPlugin]}
@@ -179,6 +198,7 @@ export function CompanyCourtCalendar({
           backgroundColor: getAvailabilityColor(availability.status),
           borderColor: 'transparent',
           textColor: 'hsl(var(--background))',
+          extendedProps: { availability },
         }))}
         select={handleSelect}
         slotLabelClassNames="text-muted-foreground text-xs sm:text-sm"
@@ -187,7 +207,9 @@ export function CompanyCourtCalendar({
         nowIndicatorClassNames="bg-primary"
         slotLaneClassNames="border-border"
         eventClick={handleEventClick}
+        eventContent={(arg) => getEventContent(arg.event.extendedProps.availability)}
       />
+
       {selectedAvailability && (
         <CourtAvailabilityDialog
           availability={selectedAvailability}

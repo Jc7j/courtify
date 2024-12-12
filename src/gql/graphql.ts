@@ -547,7 +547,6 @@ export enum Availability_Status {
   Available = 'available',
   Booked = 'booked',
   Held = 'held',
-  Past = 'past'
 }
 
 /** Boolean expression comparing fields on type "availability_status" */

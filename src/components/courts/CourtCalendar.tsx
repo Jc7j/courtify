@@ -144,10 +144,7 @@ export function CourtCalendar({ court }: CourtCalendarProps) {
             backgroundColor: getAvailabilityColor(availability.status),
             borderColor: 'transparent',
             textColor: 'hsl(var(--background))',
-            classNames: [
-              'cursor-pointer hover:opacity-90 transition-opacity',
-              availability.status === AvailabilityStatus.Past ? 'opacity-50' : '',
-            ],
+            classNames: ['cursor-pointer hover:opacity-90 transition-opacity'],
           }))}
           select={handleSelect}
           eventClick={handleEventClick}

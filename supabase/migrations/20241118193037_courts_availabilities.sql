@@ -1,4 +1,4 @@
-CREATE TYPE availability_status AS ENUM ('available', 'held', 'booked', 'past');
+CREATE TYPE availability_status AS ENUM ('available', 'held', 'booked');
 
 CREATE TABLE court_availabilities (
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,

@@ -56,14 +56,17 @@ export interface CourtAvailability {
   status: AvailabilityStatus
   created_at: string
   updated_at: string
+  bookings?: {
+    edges: Array<{
+      node: Booking
+    }>
+  }
 }
-// @TODO possibly remove 'past' status. We'll have ui to show its past by comparing to current date. This removes the functionality to handle updating to past availability.
 
 export enum AvailabilityStatus {
   Available = 'available',
   Held = 'held',
   Booked = 'booked',
-  Past = 'past',
 }
 
 export enum BookingStatus {
@@ -187,4 +190,12 @@ export interface CompanyProductEdge {
 export interface CompanyProductConnection {
   edges: CompanyProductEdge[]
   __typename: 'CompanyProductConnection'
+}
+
+export interface EnhancedBooking extends Omit<Booking, 'metadata'> {
+  metadata: Record<string, any>
+}
+
+export interface EnhancedAvailability extends CourtAvailability {
+  booking?: EnhancedBooking | null
 }

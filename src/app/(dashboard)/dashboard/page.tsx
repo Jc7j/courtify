@@ -31,7 +31,7 @@ function DashboardContent({
     availabilities,
     loading: availabilitiesLoading,
   } = useCompanyAvailabilities(selectedDate.start, selectedDate.end)
-
+  console.log('availabilities', availabilities)
   const handleDateChange = (start: string, end: string) => {
     setSelectedDate({ start, end })
   }

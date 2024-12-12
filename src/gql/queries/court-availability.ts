@@ -10,7 +10,6 @@ export const COURT_AVAILABILITY_FIELDS = gql`
 `
 
 export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
-  ${COURT_AVAILABILITY_FIELDS}
   query GetCompanyAvailabilities($company_id: UUID!, $start_time: Datetime!, $end_time: Datetime!) {
     courtsCollection(
       filter: { company_id: { eq: $company_id } }
@@ -23,6 +22,7 @@ export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
         }
       }
     }
+
     court_availabilitiesCollection(
       filter: {
         company_id: { eq: $company_id }
@@ -32,7 +32,30 @@ export const GET_COMPANY_COURTS_AVAILABILITIES = gql`
     ) {
       edges {
         node {
-          ...CourtAvailabilityFields
+          nodeId
+          company_id
+          court_number
+          start_time
+          end_time
+          status
+          created_at
+          updated_at
+          booking: bookingsCollection(first: 1) {
+            edges {
+              node {
+                id
+                customer_name
+                customer_email
+                customer_phone
+                status
+                payment_status
+                amount_total
+                amount_paid
+                currency
+                metadata
+              }
+            }
+          }
         }
       }
     }

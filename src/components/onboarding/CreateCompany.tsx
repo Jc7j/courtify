@@ -8,7 +8,7 @@ import { useCompany } from '@/hooks/useCompany'
 import { useUserStore } from '@/stores/useUserStore'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { GoogleMap, useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
+import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
 import { useRef } from 'react'
 const createCompanySchema = z.object({
   name: z
@@ -29,7 +29,7 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
   const { createCompany, creating } = useCompany()
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.GOOGLE_MAP_API_KEY,
+    googleMapsApiKey: process.env.GOOGLE_MAP_API_KEY!,
     libraries: ['places'],
   })
   const inputRef = useRef(null)

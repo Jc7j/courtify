@@ -47,7 +47,7 @@ export async function POST(req: Request) {
             external_account_collection: true,
           },
         },
-        payments: {
+        payment_details: {
           enabled: true,
           features: {
             refund_management: true,

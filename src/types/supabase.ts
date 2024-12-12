@@ -667,7 +667,7 @@ export type Database = {
       }
     }
     Enums: {
-      availability_status: 'available' | 'held' | 'booked' | 'past'
+      availability_status: 'available' | 'held' | 'booked'
       booking_status: 'confirmed' | 'cancelled' | 'pending'
       member_role: 'owner' | 'admin' | 'member'
       payment_status: 'paid' | 'refunded' | 'failed' | 'processing' | 'pending'

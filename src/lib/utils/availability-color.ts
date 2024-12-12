@@ -2,11 +2,10 @@ import { AvailabilityStatus } from '@/types/graphql'
 
 export function getAvailabilityColor(status: AvailabilityStatus): string {
   const colors = {
-    [AvailabilityStatus.Available]: '#22c55e', // Green from design system
-    [AvailabilityStatus.Booked]: '#ef4444', // Red from design system
-    [AvailabilityStatus.Past]: '#6b7280', // Gray from design system
-    [AvailabilityStatus.Held]: '#f59e0b', // Yellow from design system
+    [AvailabilityStatus.Available]: '#22c55e', // Softer primary color
+    [AvailabilityStatus.Booked]: 'hsl(var(--primary) / 0.8)', // Muted dark color
+    [AvailabilityStatus.Held]: '#f59e0b', // Keep yellow for held status
   }
 
-  return colors[status] || '#6b7280'
+  return colors[status] || 'hsl(var(--muted))'
 }

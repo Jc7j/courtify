@@ -24,7 +24,7 @@ export const GET_COMPLETED_BOOKINGS = gql`
   ${BOOKING_FIELDS}
   query GetCompletedBookings($company_id: UUID!) {
     bookingsCollection(
-      filter: { company_id: { eq: $company_id }, booking_status: { eq: "completed" } }
+      filter: { company_id: { eq: $company_id }, booking_status: { eq: "confirmed" } }
       orderBy: [{ start_time: DescNullsLast }]
     ) {
       edges {
