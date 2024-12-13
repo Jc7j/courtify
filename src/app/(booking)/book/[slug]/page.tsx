@@ -66,7 +66,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     dayjs(weekStartDate).startOf('day').toISOString(),
     dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
   )
-
   const loading = companyLoading || availabilitiesLoading || isLoading
   const error = companyError || availabilitiesError
 

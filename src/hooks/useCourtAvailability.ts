@@ -193,10 +193,20 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
+    // Convert to local time for consistent display
     const startDateTime = dayjs(input.startTime)
     const endDateTime = dayjs(input.endTime)
     const currentTime = dayjs()
 
+    console.log('Creating availability:', {
+      inputStart: input.startTime,
+      inputEnd: input.endTime,
+      localStart: startDateTime.format(),
+      localEnd: endDateTime.format(),
+      currentTime: currentTime.format(),
+    })
+
+    // Validation using local time
     if (startDateTime.isBefore(currentTime.startOf('day'))) {
       throw new Error('Cannot create availability for past dates')
     }
@@ -214,8 +224,8 @@ export function useCourtAvailability({
             {
               company_id: user.company_id,
               court_number: input.courtNumber,
-              start_time: input.startTime,
-              end_time: input.endTime,
+              start_time: startDateTime.format(), // Will be stored as TIMESTAMPTZ
+              end_time: endDateTime.format(),
               status: input.status as AvailabilityStatus,
               created_at: timestamp,
               updated_at: timestamp,

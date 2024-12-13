@@ -73,5 +73,5 @@ CREATE POLICY "Public can view available courts"
   ON court_availabilities FOR SELECT
   USING (
     status = 'available' AND
-    end_time > timezone('UTC', now())
+    end_time > CURRENT_TIMESTAMP
   );

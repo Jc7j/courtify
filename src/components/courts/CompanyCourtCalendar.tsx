@@ -5,17 +5,24 @@ import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import dayjs from 'dayjs'
-import { Skeleton } from '@/components/ui'
+import { Skeleton, Button } from '@/components/ui'
 import type { DatesSetArg, EventClickArg, DateSelectArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
-import { CourtAvailability, Courts, AvailabilityStatus } from '@/types/graphql'
+import {
+  CourtAvailability,
+  Courts,
+  AvailabilityStatus,
+  EnhancedAvailability,
+} from '@/types/graphql'
 import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
 import { toast } from 'sonner'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
+import { Expand, Shrink, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
+import { DatePicker } from '@/components/ui/date-picker'
 
 interface CompanyCourtCalendarProps {
   courts: Courts[]
-  availabilities: CourtAvailability[]
+  availabilities: EnhancedAvailability[]
   loading: boolean
   onDateChange: (startDate: string, endDate: string) => void
 }
@@ -28,7 +35,10 @@ export function CompanyCourtCalendar({
 }: CompanyCourtCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const [selectedDate, setSelectedDate] = useState(dayjs())
-  const [selectedAvailability, setSelectedAvailability] = useState<CourtAvailability | null>(null)
+  const [selectedAvailability, setSelectedAvailability] = useState<EnhancedAvailability | null>(
+    null
+  )
+  const [isFullHeight, setIsFullHeight] = useState(false)
 
   const { createAvailability } = useCourtAvailability({
     startTime: selectedDate.startOf('day').toISOString(),
@@ -61,6 +71,19 @@ export function CompanyCourtCalendar({
         return
       }
 
+      const calendarApi = selectInfo.view.calendar
+      calendarApi.unselect()
+
+      calendarApi.addEvent({
+        id: 'temp',
+        resourceId: resourceId.toString().padStart(2, '0'),
+        title: 'Creating...',
+        start: selectInfo.startStr,
+        end: selectInfo.endStr,
+        backgroundColor: getAvailabilityColor(AvailabilityStatus.Available),
+        classNames: ['opacity-50'],
+      })
+
       try {
         await createAvailability({
           courtNumber: resourceId,
@@ -72,6 +95,7 @@ export function CompanyCourtCalendar({
       } catch (error) {
         console.error('Failed to create availability:', error)
         toast.error(error instanceof Error ? error.message : 'Failed to create availability')
+        calendarApi.getEventById('temp')?.remove()
       }
     },
     [createAvailability]
@@ -87,25 +111,25 @@ export function CompanyCourtCalendar({
     [availabilities]
   )
 
-  const getEventContent = useCallback((availability: CourtAvailability & { booking?: any }) => {
-    const isBooked = availability.status === AvailabilityStatus.Booked && availability.booking
+  // const getEventContent = useCallback((availability: CourtAvailability & { booking?: any }) => {
+  //   const isBooked = availability.status === AvailabilityStatus.Booked && availability.booking
 
-    return (
-      <div className="p-1 text-xs">
-        {dayjs(availability.start_time).format('h:mm A')} -{' '}
-        {dayjs(availability.end_time).format('h:mm A')}
-        {isBooked ? (
-          <>
-            <div className="font-medium">{availability.booking.customer_name}</div>
-            <div className="opacity-75">{availability.booking.customer_email}</div>
-          </>
-        ) : (
-          availability.status
-        )}
-      </div>
-    )
-  }, [])
-
+  //   return (
+  //     <div className="p-1 text-xs">
+  //       {dayjs(availability.start_time).format('h:mm A')} -{' '}
+  //       {dayjs(availability.end_time).format('h:mm A')}
+  //       {isBooked ? (
+  //         <>
+  //           <div className="font-medium">{availability.booking.customer_name}</div>
+  //           <div className="opacity-75">{availability.booking.customer_email}</div>
+  //         </>
+  //       ) : (
+  //         availability.status
+  //       )}
+  //     </div>
+  //   )
+  // }, [])
+  console.log('availabilities', availabilities)
   if (loading) {
     return <Skeleton className="h-[600px] w-full" />
   }
@@ -126,38 +150,82 @@ export function CompanyCourtCalendar({
 
   return (
     <div className="bg-background border rounded-lg p-2 sm:p-6 overflow-hidden">
-      <style jsx global>{`
-        .fc .fc-toolbar {
-          gap: 1rem;
-          padding: 0.5rem;
-        }
-        .fc .fc-toolbar-title {
-          font-size: 1rem;
-          line-height: 1.5rem;
-          font-weight: 500;
-        }
-        .fc-timegrid-axis-cushion {
-          max-width: 60px;
-        }
-        .fc-col-header-cell-cushion {
-          font-weight: 500;
-          font-size: 0.875rem;
-          padding: 1rem 0.5rem;
-          text-align: center;
-          width: 100%;
-          display: block;
-        }
-        .fc .fc-timegrid-cols {
-          width: 100% !important;
-        }
-        .fc .fc-timegrid-col {
-          min-width: 0 !important;
-        }
-        .fc-resource-timeline-divider {
-          width: 1px !important;
-          background-color: hsl(var(--border));
-        }
-      `}</style>
+      <div className="flex items-center justify-between mb-4">
+        <div className="w-[200px]">{/* Spacer div */}</div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-background/50 ">
+            <Button
+              variant="outline-primary"
+              size="icon"
+              onClick={() => {
+                const newDate = selectedDate.subtract(1, 'day')
+                setSelectedDate(newDate)
+                onDateChange(
+                  newDate.startOf('day').toISOString(),
+                  newDate.endOf('day').toISOString()
+                )
+                calendarRef.current?.getApi().prev()
+              }}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+
+            <DatePicker
+              date={selectedDate.toDate()}
+              onSelect={(date) => {
+                const newDate = dayjs(date)
+                setSelectedDate(newDate)
+                onDateChange(
+                  newDate.startOf('day').toISOString(),
+                  newDate.endOf('day').toISOString()
+                )
+                calendarRef.current?.getApi().gotoDate(date)
+              }}
+              buttonClassName="w-[280px] text-lg font-medium text-primary items-center justify-center"
+              variant="ghost"
+              leftIcon={<CalendarIcon className="h-4 w-4" />}
+            />
+
+            <Button
+              variant="outline-primary"
+              size="icon"
+              onClick={() => {
+                const newDate = selectedDate.add(1, 'day')
+                setSelectedDate(newDate)
+                onDateChange(
+                  newDate.startOf('day').toISOString(),
+                  newDate.endOf('day').toISOString()
+                )
+                calendarRef.current?.getApi().next()
+              }}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="w-[200px] flex justify-end">
+          <Button
+            size="sm"
+            variant="outline-primary"
+            onClick={() => setIsFullHeight(!isFullHeight)}
+            className="gap-2 hover:bg-background/80"
+          >
+            {isFullHeight ? (
+              <>
+                <Shrink className="h-4 w-4" />
+                Compact View
+              </>
+            ) : (
+              <>
+                <Expand className="h-4 w-4" />
+                Full View
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
 
       <FullCalendar
         ref={calendarRef}
@@ -166,33 +234,30 @@ export function CompanyCourtCalendar({
         initialDate={selectedDate.toDate()}
         resources={resources}
         headerToolbar={{
-          left: 'prev,next',
-          center: 'title',
-          right: 'today',
+          left: '',
+          center: '',
+          right: '',
         }}
-        titleFormat={() => selectedDate.format('dddd, MMMM D, YYYY')}
-        datesSet={handleDatesSet}
-        slotMinTime="06:00:00"
-        slotMaxTime="23:00:00"
+        titleFormat={() => selectedDate.format('dddd - MMM D, YYYY')}
+        slotLabelClassNames="text-muted-foreground text-3xl sm:text-sm"
+        resourceLabelClassNames="text-muted-foreground text-xs sm:text-sm font-medium"
+        datesSet={handleDatesSet} // prev and next calendar dates
+        slotMinTime="00:00:00"
+        slotMaxTime="24:00:00"
         allDaySlot={false}
-        height="auto"
-        expandRows
-        stickyHeaderDates
+        height={isFullHeight ? 'auto' : '1000px'}
         nowIndicator
         selectable
         selectMirror
-        selectConstraint={{
-          start: dayjs().startOf('day').toISOString(),
-          end: dayjs().add(6, 'months').toISOString(),
-        }}
-        selectOverlap={false}
-        slotDuration="00:30:00"
+        slotDuration="00:15:00"
         timeZone="local"
         resourceOrder="id"
         events={availabilities.map((availability) => ({
           id: `${availability.court_number}-${availability.start_time}`,
           resourceId: availability.court_number.toString().padStart(2, '0'),
-          title: availability.status,
+          title: availability.booking
+            ? `${availability.booking.customer_name} • ${availability.booking.metadata?.customer_preferences?.net_height || 'No height'}`
+            : '',
           start: availability.start_time,
           end: availability.end_time,
           backgroundColor: getAvailabilityColor(availability.status),
@@ -200,14 +265,16 @@ export function CompanyCourtCalendar({
           textColor: 'hsl(var(--background))',
           extendedProps: { availability },
         }))}
-        select={handleSelect}
-        slotLabelClassNames="text-muted-foreground text-xs sm:text-sm"
-        resourceLabelClassNames="text-muted-foreground text-xs sm:text-sm font-medium"
-        allDayClassNames="hidden"
-        nowIndicatorClassNames="bg-primary"
-        slotLaneClassNames="border-border"
+        // eventContent={(arg) => getEventContent(arg.event.extendedProps.availability)}
+        select={handleSelect} //
         eventClick={handleEventClick}
-        eventContent={(arg) => getEventContent(arg.event.extendedProps.availability)}
+        snapDuration="00:30:00"
+        editable={true} // events can be dragged and resized for updates
+        slotEventOverlap={false}
+        eventClassNames={(arg) => [
+          'transition-opacity duration-200',
+          arg.event.id === 'temp' ? 'opacity-50' : 'opacity-100',
+        ]}
       />
 
       {selectedAvailability && (

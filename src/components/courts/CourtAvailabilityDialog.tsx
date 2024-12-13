@@ -252,12 +252,12 @@ export function CourtAvailabilityDialog({
                   <InfoRow
                     icon={Clock}
                     label="Duration"
-                    value={`${availability.booking.metadata?.bookingDuration}`}
+                    value={`${availability.booking.metadata?.court_details?.duration_hours} hours`}
                   />
                   <InfoRow
                     icon={User}
                     label="Net Height"
-                    value={availability.booking.metadata?.netHeight}
+                    value={availability.booking.metadata?.customer_preferences?.net_height}
                   />
                 </Section>
 

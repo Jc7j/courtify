@@ -4,13 +4,8 @@ import { CourtAvailability } from '@/types/graphql'
 import { Clock } from 'lucide-react'
 import cn from '@/lib/utils/cn'
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
 import { memo, useMemo } from 'react'
 import { useGuestStore } from '@/stores/useGuestStore'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
 
 interface AvailabilitySlotProps {
   startTime: string
@@ -41,8 +36,7 @@ const AvailabilitySlot = memo(function AvailabilitySlot({
           <div className="flex items-center gap-2">
             <Clock className={cn('h-4 w-4', selected ? 'text-primary' : 'text-muted-foreground')} />
             <span className={cn('font-medium', selected ? 'text-primary' : 'text-foreground')}>
-              {dayjs(startTime).utc().local().format('h:mm A')} -{' '}
-              {dayjs(endTime).utc().local().format('h:mm A')}
+              {dayjs(startTime).format('h:mm A')} - {dayjs(endTime).format('h:mm A')}
             </span>
           </div>
           <span className="text-sm text-muted-foreground">
@@ -72,14 +66,14 @@ function CourtAvailabilityListComponent({
     : undefined
 
   const { morningSlots, afternoonSlots } = useMemo(() => {
-    const now = dayjs().utc()
-    const selectedDateUtc = dayjs(selectedDate).utc().startOf('day')
+    const now = dayjs()
+    const selectedDateLocal = dayjs(selectedDate).startOf('day')
 
     const filteredAvailabilities = availabilities.filter((availability) => {
-      const availabilityStart = dayjs(availability.start_time).utc()
+      const availabilityStart = dayjs(availability.start_time)
       return (
         availability.status === 'available' &&
-        availabilityStart.isSame(selectedDateUtc, 'day') &&
+        availabilityStart.isSame(selectedDateLocal, 'day') &&
         availabilityStart.isAfter(now)
       )
     })
@@ -115,12 +109,8 @@ function CourtAvailabilityListComponent({
     )
 
     return {
-      morningSlots: sortedSlots.filter(
-        ([, slot]) => dayjs(slot.startTime).utc().local().hour() < 12
-      ),
-      afternoonSlots: sortedSlots.filter(
-        ([, slot]) => dayjs(slot.startTime).utc().local().hour() >= 12
-      ),
+      morningSlots: sortedSlots.filter(([, slot]) => dayjs(slot.startTime).hour() < 12),
+      afternoonSlots: sortedSlots.filter(([, slot]) => dayjs(slot.startTime).hour() >= 12),
     }
   }, [availabilities, selectedDate])
 
@@ -163,7 +153,7 @@ function CourtAvailabilityListComponent({
   }
 
   if (morningSlots.length === 0 && afternoonSlots.length === 0) {
-    const isToday = dayjs(selectedDate).utc().isSame(dayjs().utc(), 'day')
+    const isToday = dayjs(selectedDate).isSame(dayjs().startOf('day'), 'day')
     const message = isToday
       ? 'No more available times today'
       : `No available times for ${dayjs(selectedDate).format('MMMM D, YYYY')}`

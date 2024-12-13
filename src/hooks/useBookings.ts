@@ -150,12 +150,14 @@ export function useBookings(): UseBookingsReturn {
                 net_height: state.guestInfo.net_height,
               },
               products: {
-                court_product: state.guestInfo.selectedCourtProduct,
+                court_rental: state.guestInfo.selectedCourtProduct,
                 equipment: state.guestInfo.selectedEquipment,
               },
               booking_flow: {
                 created_from: 'guest_checkout',
                 created_at: new Date().toISOString(),
+                payment_intent_id: state.paymentIntent.paymentIntentId,
+                booking_status: 'initialized',
               },
             }),
             created_at: new Date().toISOString(),
@@ -168,7 +170,10 @@ export function useBookings(): UseBookingsReturn {
         throw new Error('Failed to create booking record')
       }
 
-      // 2. Update court availability to booked
+      // 2. Wait a moment to ensure booking is created
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // 3. Update court availability to booked
       await updateCourtAvailability({
         variables: {
           company_id: companyId,
