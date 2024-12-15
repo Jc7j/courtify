@@ -129,7 +129,6 @@ export function CompanyCourtCalendar({
   //     </div>
   //   )
   // }, [])
-  console.log('availabilities', availabilities)
   if (loading) {
     return <Skeleton className="h-[600px] w-full" />
   }

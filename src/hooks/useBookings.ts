@@ -4,23 +4,28 @@ import { useQuery, useMutation } from '@apollo/client'
 import { GET_COMPLETED_BOOKINGS } from '@/gql/queries/booking'
 import { UPDATE_COURT_AVAILABILITY } from '@/gql/mutations/court-availability'
 import { useUserStore } from '@/stores/useUserStore'
-import type { Booking } from '@/types/graphql'
-import { GuestInfo } from '@/components/booking/GuestInfoForm'
+import type { Booking, CompanyProduct } from '@/types/graphql'
 import { AvailabilityStatus, BookingStatus, PaymentStatus } from '@/types/graphql'
 import { CREATE_BOOKING } from '@/gql/mutations/booking'
 
 import { useGuestStore } from '@/stores/useGuestStore'
-import dayjs from 'dayjs'
 
-interface CreateBookingInput {
+type ProductInfo = Pick<CompanyProduct, 'id' | 'name' | 'price_amount' | 'type'>
+
+export interface CreatePaymentIntentInput {
   companyId: string
   courtNumber: number
   startTime: string
   endTime: string
-  guestInfo: GuestInfo
+  guestInfo: {
+    name: string
+    email: string
+    phone: string
+    net_height: string
+  }
   selectedProducts: {
-    courtProductId: string
-    equipmentProductIds: string[]
+    courtProduct: ProductInfo
+    equipmentProducts: ProductInfo[]
   }
 }
 
@@ -29,7 +34,7 @@ interface UseBookingsReturn {
   loading: boolean
   error: Error | null
   refetch: () => Promise<void>
-  createPaymentIntent: (input: CreateBookingInput) => Promise<{
+  createPaymentIntent: (input: CreatePaymentIntentInput) => Promise<{
     clientSecret: string
     paymentIntentId: string
     amount: number
@@ -57,25 +62,8 @@ export function useBookings(): UseBookingsReturn {
   const completedBookings =
     data?.bookingsCollection?.edges?.map((edge: { node: Booking }) => edge.node) || []
 
-  async function createPaymentIntent(input: CreateBookingInput) {
+  async function createPaymentIntent(input: CreatePaymentIntentInput) {
     try {
-      const { errors: availabilityError } = await updateCourtAvailability({
-        variables: {
-          company_id: input.companyId,
-          court_number: input.courtNumber,
-          start_time: input.startTime,
-          end_time: input.endTime,
-          set: {
-            status: AvailabilityStatus.Held,
-          },
-        },
-      })
-
-      if (availabilityError) {
-        console.error('❌ Court availability update failed:', availabilityError)
-        throw new Error('Court is no longer available')
-      }
-
       const response = await fetch('/api/stripe/payment/create', {
         method: 'POST',
         headers: {
@@ -85,33 +73,14 @@ export function useBookings(): UseBookingsReturn {
       })
 
       if (!response.ok) {
-        console.error('❌ Payment intent creation failed:', response.status)
-
-        await updateCourtAvailability({
-          variables: {
-            company_id: input.companyId,
-            court_number: input.courtNumber,
-            start_time: input.startTime,
-            end_time: input.endTime,
-            set: {
-              status: AvailabilityStatus.Available,
-            },
-          },
-        })
-
         const error = await response.json()
-        throw new Error(error.message || 'Failed to create payment intent')
+        throw new Error(error.error || 'Failed to create payment intent')
       }
 
-      const data = await response.json()
-      return {
-        clientSecret: data.clientSecret,
-        paymentIntentId: data.paymentIntentId,
-        amount: data.amount,
-      }
+      return response.json()
     } catch (err) {
-      console.error('❌ Error in createPaymentIntent:', err)
-      throw err instanceof Error ? err : new Error('Failed to create booking')
+      console.error('Failed to create payment intent:', err)
+      throw err
     }
   }
 
@@ -137,28 +106,10 @@ export function useBookings(): UseBookingsReturn {
             stripe_payment_intent_id: state.paymentIntent.paymentIntentId,
             amount_total: state.paymentIntent.amount,
             currency: 'usd',
+            // Only include minimal initial metadata
             metadata: JSON.stringify({
-              court_details: {
-                end_time: state.selectedAvailability.end_time,
-                duration_hours: dayjs(state.selectedAvailability.end_time).diff(
-                  dayjs(state.selectedAvailability.start_time),
-                  'hour',
-                  true
-                ),
-              },
-              customer_preferences: {
-                net_height: state.guestInfo.net_height,
-              },
-              products: {
-                court_rental: state.guestInfo.selectedCourtProduct,
-                equipment: state.guestInfo.selectedEquipment,
-              },
-              booking_flow: {
-                created_from: 'guest_checkout',
-                created_at: new Date().toISOString(),
-                payment_intent_id: state.paymentIntent.paymentIntentId,
-                booking_status: 'initialized',
-              },
+              initialized_at: new Date().toISOString(),
+              status: 'pending_payment',
             }),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -170,10 +121,7 @@ export function useBookings(): UseBookingsReturn {
         throw new Error('Failed to create booking record')
       }
 
-      // 2. Wait a moment to ensure booking is created
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // 3. Update court availability to booked
+      // 2. Update court availability to booked
       await updateCourtAvailability({
         variables: {
           company_id: companyId,
@@ -185,23 +133,8 @@ export function useBookings(): UseBookingsReturn {
 
       return bookingData.insertIntobookingsCollection.records[0]
     } catch (err) {
-      console.error('❌ Error in confirmPaymentIntentAndBook:', err)
-
-      // Revert court availability if booking fails
-      try {
-        await updateCourtAvailability({
-          variables: {
-            company_id: companyId,
-            court_number: state.selectedAvailability.court_number,
-            start_time: state.selectedAvailability.start_time,
-            set: { status: AvailabilityStatus.Available },
-          },
-        })
-      } catch (revertError) {
-        console.error('Failed to revert court availability:', revertError)
-      }
-
-      throw err instanceof Error ? err : new Error('Failed to confirm payment intent and book')
+      console.error('Failed to create booking:', err)
+      throw err
     }
   }
 

@@ -146,17 +146,6 @@ export function useCompanyAvailabilities(
 
         const courts = data?.courtsCollection?.edges?.map((edge) => edge.node) || []
 
-        console.log(
-          'Processed availabilities:',
-          availabilities.map((a) => ({
-            court: a.court_number,
-            time: a.start_time,
-            status: a.status,
-            hasBooking: !!a.booking,
-            bookingDetails: a.booking,
-          }))
-        )
-
         setLocalAvailabilities(availabilities)
         setCourts(courts)
       },
@@ -193,20 +182,10 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
-    // Convert to local time for consistent display
     const startDateTime = dayjs(input.startTime)
     const endDateTime = dayjs(input.endTime)
     const currentTime = dayjs()
 
-    console.log('Creating availability:', {
-      inputStart: input.startTime,
-      inputEnd: input.endTime,
-      localStart: startDateTime.format(),
-      localEnd: endDateTime.format(),
-      currentTime: currentTime.format(),
-    })
-
-    // Validation using local time
     if (startDateTime.isBefore(currentTime.startOf('day'))) {
       throw new Error('Cannot create availability for past dates')
     }

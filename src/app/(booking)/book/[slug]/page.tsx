@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, use, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, use } from 'react'
 import { notFound, useRouter } from 'next/navigation'
 import { useCompany } from '@/hooks/useCompany'
 import { BookingForm } from '@/components/booking/BookingForm'
@@ -15,7 +15,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
 import { useBookings } from '@/hooks/useBookings'
 import { GuestCheckoutForm } from '@/components/booking/GuestCheckoutForm'
-import { CompanyProduct, AvailabilityStatus } from '@/types/graphql'
+import { AvailabilityStatus } from '@/types/graphql'
 
 function getStripePromise(accountId: string) {
   return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
@@ -55,7 +55,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
   const formRef = useRef<{ submit: () => void }>(null)
-  const [amount, setAmount] = useState<number>(0)
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null)
 
   const {
@@ -83,7 +82,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   }
 
   async function handleGuestInfoSubmit(data: GuestInfo) {
-    if (!company || !selectedAvailability) return
+    if (!company?.id || !selectedAvailability) return
 
     try {
       setLoading(true)
@@ -97,21 +96,24 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
         guestInfo: {
           name: data.name,
           email: data.email,
-          phone: data.phone || '',
+          phone: data.phone,
           net_height: data.net_height,
-          selectedCourtProduct: data.selectedCourtProduct,
-          selectedEquipment: data.selectedEquipment,
         },
         selectedProducts: {
-          courtProductId: data.selectedCourtProduct,
-          equipmentProductIds: data.selectedEquipment,
+          courtProduct: data.selectedCourtProduct,
+          equipmentProducts: data.selectedEquipment,
         },
       })
-      setPaymentIntent({ clientSecret, paymentIntentId, amount })
-      setAmount(amount)
+
+      setPaymentIntent({
+        paymentIntentId,
+        clientSecret,
+        amount,
+      })
+
       setCurrentStep('payment')
     } catch (error) {
-      console.error('Error creating booking:', error)
+      console.error('Failed to create payment intent:', error)
     } finally {
       setLoading(false)
     }
@@ -299,7 +301,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                   <GuestCheckoutForm
                     onSuccess={handlePaymentSuccess}
                     onBack={handleBack}
-                    amount={amount}
+                    amount={paymentIntent.amount}
                     bookingDetails={{
                       date: dayjs(selectedAvailability?.start_time).format('dddd, MMMM D, YYYY'),
                       time: `${dayjs(selectedAvailability?.start_time).format('h:mm A')} - ${dayjs(
@@ -312,19 +314,6 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                       ),
                       companyId: company.id,
                       guestInfo: guestInfo!,
-                      products: products
-                        .filter((p: CompanyProduct) =>
-                          [
-                            guestInfo?.selectedCourtProduct,
-                            ...(guestInfo?.selectedEquipment || []),
-                          ].includes(p.id)
-                        )
-                        .map((p: CompanyProduct) => ({
-                          name: p.name,
-                          type: p.type,
-                          price: p.price_amount,
-                          isHourly: p.type === 'court_rental',
-                        })),
                     }}
                   />
                 </Elements>

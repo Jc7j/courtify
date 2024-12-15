@@ -160,8 +160,6 @@ export function CourtAvailabilityDialog({
     }
   }
 
-  console.log(availability)
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent loading={loading || isUpdating}>

@@ -7,25 +7,17 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { GuestInfo } from './GuestInfoForm'
 import { useBookings } from '@/hooks/useBookings'
 
-interface ProductDetail {
-  name: string
-  type: string
-  price: number
-  isHourly: boolean
-}
-
 interface BookingDetails {
   date: string
   time: string
   duration: number
   companyId: string
   guestInfo: GuestInfo
-  products: ProductDetail[]
 }
 
 interface GuestCheckoutFormProps {
   onSuccess: () => void
-  onBack?: () => void
+  onBack: () => void
   amount: number
   bookingDetails: BookingDetails
 }
@@ -79,7 +71,7 @@ export function GuestCheckoutForm({
       setIsProcessing(false)
     }
   }
-
+  console.log('bookingDetails', bookingDetails)
   return (
     <div className="space-y-8">
       {/* Order Summary */}
@@ -126,35 +118,41 @@ export function GuestCheckoutForm({
           <div className="space-y-4">
             <h4 className="font-medium">Price Breakdown</h4>
 
-            {/* Individual Items */}
-            <div className="space-y-2 text-sm">
-              {bookingDetails.products.map((product) => (
-                <div key={product.name} className="flex justify-between items-center">
-                  <div>
-                    <span className="font-medium">{product.name}</span>
-                    {product.isHourly && (
-                      <span className="text-muted-foreground">
-                        {' '}
-                        (${(product.price / 100).toFixed(2)}/hour × {bookingDetails.duration} hours)
-                      </span>
-                    )}
-                  </div>
-                  <span>
-                    $
-                    {(
-                      (product.isHourly ? product.price * bookingDetails.duration : product.price) /
-                      100
-                    ).toFixed(2)}
-                  </span>
-                </div>
-              ))}
+            {/* Court Rental */}
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="font-medium">
+                  {bookingDetails.guestInfo.selectedCourtProduct.name}
+                </span>
+                <span className="text-muted-foreground">
+                  {' '}
+                  (${(bookingDetails.guestInfo.selectedCourtProduct.price_amount / 100).toFixed(2)}
+                  /hour × {bookingDetails.duration} hours)
+                </span>
+              </div>
+              <span>
+                $
+                {(
+                  (bookingDetails.guestInfo.selectedCourtProduct.price_amount *
+                    bookingDetails.duration) /
+                  100
+                ).toFixed(2)}
+              </span>
             </div>
+
+            {/* Equipment */}
+            {bookingDetails.guestInfo.selectedEquipment.map((equipment) => (
+              <div key={equipment.id} className="flex justify-between items-center">
+                <span className="font-medium">{equipment.name}</span>
+                <span>${(equipment.price_amount / 100).toFixed(2)}</span>
+              </div>
+            ))}
 
             <Separator />
 
             {/* Total */}
             <div className="flex justify-between items-center font-medium">
-              <span>Total ({bookingDetails.duration} hours)</span>
+              <span>Total</span>
               <div className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4" />
                 <span>{(amount / 100).toFixed(2)}</span>

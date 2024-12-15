@@ -14,8 +14,6 @@ export const dynamic = 'force-dynamic'
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
 async function getExistingBookingMetadata(supabase: any, paymentIntentId: string) {
-  console.log('🔍 Fetching booking metadata for payment intent:', paymentIntentId)
-
   const { data: existingBooking, error: fetchError } = await supabase
     .from('bookings')
     .select('metadata')
@@ -39,7 +37,7 @@ async function getExistingBookingMetadata(supabase: any, paymentIntentId: string
     try {
       return JSON.parse(existingBooking.metadata)
     } catch (err) {
-      console.error('❌ Error parsing metadata string:', existingBooking.metadata)
+      console.error('❌ Error parsing metadata string:', existingBooking.metadata + ' ' + err)
       return {}
     }
   }
@@ -48,8 +46,6 @@ async function getExistingBookingMetadata(supabase: any, paymentIntentId: string
 }
 
 async function updateBooking(supabase: any, paymentIntentId: string, updateData: any) {
-  console.log('📝 Updating booking for payment intent:', paymentIntentId, updateData)
-
   const dataToUpdate = {
     ...updateData,
     metadata:
@@ -75,7 +71,6 @@ async function updateBooking(supabase: any, paymentIntentId: string, updateData:
     throw new Error(`Failed to update booking: ${error.message}`)
   }
 
-  console.log('✅ Successfully updated booking:', data)
   return data
 }
 
@@ -122,18 +117,46 @@ export async function POST(request: Request) {
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
-        console.log('💰 Processing successful payment:', paymentIntent.id)
-
         const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
 
+        // Single source of truth for booking metadata structure
         const updatedMetadata = {
-          ...existingMetadata,
           payment_details: {
             payment_method: paymentIntent.payment_method_types[0],
             payment_date: new Date().toISOString(),
             stripe_status: paymentIntent.status,
             payment_intent_id: paymentIntent.id,
             event_type: 'payment_intent.succeeded',
+            amount_paid: paymentIntent.amount,
+          },
+          products: {
+            court_rental: {
+              id: paymentIntent.metadata.courtProductId,
+              name: paymentIntent.metadata.courtProductName,
+              price_amount: parseInt(paymentIntent.metadata.courtProductPrice),
+              type: 'court_rental',
+            },
+            equipment: JSON.parse(paymentIntent.metadata.equipmentProducts || '[]'),
+          },
+          customer_preferences: {
+            net_height: paymentIntent.metadata.netHeight,
+          },
+          court_details: {
+            court_number: parseInt(paymentIntent.metadata.courtNumber),
+            start_time: paymentIntent.metadata.startTime,
+            end_time: paymentIntent.metadata.endTime,
+            duration_hours: paymentIntent.metadata.bookingDuration,
+          },
+          booking_flow: {
+            created_from: 'guest_checkout',
+            initialized_at: existingMetadata.initialized_at,
+            payment_completed_at: new Date().toISOString(),
+            status: 'payment_completed',
+          },
+          customer_info: {
+            name: paymentIntent.metadata.customerName,
+            email: paymentIntent.metadata.customerEmail,
+            phone: paymentIntent.metadata.customerPhone,
           },
         }
 
@@ -167,9 +190,6 @@ export async function POST(request: Request) {
       }
 
       case 'payment_intent.payment_failed': {
-        console.log('❌ Processing failed payment:', paymentIntent.id)
-
-        // First update the booking status
         const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
 
         const updatedMetadata = {
@@ -188,9 +208,6 @@ export async function POST(request: Request) {
           payment_status: PaymentStatus.Failed,
           metadata: JSON.stringify(updatedMetadata),
         })
-
-        // Then release the court availability
-        console.log('🎾 Releasing court for failed booking:', updatedBooking)
 
         const { error: courtError } = await supabaseAdmin
           .from('court_availabilities')

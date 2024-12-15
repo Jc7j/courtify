@@ -20,6 +20,8 @@ import dayjs from 'dayjs'
 import { CompanyProduct } from '@/types/graphql'
 import cn from '@/lib/utils/cn'
 
+type ProductInfo = Pick<CompanyProduct, 'id' | 'name' | 'price_amount' | 'type'>
+
 const guestInfoSchema = z.object({
   name: z
     .string()
@@ -32,8 +34,8 @@ const guestInfoSchema = z.object({
     .max(15, 'Phone number must be less than 15 digits')
     .regex(/^[0-9+\-\s()]*$/, 'Invalid phone number format'),
   net_height: z.enum(['Mens', 'Womens', 'CoedPlus', 'Coed']),
-  selectedCourtProduct: z.string(),
-  selectedEquipment: z.array(z.string()).default([]),
+  selectedCourtProduct: z.custom<ProductInfo>(),
+  selectedEquipment: z.array(z.custom<ProductInfo>()),
 })
 
 export type GuestInfo = z.infer<typeof guestInfoSchema>
@@ -88,7 +90,7 @@ export function GuestInfoForm({
       email: '',
       phone: '',
       net_height: 'Mens',
-      selectedCourtProduct: courtProducts[0]?.id,
+      selectedCourtProduct: courtProducts[0] || undefined,
       selectedEquipment: [],
       ...defaultValues,
     },
@@ -107,14 +109,15 @@ export function GuestInfoForm({
 
   const showError = (field: keyof GuestInfo) => touched[field] && errors[field]
 
-  const handleEquipmentChange = (productId: string, checked: boolean) => {
-    const current = new Set(selectedEquipment)
+  const handleEquipmentChange = (product: CompanyProduct, checked: boolean) => {
     if (checked) {
-      current.add(productId)
+      setValue('selectedEquipment', [...selectedEquipment, product])
     } else {
-      current.delete(productId)
+      setValue(
+        'selectedEquipment',
+        selectedEquipment.filter((p) => p.id !== product.id)
+      )
     }
-    setValue('selectedEquipment', Array.from(current))
   }
 
   return (
@@ -229,7 +232,10 @@ export function GuestInfoForm({
                     <Select
                       defaultValue={courtProducts[0]?.id}
                       onValueChange={(value) => {
-                        setValue('selectedCourtProduct', value)
+                        const product = courtProducts.find((p) => p.id === value)
+                        if (product) {
+                          setValue('selectedCourtProduct', product)
+                        }
                         handleFieldBlur('selectedCourtProduct')
                       }}
                       disabled={loading}
@@ -296,9 +302,9 @@ export function GuestInfoForm({
                     >
                       <Checkbox
                         id={product.id}
-                        checked={selectedEquipment.includes(product.id)}
+                        checked={selectedEquipment.some((p) => p.id === product.id)}
                         onCheckedChange={(checked) =>
-                          handleEquipmentChange(product.id, checked as boolean)
+                          handleEquipmentChange(product, checked as boolean)
                         }
                         className="mr-4"
                       />

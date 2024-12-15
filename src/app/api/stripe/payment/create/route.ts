@@ -2,31 +2,15 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe/stripe'
 import { createAdminClient } from '@/lib/supabase/server'
 import dayjs from 'dayjs'
-
-interface RequestBody {
-  companyId: string
-  courtNumber: number
-  startTime: string
-  endTime: string
-  guestInfo: {
-    name: string
-    email: string
-    phone: string
-    net_height: string
-  }
-  selectedProducts: {
-    courtProductId: string
-    equipmentProductIds: string[]
-  }
-}
+import { CreatePaymentIntentInput } from '@/hooks/useBookings'
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as RequestBody
+    const body = (await req.json()) as CreatePaymentIntentInput
 
     const startTime = dayjs(body.startTime)
     const endTime = dayjs(body.endTime)
-    const durationInHours = endTime.diff(startTime, 'hour', true) // Use true for floating point
+    const durationInHours = endTime.diff(startTime, 'hour', true)
 
     const supabase = createAdminClient()
     const { data: company, error: companyError } = await supabase
@@ -39,35 +23,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Company not setup for payments' }, { status: 400 })
     }
 
-    const { data: products, error: productsError } = await supabase
-      .from('company_products')
-      .select('id, price_amount, name, type')
-      .in('id', [
-        body.selectedProducts.courtProductId,
-        ...body.selectedProducts.equipmentProductIds,
-      ])
-
-    if (productsError || !products?.length) {
-      return NextResponse.json({ error: 'Products not found' }, { status: 400 })
-    }
-
-    const amount = products.reduce((sum, product) => {
-      if (product.type === 'court_rental') {
-        // For court rentals, multiply hourly rate by duration
-        const hourlyRate = product.price_amount
-        const courtAmount = Math.round(hourlyRate * durationInHours)
-        return sum + courtAmount
-      }
-      // Equipment prices are flat rate
-      return sum + product.price_amount
-    }, 0)
+    const amount = body.selectedProducts.equipmentProducts.reduce(
+      (sum, product) => sum + product.price_amount,
+      Math.round(body.selectedProducts.courtProduct.price_amount * durationInHours)
+    )
 
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
         currency: company.stripe_currency?.toLowerCase() ?? 'usd',
         payment_method_types: ['card'],
-        // payment_method: 'card',
         metadata: {
           companyId: body.companyId,
           courtNumber: body.courtNumber,
@@ -78,8 +43,19 @@ export async function POST(req: Request) {
           customerName: body.guestInfo.name,
           customerPhone: body.guestInfo.phone,
           netHeight: body.guestInfo.net_height,
-          courtProductId: body.selectedProducts.courtProductId,
-          equipmentProductIds: JSON.stringify(body.selectedProducts.equipmentProductIds),
+          // Court product info
+          courtProductId: body.selectedProducts.courtProduct.id,
+          courtProductName: body.selectedProducts.courtProduct.name,
+          courtProductPrice: body.selectedProducts.courtProduct.price_amount.toString(),
+          // Equipment info
+          equipmentProducts: JSON.stringify(
+            body.selectedProducts.equipmentProducts.map((product) => ({
+              id: product.id,
+              name: product.name,
+              price_amount: product.price_amount,
+              type: product.type,
+            }))
+          ),
         },
       },
       {
