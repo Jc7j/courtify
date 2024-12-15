@@ -44,19 +44,19 @@ export default function PaymentProcessorPage() {
   if (!company) return null
 
   return (
-    <StripeConnectProvider companyId={company.id}>
-      <div className="p-8">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Payment Processor</h1>
-          <p className="text-sm text-muted-foreground">
-            Connect your Stripe account to accept payments
-          </p>
-        </div>
-
-        <div className="grid gap-8 mt-8">
-          <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
-        </div>
+    <div className="p-8">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Payment Processor</h1>
+        <p className="text-sm text-muted-foreground">
+          Connect your Stripe account to accept payments
+        </p>
       </div>
-    </StripeConnectProvider>
+
+      <div className="grid gap-8 mt-8">
+        <StripeConnectProvider companyId={company.id}>
+          <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
+        </StripeConnectProvider>
+      </div>
+    </div>
   )
 }

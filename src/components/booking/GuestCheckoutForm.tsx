@@ -7,7 +7,7 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { GuestInfo } from './GuestInfoForm'
 import { useBookings } from '@/hooks/useBookings'
 
-interface BookingDetails {
+export interface BookingDetails {
   date: string
   time: string
   duration: number

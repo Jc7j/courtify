@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useState, ReactNode, useCallback } from 'react'
+import React, { useState, ReactNode } from 'react'
 import { loadConnectAndInitialize } from '@stripe/connect-js/pure'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
-import { useStripe } from '@/hooks/useStripe'
 
 interface StripeConnectProviderProps {
   children: ReactNode
@@ -11,14 +10,18 @@ interface StripeConnectProviderProps {
 }
 
 export default function StripeConnectProvider({ children, companyId }: StripeConnectProviderProps) {
-  const { getAccountSession } = useStripe()
-
-  const fetchClientSecret = useCallback(
-    () => getAccountSession(companyId),
-    [companyId, getAccountSession]
-  )
-
+  // Only initialize when actually needed
   const [stripeConnectInstance] = useState(() => {
+    // Simple synchronous function that returns a promise
+    const fetchClientSecret = () =>
+      fetch('/api/stripe/accounts/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId }),
+      })
+        .then((res) => res.json())
+        .then((data) => data.client_secret)
+
     return loadConnectAndInitialize({
       publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
       fetchClientSecret,

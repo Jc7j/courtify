@@ -9,6 +9,7 @@ import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
 import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import { Courts } from '@/types/graphql'
+import StripeConnectProvider from '@/providers/StripeConnectProvider'
 
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'
 
@@ -103,12 +104,14 @@ export default function DashboardPage() {
             </p>
           </div>
         </div> */}
-      <CompanyCourtCalendar
-        courts={availabilityCourts as Courts[]}
-        availabilities={availabilities}
-        loading={availabilitiesLoading}
-        onDateChange={handleDateChange}
-      />
+      <StripeConnectProvider companyId={company.id}>
+        <CompanyCourtCalendar
+          courts={availabilityCourts as Courts[]}
+          availabilities={availabilities}
+          loading={availabilitiesLoading}
+          onDateChange={handleDateChange}
+        />
+      </StripeConnectProvider>
       {/* </Card> */}
     </div>
   )

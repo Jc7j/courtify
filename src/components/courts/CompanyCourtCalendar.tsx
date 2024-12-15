@@ -8,18 +8,14 @@ import dayjs from 'dayjs'
 import { Skeleton, Button } from '@/components/ui'
 import type { DatesSetArg, EventClickArg, DateSelectArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
-import {
-  CourtAvailability,
-  Courts,
-  AvailabilityStatus,
-  EnhancedAvailability,
-} from '@/types/graphql'
+import { Courts, AvailabilityStatus, EnhancedAvailability } from '@/types/graphql'
 import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
 import { toast } from 'sonner'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { Expand, Shrink, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 
+// @TODO a quick button set availabilities for a day. Recurring availability, etc.
 interface CompanyCourtCalendarProps {
   courts: Courts[]
   availabilities: EnhancedAvailability[]
@@ -66,8 +62,8 @@ export function CompanyCourtCalendar({
         return
       }
 
-      if (selectedStart.isBefore(dayjs().startOf('day'))) {
-        toast.error('Cannot create availability for past dates')
+      if (selectedStart.isBefore(dayjs())) {
+        toast.error('Cannot create availability in the past')
         return
       }
 
@@ -140,7 +136,7 @@ export function CompanyCourtCalendar({
       </div>
     )
   }
-
+  console.log('availabilities', availabilities)
   const resources = courts.map((court) => ({
     id: court.court_number.toString().padStart(2, '0'),
     title: court.name || `Court ${court.court_number}`,
@@ -227,7 +223,7 @@ export function CompanyCourtCalendar({
       </div>
 
       <FullCalendar
-        ref={calendarRef}
+        schedulerLicenseKey={process.env.FULLCALENDAR_LICENSE_KEY}
         plugins={[resourceTimeGridPlugin, interactionPlugin]}
         initialView="resourceTimeGridDay"
         initialDate={selectedDate.toDate()}
@@ -255,7 +251,7 @@ export function CompanyCourtCalendar({
           id: `${availability.court_number}-${availability.start_time}`,
           resourceId: availability.court_number.toString().padStart(2, '0'),
           title: availability.booking
-            ? `${availability.booking.customer_name} • ${availability.booking.metadata?.customer_preferences?.net_height || 'No height'}`
+            ? `${availability.booking.customer_name} • ${availability.booking.metadata.products.court_rental.name} ${availability.booking.metadata?.customer_preferences?.net_height} • ${availability.booking.metadata.products.equipment?.map((equipment: { name: string }) => equipment.name).join(', ')}`
             : '',
           start: availability.start_time,
           end: availability.end_time,

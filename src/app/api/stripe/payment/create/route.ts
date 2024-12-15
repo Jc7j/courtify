@@ -28,11 +28,14 @@ export async function POST(req: Request) {
       Math.round(body.selectedProducts.courtProduct.price_amount * durationInHours)
     )
 
+    // const applicationFeeAmount = Math.round(amount * 0.025)
+
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
         currency: company.stripe_currency?.toLowerCase() ?? 'usd',
         payment_method_types: ['card'],
+        // application_fee_amount: applicationFeeAmount,
         metadata: {
           companyId: body.companyId,
           courtNumber: body.courtNumber,
@@ -43,11 +46,9 @@ export async function POST(req: Request) {
           customerName: body.guestInfo.name,
           customerPhone: body.guestInfo.phone,
           netHeight: body.guestInfo.net_height,
-          // Court product info
           courtProductId: body.selectedProducts.courtProduct.id,
           courtProductName: body.selectedProducts.courtProduct.name,
           courtProductPrice: body.selectedProducts.courtProduct.price_amount.toString(),
-          // Equipment info
           equipmentProducts: JSON.stringify(
             body.selectedProducts.equipmentProducts.map((product) => ({
               id: product.id,

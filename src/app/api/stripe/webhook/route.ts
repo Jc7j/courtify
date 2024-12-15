@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/server'
-import { BookingStatus, PaymentStatus } from '@/types/graphql'
+import { BookingStatus, PaymentStatus, ProductType } from '@/types/graphql'
 import { stripe } from '@/lib/stripe/stripe'
 import Stripe from 'stripe'
+import { Resend } from 'resend'
+import { ConfirmationEmail } from '@/components/booking/confirmation-email'
+import dayjs from 'dayjs'
+import { GuestInfo } from '@/components/booking/GuestInfoForm'
 
 export const maxDuration = 30 // seconds
 
@@ -12,6 +16,7 @@ export const preferredRegion = 'auto'
 export const dynamic = 'force-dynamic'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 async function getExistingBookingMetadata(supabase: any, paymentIntentId: string) {
   const { data: existingBooking, error: fetchError } = await supabase
@@ -86,7 +91,6 @@ export async function POST(request: Request) {
   let event: Stripe.Event
 
   try {
-    // Verify webhook signature
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err)
@@ -118,8 +122,7 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
-
-        // Single source of truth for booking metadata structure
+        console.log('paymentIntent', paymentIntent)
         const updatedMetadata = {
           payment_details: {
             payment_method: paymentIntent.payment_method_types[0],
@@ -167,6 +170,55 @@ export async function POST(request: Request) {
           amount_total: paymentIntent.amount,
           metadata: updatedMetadata,
         })
+
+        try {
+          const { data: company, error: companyError } = await supabaseAdmin
+            .from('companies')
+            .select('name, address')
+            .eq('id', companyId)
+            .single()
+
+          if (companyError) {
+            console.error('Failed to fetch company info:', companyError)
+            throw new Error('Failed to fetch company info')
+          }
+          await resend.emails.send({
+            from: `${company.name} <bookings@courtify.app>`,
+            to: [paymentIntent.metadata.customerEmail],
+            subject: `Reservation Confirmation`,
+            react: ConfirmationEmail({
+              booking: {
+                date: dayjs(paymentIntent.metadata.startTime).format('dddd, MMMM D, YYYY'),
+                time: `${dayjs(paymentIntent.metadata.startTime).format('h:mm A')} - ${dayjs(
+                  paymentIntent.metadata.endTime
+                ).format('h:mm A')}`,
+                duration: parseFloat(paymentIntent.metadata.bookingDuration),
+                companyId: companyId,
+                guestInfo: {
+                  name: paymentIntent.metadata.customerName,
+                  email: paymentIntent.metadata.customerEmail,
+                  phone: paymentIntent.metadata.customerPhone,
+                  net_height: paymentIntent.metadata.netHeight as GuestInfo['net_height'],
+                  selectedCourtProduct: {
+                    id: paymentIntent.metadata.courtProductId,
+                    name: paymentIntent.metadata.courtProductName,
+                    price_amount: parseInt(paymentIntent.metadata.courtProductPrice),
+                    type: ProductType.CourtRental,
+                  },
+                  selectedEquipment: JSON.parse(paymentIntent.metadata.equipmentProducts || '[]'),
+                },
+                amount: paymentIntent.amount,
+              },
+              company: {
+                name: company.name,
+                address: company.address,
+              },
+            }),
+          })
+        } catch (error) {
+          console.error('Failed to send confirmation email:', error)
+        }
+
         break
       }
 

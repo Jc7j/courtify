@@ -102,7 +102,6 @@ export function DatePicker({
                   !dpDay.inCurrentMonth && 'text-muted-foreground/50',
                   dpDay.selected && 'bg-primary text-primary-foreground'
                 )}
-                disabled={!dpDay.inCurrentMonth || dpDay.$date < new Date()}
                 {...buttonProps}
               >
                 {dpDay.day}

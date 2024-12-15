@@ -50,7 +50,7 @@ export function AppSidebar({ companyName }: AppSidebarProps) {
   }
 
   return (
-    <Sidebar className="hidden lg:block w-[280px]">
+    <Sidebar className="hidden lg:block w-[250px]">
       <SidebarContent>
         <SidebarGroup>
           <SidebarHeader className="border-b border-sidebar-border">

@@ -16,20 +16,9 @@ import {
 } from '@/components/ui'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
-import {
-  Calendar,
-  Clock,
-  User,
-  Mail,
-  Phone,
-  Trash2,
-  Save,
-  DollarSign,
-  Receipt,
-  CreditCard,
-} from 'lucide-react'
+import { Calendar, Clock, User, Mail, Phone, Trash2, Save, Receipt } from 'lucide-react'
 import cn from '@/lib/utils/cn'
-
+import { ConnectPaymentDetails } from '@stripe/react-connect-js'
 interface CourtAvailabilityDialogProps {
   availability: EnhancedAvailability
   isOpen: boolean
@@ -95,13 +84,14 @@ export function CourtAvailabilityDialog({
   const [timeEditing, setTimeEditing] = useState(false)
   const [startTime, setStartTime] = useState(dayjs(availability.start_time).format('HH:mm'))
   const [endTime, setEndTime] = useState(dayjs(availability.end_time).format('HH:mm'))
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false)
 
   const { deleteAvailability, updateAvailability } = useCourtAvailability({
     courtNumber: availability.court_number,
     startTime: dayjs(availability.start_time).startOf('day').toISOString(),
     endTime: dayjs(availability.start_time).endOf('day').toISOString(),
   })
-
+  console.log('availability', availability)
   const isBooked = availability.status === AvailabilityStatus.Booked
   const isHeld = availability.status === AvailabilityStatus.Held
   const isPast = dayjs(availability.end_time).isBefore(dayjs())
@@ -173,7 +163,6 @@ export function CourtAvailabilityDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Time Section */}
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             {timeEditing ? (
@@ -221,7 +210,6 @@ export function CourtAvailabilityDialog({
             )}
           </div>
 
-          {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Status:</span>
             <span className={cn('font-medium', statusStyles[availability.status])}>
@@ -229,14 +217,12 @@ export function CourtAvailabilityDialog({
             </span>
           </div>
 
-          {/* Booking Details */}
           {showBookingDetails && availability.booking && (
             <>
               <Separator />
               <div className="space-y-4">
                 <h3 className="font-medium">Booking Details</h3>
 
-                {/* Customer Info */}
                 <Section title="Customer Information">
                   <InfoRow icon={User} value={availability.booking.customer_name} />
                   <InfoRow icon={Mail} value={availability.booking.customer_email} />
@@ -245,7 +231,6 @@ export function CourtAvailabilityDialog({
                   )}
                 </Section>
 
-                {/* Court Details */}
                 <Section title="Court Details">
                   <InfoRow
                     icon={Clock}
@@ -259,38 +244,29 @@ export function CourtAvailabilityDialog({
                   />
                 </Section>
 
-                {/* Products */}
                 {(availability.booking.metadata?.products?.equipment?.length > 0 ||
-                  availability.booking.metadata?.products?.court_product) && (
+                  availability.booking.metadata?.products?.court_rental) && (
                   <Section title="Products">
-                    {/* Court Product */}
-                    {availability.booking.metadata?.products?.court_product && (
-                      <InfoRow
-                        icon={Receipt}
-                        label="Court Product"
-                        value={availability.booking.metadata.products.court_product}
-                      />
-                    )}
+                    <ul className="list-disc list-inside space-y-1">
+                      {/* Court Rental */}
+                      {availability.booking.metadata?.products?.court_rental && (
+                        <li className="text-sm">
+                          {availability.booking.metadata.products.court_rental.name}
+                        </li>
+                      )}
 
-                    {/* Equipment */}
-                    {availability.booking.metadata?.products?.equipment?.length > 0 && (
-                      <div className="mt-2">
-                        <h5 className="text-sm text-muted-foreground mb-1">Equipment:</h5>
-                        <ul className="list-disc list-inside pl-2 space-y-1">
-                          {availability.booking.metadata.products.equipment.map(
-                            (item: string, i: number) => (
-                              <li key={i} className="text-sm">
-                                {item}
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
+                      {/* Equipment */}
+                      {availability.booking.metadata?.products?.equipment?.map(
+                        (item: { name: string }, i: number) => (
+                          <li key={i} className="text-sm">
+                            {item.name}
+                          </li>
+                        )
+                      )}
+                    </ul>
                   </Section>
                 )}
 
-                {/* Booking Flow Info */}
                 <Section title="Booking Information">
                   <InfoRow
                     icon={Calendar}
@@ -298,6 +274,65 @@ export function CourtAvailabilityDialog({
                     value={formatDateTime(availability.booking.metadata?.booking_flow?.created_at)}
                   />
                 </Section>
+
+                {availability.booking?.metadata?.payment_details?.payment_intent_id && (
+                  <>
+                    <Separator />
+                    <Section title="Payment Details">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3 bg-background/50 p-3 rounded-md">
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Status</span>
+                            <p
+                              className={cn('font-medium text-sm', {
+                                'text-green-600': availability.booking.payment_status === 'paid',
+                                'text-yellow-600':
+                                  availability.booking.payment_status === 'processing',
+                                'text-red-600': availability.booking.payment_status === 'failed',
+                              })}
+                            >
+                              {availability.booking.payment_status.charAt(0).toUpperCase() +
+                                availability.booking.payment_status.slice(1)}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Amount</span>
+                            <p className="font-medium text-sm">
+                              ${(availability.booking.amount_total / 100).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="col-span-2 space-y-1">
+                            <span className="text-xs text-muted-foreground">Payment Date</span>
+                            <p className="text-sm text-muted-foreground">
+                              {dayjs(
+                                availability.booking.metadata.payment_details.payment_date
+                              ).format('MMM D, YYYY h:mm A')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPaymentDetails(!showPaymentDetails)}
+                        className="w-full"
+                      >
+                        {showPaymentDetails ? 'Hide' : 'View'} Payment Details
+                      </Button>
+
+                      {showPaymentDetails && (
+                        <div className="bg-muted/50 rounded-md p-4 mt-2">
+                          <ConnectPaymentDetails
+                            payment={
+                              availability.booking.metadata.payment_details.payment_intent_id
+                            }
+                            onClose={() => setShowPaymentDetails(false)}
+                          />
+                        </div>
+                      )}
+                    </Section>
+                  </>
+                )}
               </div>
             </>
           )}

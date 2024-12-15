@@ -1,12 +1,17 @@
 CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
-
 CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
-    address TEXT NOT NULL,
+    address TEXT,
+    -- phone TEXT,
+    -- email TEXT,
+    -- website TEXT,
+    -- description TEXT,
+    -- logo_url TEXT,
+    -- timezone TEXT NOT NULL DEFAULT 'UTC',
+    -- business_hours JSONB,
     sports TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
-    
     stripe_account_id TEXT UNIQUE,
     stripe_account_enabled BOOLEAN DEFAULT false,
     stripe_account_details JSONB,
