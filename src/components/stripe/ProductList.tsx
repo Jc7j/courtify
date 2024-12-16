@@ -2,7 +2,7 @@
 
 import { CompanyProduct } from '@/types/graphql'
 import { formatCurrency } from '@/lib/utils/format-currency'
-import { MoreHorizontal, Archive, Loader2, RefreshCw } from 'lucide-react'
+import { MoreHorizontal, Archive, Loader2, RefreshCw, Pencil } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui'
 import { useState } from 'react'
 import cn from '@/lib/utils/cn'
+import { ProductDialog } from './ProductDialog'
 
 interface ProductListProps {
   products: CompanyProduct[]
@@ -28,7 +29,6 @@ interface ProductListProps {
   syncNeeded?: boolean
   onSync: () => void
   onArchive: (productId: string) => Promise<void>
-  onEdit: (product: CompanyProduct) => void
 }
 
 type ActionType = 'archive'
@@ -44,9 +44,9 @@ export function ProductList({
   syncNeeded,
   onSync,
   onArchive,
-  onEdit,
 }: ProductListProps) {
   const [productAction, setProductAction] = useState<ProductAction | null>(null)
+  const [editingProduct, setEditingProduct] = useState<CompanyProduct | null>(null)
 
   const handleActionClick = (type: ActionType, product: CompanyProduct) => {
     setProductAction({ type, product })
@@ -123,6 +123,9 @@ export function ProductList({
             <div key={product.id} className="flex items-center justify-between p-4">
               <div className="space-y-1">
                 <h3 className="font-medium">{product.name}</h3>
+                {product.description && (
+                  <p className="text-sm text-muted-foreground">{product.description}</p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="capitalize">
                     {product.type.replace('_', ' ')}
@@ -139,9 +142,6 @@ export function ProductList({
                   <p className="font-medium">
                     {formatCurrency(product.price_amount / 100, product.currency)}
                   </p>
-                  {product.description && (
-                    <p className="text-sm text-muted-foreground">{product.description}</p>
-                  )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -155,8 +155,9 @@ export function ProductList({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-[180px]">
-                    <DropdownMenuItem onClick={() => onEdit(product)} className="gap-2">
-                      <span className="flex items-center gap-2 flex-1">Edit product</span>
+                    <DropdownMenuItem onClick={() => setEditingProduct(product)} className="gap-2">
+                      <Pencil className="h-4 w-4" />
+                      <span>Edit product</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => handleActionClick('archive', product)}
@@ -205,6 +206,12 @@ export function ProductList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProductDialog
+        product={editingProduct}
+        open={!!editingProduct}
+        onOpenChange={(open) => !open && setEditingProduct(null)}
+      />
     </div>
   )
 }

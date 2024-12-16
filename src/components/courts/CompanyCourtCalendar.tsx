@@ -6,7 +6,7 @@ import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import dayjs from 'dayjs'
 import { Skeleton, Button } from '@/components/ui'
-import type { DatesSetArg, EventClickArg, DateSelectArg } from '@fullcalendar/core'
+import type { DatesSetArg, EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
 import { Courts, AvailabilityStatus, EnhancedAvailability } from '@/types/graphql'
 import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { Expand, Shrink, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
+import type { EventResizeDoneArg } from '@fullcalendar/interaction'
 
 // @TODO a quick button set availabilities for a day. Recurring availability, etc.
 interface CompanyCourtCalendarProps {
@@ -36,7 +37,7 @@ export function CompanyCourtCalendar({
   )
   const [isFullHeight, setIsFullHeight] = useState(false)
 
-  const { createAvailability } = useCourtAvailability({
+  const { createAvailability, updateAvailability } = useCourtAvailability({
     startTime: selectedDate.startOf('day').toISOString(),
     endTime: selectedDate.endOf('day').toISOString(),
   })
@@ -107,24 +108,85 @@ export function CompanyCourtCalendar({
     [availabilities]
   )
 
-  // const getEventContent = useCallback((availability: CourtAvailability & { booking?: any }) => {
-  //   const isBooked = availability.status === AvailabilityStatus.Booked && availability.booking
+  const handleEventDrop = useCallback(
+    async (dropInfo: EventDropArg) => {
+      const { event, oldEvent } = dropInfo
+      const availability = availabilities.find(
+        (a) => `${a.court_number}-${a.start_time}` === event.id
+      )
 
-  //   return (
-  //     <div className="p-1 text-xs">
-  //       {dayjs(availability.start_time).format('h:mm A')} -{' '}
-  //       {dayjs(availability.end_time).format('h:mm A')}
-  //       {isBooked ? (
-  //         <>
-  //           <div className="font-medium">{availability.booking.customer_name}</div>
-  //           <div className="opacity-75">{availability.booking.customer_email}</div>
-  //         </>
-  //       ) : (
-  //         availability.status
-  //       )}
-  //     </div>
-  //   )
-  // }, [])
+      if (!availability) return
+
+      if (availability.status === AvailabilityStatus.Booked) {
+        dropInfo.revert()
+        toast.error("Can't move booked slots")
+        return
+      }
+
+      if (dayjs(event.start).isBefore(dayjs())) {
+        dropInfo.revert()
+        toast.error("Can't move availability to past dates")
+        return
+      }
+
+      // Get new court number from the resource ID
+      const newCourtNumber = parseInt(event.getResources()[0]?.id || '0', 10)
+      const oldCourtNumber = parseInt(oldEvent.getResources()[0]?.id || '0', 10)
+
+      try {
+        await updateAvailability({
+          courtNumber: oldCourtNumber,
+          startTime: oldEvent.start?.toISOString() || '',
+          update: {
+            court_number: newCourtNumber,
+            start_time: event.start?.toISOString() || '',
+            end_time: event.end?.toISOString() || '',
+          },
+        })
+        toast.success('Availability updated')
+      } catch (error) {
+        console.error('Failed to update availability:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to update availability')
+        dropInfo.revert()
+      }
+    },
+    [availabilities, updateAvailability]
+  )
+
+  const handleEventResize = useCallback(
+    async (resizeInfo: EventResizeDoneArg) => {
+      const { event, oldEvent } = resizeInfo
+      const availability = availabilities.find(
+        (a) => `${a.court_number}-${a.start_time}` === event.id
+      )
+
+      if (!availability) return
+
+      if (availability.status === AvailabilityStatus.Booked) {
+        resizeInfo.revert()
+        toast.error("Can't resize booked slots")
+        return
+      }
+
+      try {
+        await updateAvailability({
+          courtNumber: availability.court_number,
+          startTime: oldEvent.start?.toISOString() || '',
+          update: {
+            start_time: event.start?.toISOString() || '',
+            end_time: event.end?.toISOString() || '',
+          },
+        })
+        toast.success('Availability updated')
+      } catch (error) {
+        console.error('Failed to update availability:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to update availability')
+        resizeInfo.revert()
+      }
+    },
+    [availabilities, updateAvailability]
+  )
+
   if (loading) {
     return <Skeleton className="h-[600px] w-full" />
   }
@@ -236,7 +298,7 @@ export function CompanyCourtCalendar({
         titleFormat={() => selectedDate.format('dddd - MMM D, YYYY')}
         slotLabelClassNames="text-muted-foreground text-3xl sm:text-sm"
         resourceLabelClassNames="text-muted-foreground text-xs sm:text-sm font-medium"
-        datesSet={handleDatesSet} // prev and next calendar dates
+        datesSet={handleDatesSet}
         slotMinTime="00:00:00"
         slotMaxTime="24:00:00"
         allDaySlot={false}
@@ -260,16 +322,15 @@ export function CompanyCourtCalendar({
           textColor: 'hsl(var(--background))',
           extendedProps: { availability },
         }))}
-        // eventContent={(arg) => getEventContent(arg.event.extendedProps.availability)}
-        select={handleSelect} //
+        select={handleSelect}
         eventClick={handleEventClick}
+        eventDrop={handleEventDrop}
+        eventResize={handleEventResize}
         snapDuration="00:30:00"
-        editable={true} // events can be dragged and resized for updates
         slotEventOverlap={false}
-        eventClassNames={(arg) => [
-          'transition-opacity duration-200',
-          arg.event.id === 'temp' ? 'opacity-50' : 'opacity-100',
-        ]}
+        editable
+        eventDurationEditable
+        eventResizableFromStart
       />
 
       {selectedAvailability && (

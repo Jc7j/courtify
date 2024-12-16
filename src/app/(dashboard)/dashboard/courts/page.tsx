@@ -16,7 +16,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { CourtsList } from '@/components/courts/CourtsList'
 import { Info, Plus } from 'lucide-react'
-import { CreateProductDialog } from '@/components/stripe/CreateProductDialog'
+import { ProductDialog } from '@/components/stripe/ProductDialog'
 
 dayjs.extend(relativeTime)
 
@@ -47,11 +47,6 @@ export default function CourtsPage() {
     },
     [archiveProduct, listProducts]
   )
-
-  const handleEdit = useCallback((product: CompanyProduct) => {
-    // TODO: Implement edit functionality
-    console.log('Edit product:', product.id)
-  }, [])
 
   async function handleCreateCourt(name: string) {
     try {
@@ -209,7 +204,16 @@ export default function CourtsPage() {
                   Configure court rentals and equipment offerings
                 </p>
               </div>
-              {stripeStatus?.isConnected && stripeStatus.isEnabled && <CreateProductDialog />}
+              {stripeStatus?.isConnected && stripeStatus.isEnabled && (
+                <ProductDialog
+                  trigger={
+                    <Button variant="outline" className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create Product
+                    </Button>
+                  }
+                />
+              )}
             </div>
 
             {stripeStatus?.isConnected && stripeStatus.isEnabled ? (
@@ -219,7 +223,6 @@ export default function CourtsPage() {
                 syncNeeded={syncNeeded}
                 onSync={handleSync}
                 onArchive={handleArchive}
-                onEdit={handleEdit}
               />
             ) : (
               <div className="rounded-lg border bg-muted/5 p-8">

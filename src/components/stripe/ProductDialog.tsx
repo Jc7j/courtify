@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect, ReactNode } from 'react'
 import {
   Button,
   Input,
@@ -16,19 +16,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui'
-import { ProductType, StripePaymentType } from '@/types/graphql'
+import { ProductType, StripePaymentType, CompanyProduct } from '@/types/graphql'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
-import { Plus } from 'lucide-react'
 
 const PRODUCT_TYPES: { value: ProductType; label: string }[] = [
   { value: ProductType.CourtRental, label: 'Court Rental' },
   { value: ProductType.Equipment, label: 'Equipment' },
 ]
 
-export function CreateProductDialog() {
-  const { createProduct, creating } = useCompanyProducts()
-  const [open, setOpen] = useState(false)
+interface ProductDialogProps {
+  product?: CompanyProduct | null
+  trigger?: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export function ProductDialog({ product, open, onOpenChange, trigger }: ProductDialogProps) {
+  const { createProduct, updateProduct, creating } = useCompanyProducts()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -37,23 +43,19 @@ export function CreateProductDialog() {
     stripePaymentType: 'one_time' as StripePaymentType,
   })
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  const isEditing = !!product
 
-    try {
-      const response = await createProduct({
-        name: formData.name,
-        description: formData.description || undefined,
-        type: formData.type,
-        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
-        stripePaymentType: 'one_time' as StripePaymentType,
+  // Reset form when dialog opens with product data
+  useEffect(() => {
+    if (open && product) {
+      setFormData({
+        name: product.name,
+        description: product.description || '',
+        type: product.type as ProductType,
+        priceAmount: (product.price_amount / 100).toString(),
+        stripePaymentType: product.stripe_payment_type as StripePaymentType,
       })
-
-      if (response.error) {
-        throw new Error(response.error)
-      }
-
-      setOpen(false)
+    } else if (!open) {
       setFormData({
         name: '',
         description: '',
@@ -61,29 +63,44 @@ export function CreateProductDialog() {
         priceAmount: '',
         stripePaymentType: 'one_time' as StripePaymentType,
       })
+    }
+  }, [open, product])
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+
+    try {
+      const productData = {
+        name: formData.name,
+        description: formData.description || undefined,
+        type: formData.type,
+        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
+        stripePaymentType: formData.stripePaymentType,
+      }
+
+      if (isEditing && product) {
+        await updateProduct(product.id, productData)
+      } else {
+        await createProduct(productData)
+      }
+
+      onOpenChange?.(false)
     } catch (error) {
-      console.error('❌ Form submission error:', {
-        error,
-        formData,
-        stack: error instanceof Error ? error.stack : undefined,
-      })
+      console.error('❌ Form submission error:', error)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="text-primary hover:text-primary-foreground hover:bg-primary"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Product
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Product</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Product' : 'Create New Product'}</DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? 'Make changes to your product'
+              : 'Your customers will see this product in their checkout flow.'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -138,7 +155,7 @@ export function CreateProductDialog() {
           </div>
 
           <Button type="submit" className="w-full" disabled={creating}>
-            Create Product
+            {isEditing ? 'Update Product' : 'Create Product'}
           </Button>
         </form>
       </DialogContent>

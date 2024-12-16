@@ -34,6 +34,7 @@ interface UpdateAvailabilityInput {
   startTime: string
   update: {
     status?: AvailabilityStatus
+    court_number?: number
     start_time?: string
     end_time?: string
   }

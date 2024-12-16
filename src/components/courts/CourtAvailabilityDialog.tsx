@@ -16,7 +16,7 @@ import {
 } from '@/components/ui'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
-import { Calendar, Clock, User, Mail, Phone, Trash2, Save, Receipt } from 'lucide-react'
+import { Calendar, Clock, User, Mail, Phone, Trash2, Save } from 'lucide-react'
 import cn from '@/lib/utils/cn'
 import { ConnectPaymentDetails } from '@stripe/react-connect-js'
 interface CourtAvailabilityDialogProps {

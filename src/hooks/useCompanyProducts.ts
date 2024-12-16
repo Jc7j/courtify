@@ -355,10 +355,97 @@ export function useCompanyProducts() {
     }
   }
 
+  async function updateProduct(
+    productId: string,
+    input: CreateProductInput
+  ): Promise<CreateProductResponse> {
+    try {
+      setError(null)
+
+      if (!user?.company_id) {
+        throw new Error('No company found')
+      }
+
+      // Find existing product
+      const existingProduct = products.find((p: CompanyProduct) => p.id === productId)
+      if (!existingProduct) {
+        throw new Error('Product not found')
+      }
+
+      // Update Stripe price first
+      const stripeResponse = await fetch('/api/stripe/prices/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...input,
+          companyId: user.company_id,
+          productId: existingProduct.id,
+          stripePriceId: existingProduct.stripe_price_id,
+          stripeProductId: existingProduct.stripe_product_id,
+        }),
+      })
+
+      if (!stripeResponse.ok) {
+        const error = await stripeResponse.json()
+        throw new Error(error.message || 'Failed to update Stripe price')
+      }
+
+      const stripeData = await stripeResponse.json()
+
+      // Update database with new price ID
+      const result = await updateProductMutation({
+        variables: {
+          id: productId,
+          set: {
+            name: input.name,
+            description: input.description || null,
+            type: input.type,
+            price_amount: Math.round(input.priceAmount),
+            stripe_payment_type: input.stripePaymentType,
+            stripe_price_id: stripeData.stripePriceId,
+            metadata: JSON.stringify({
+              ...JSON.parse(existingProduct.metadata || '{}'),
+              updated_at: new Date().toISOString(),
+              price_details: {
+                currency: existingProduct.currency,
+                original_amount: input.priceAmount,
+                unit_amount: Math.round(input.priceAmount),
+              },
+            }),
+            updated_at: new Date().toISOString(),
+          },
+        },
+      })
+
+      const updatedProduct = result.data?.updatecompany_productsCollection?.records?.[0]
+      if (!updatedProduct) {
+        throw new Error('Failed to update product in database')
+      }
+
+      await refetch()
+      toast.success('Product updated successfully')
+
+      return {
+        product: updatedProduct,
+        error: null,
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update product'
+      console.error('[useCompanyProducts] Error updating product:', err)
+      setError(errorMessage)
+      toast.error(errorMessage)
+      return {
+        product: null,
+        error: errorMessage,
+      }
+    }
+  }
+
   return {
     products,
     loadingProducts,
     createProduct,
+    updateProduct,
     creating,
     error,
     refetch,

@@ -240,17 +240,25 @@ export function GuestInfoForm({
                       }}
                       disabled={loading}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full h-fit">
                         <SelectValue placeholder="Select court type" />
                       </SelectTrigger>
                       <SelectContent>
                         {courtProducts.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
-                            <div className="flex justify-between items-center w-full gap-4">
-                              <span>{product.name}</span>
-                              <span className="text-primary font-medium">
-                                ${(product.price_amount / 100).toFixed(2)}
-                              </span>
+                            <div className="flex flex-col py-1 w-full">
+                              <div className="flex justify-between items-center w-full">
+                                <span className="font-medium">{product.name}</span>
+
+                                <span className="text-primary font-medium ml-4">
+                                  ${(product.price_amount / 100).toFixed(2)}
+                                </span>
+                              </div>
+                              {product.description && (
+                                <span className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                                  {product.description}
+                                </span>
+                              )}
                             </div>
                           </SelectItem>
                         ))}
