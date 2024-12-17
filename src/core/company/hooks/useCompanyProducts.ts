@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { useState } from 'react'
 
+import { SuccessToast, ErrorToast, WarningToast } from '@/shared/components/ui'
 import {
   CompanyProduct,
   CompanyProductEdge,
@@ -258,7 +259,7 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
 
       if (hasMismatch) {
         setSyncNeeded(true)
-        toast.warning('Products are out of sync with Stripe. Click "Sync Products" to update.')
+        WarningToast('Products are out of sync with Stripe. Click "Sync Products" to update.')
       }
 
       return {
@@ -352,11 +353,11 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
 
       await refetch()
       setSyncNeeded(false)
-      toast.success('Products synced to Stripe successfully')
+      SuccessToast('Products synced to Stripe successfully')
     } catch (error) {
       console.error('[useCompanyProducts] Error syncing products:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to sync products'
-      toast.error(errorMessage)
+      ErrorToast(errorMessage)
       setError(errorMessage)
     }
   }
@@ -429,7 +430,7 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
       }
 
       await refetch()
-      toast.success('Product updated successfully')
+      SuccessToast('Product updated successfully')
 
       return {
         product: updatedProduct,
@@ -439,7 +440,7 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update product'
       console.error('[useCompanyProducts] Error updating product:', err)
       setError(errorMessage)
-      toast.error(errorMessage)
+      ErrorToast(errorMessage)
       return {
         product: null,
         error: errorMessage,

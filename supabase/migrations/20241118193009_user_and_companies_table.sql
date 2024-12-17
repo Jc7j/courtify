@@ -10,7 +10,7 @@ CREATE TABLE companies (
     -- logo_url TEXT,
     -- timezone TEXT NOT NULL DEFAULT 'UTC',
     -- business_hours JSONB,
-    sports TEXT NOT NULL,
+    sports TEXT NOT NULL DEFAULT 'volleyball',
     slug TEXT UNIQUE NOT NULL,
     stripe_account_id TEXT UNIQUE,
     stripe_account_enabled BOOLEAN DEFAULT false,

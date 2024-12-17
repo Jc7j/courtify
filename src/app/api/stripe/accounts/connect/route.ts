@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
+
+import { ROUTES } from '@/shared/constants/routes'
 import { stripe } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
-import { ROUTES } from '@/shared/constants/routes'
 
 export async function POST(req: Request) {
   try {

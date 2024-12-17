@@ -12,7 +12,6 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
 import { Button } from '@/shared/components/ui/button'
-
 import { cn } from '@/shared/lib/utils/cn'
 
 interface ConfirmationDialogProps {

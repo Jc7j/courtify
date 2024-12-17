@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+
 import type { EnhancedAvailability } from '@/shared/types/graphql'
 
 interface CalendarStore {
@@ -9,7 +10,7 @@ interface CalendarStore {
     slotMaxTime: string
     isFullHeight: boolean
   }
-  updateSettings: (settings: Partial<CalendarStore['settings']>) => void
+  setSettings: (settings: Partial<CalendarStore['settings']>) => void
 }
 
 export const useCalendarStore = create<CalendarStore>((set) => ({
@@ -20,7 +21,7 @@ export const useCalendarStore = create<CalendarStore>((set) => ({
     slotMaxTime: '23:00:00',
     isFullHeight: false,
   },
-  updateSettings: (newSettings) =>
+  setSettings: (newSettings) =>
     set((state) => ({
       settings: {
         ...state.settings,

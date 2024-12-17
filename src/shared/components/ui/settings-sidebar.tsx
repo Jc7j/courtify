@@ -15,10 +15,9 @@ import {
   SidebarMenuItem,
 } from '@/shared/components/ui/sidebar'
 import { ROUTES } from '@/shared/constants/routes'
-import { useUserStore } from '@/shared/stores/useUserStore'
-
 import { hasAdminAccess } from '@/shared/lib/utils/admin-access'
 import { cn } from '@/shared/lib/utils/cn'
+import { useUserStore } from '@/shared/stores/useUserStore'
 
 const workspaceSettings = [
   {

@@ -2,13 +2,11 @@
 
 import dayjs from 'dayjs'
 
+import { CourtAvailabilityList } from '@/features/booking/components/CourtAvailabilityList'
 import { WeeklyCalendar } from '@/features/booking/components/WeeklyCalendar'
 
 import { Card } from '@/shared/components/ui'
-
 import { CourtAvailability } from '@/shared/types/graphql'
-
-import { CourtAvailabilityList } from './CourtAvailabilityList'
 
 interface BookingFormProps {
   selectedDate: Date

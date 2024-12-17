@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, ReactNode } from 'react'
 import { loadConnectAndInitialize } from '@stripe/connect-js/pure'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
+import React, { useState, ReactNode } from 'react'
 
 interface StripeConnectProviderProps {
   children: ReactNode

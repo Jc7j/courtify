@@ -4,9 +4,8 @@ import dayjs from 'dayjs'
 import { Clock } from 'lucide-react'
 import { memo, useMemo } from 'react'
 
-import { useGuestStore } from '@/shared/stores/useGuestStore'
-
 import { cn } from '@/shared/lib/utils/cn'
+import { useBookingStore } from '@/shared/stores/useBookingStore'
 import { CourtAvailability } from '@/shared/types/graphql'
 
 interface AvailabilitySlotProps {
@@ -61,7 +60,7 @@ function CourtAvailabilityListComponent({
   availabilities,
   loading,
 }: CourtAvailabilityListProps) {
-  const { selectedAvailability, setSelectedAvailability } = useGuestStore()
+  const { selectedAvailability, setSelectedAvailability } = useBookingStore()
 
   const selectedKey = selectedAvailability
     ? `${selectedAvailability.start_time}-${selectedAvailability.court_number}`

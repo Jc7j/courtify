@@ -1,10 +1,12 @@
 'use client'
 
+import { Search } from 'lucide-react'
+import { useState } from 'react'
+
 import {
   Avatar,
   AvatarFallback,
   Badge,
-  Button,
   Input,
   Select,
   SelectContent,
@@ -12,9 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui'
-import { Search } from 'lucide-react'
-import { useState } from 'react'
 import { roleColors } from '@/shared/lib/utils/role-colors'
+
 import type { User } from '@/shared/types/graphql'
 
 interface MembersSectionProps {

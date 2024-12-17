@@ -5,8 +5,7 @@ import { useMutation } from '@apollo/client'
 import { UPDATE_COURT_AVAILABILITY } from '@/features/availability/graphql/mutations'
 import { CREATE_BOOKING } from '@/features/booking/graphql/mutations'
 
-import { useGuestStore } from '@/shared/stores/useGuestStore'
-
+import { useBookingStore } from '@/shared/stores/useBookingStore'
 import { AvailabilityStatus, BookingStatus, PaymentStatus } from '@/shared/types/graphql'
 
 import type { CompanyProduct } from '@/shared/types/graphql'
@@ -98,7 +97,7 @@ export function useBookings(): UseBookingsReturn {
   }
 
   async function confirmPaymentIntentAndBook(companyId: string) {
-    const state = useGuestStore.getState()
+    const state = useBookingStore.getState()
     if (!state.selectedAvailability || !state.guestInfo || !state.paymentIntent) {
       throw new Error('Missing booking information')
     }

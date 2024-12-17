@@ -1,8 +1,10 @@
+import dayjs from 'dayjs'
 import { NextResponse } from 'next/server'
+
+import { CreatePaymentIntentInput } from '@/features/booking/hooks/useBookings'
+
 import { stripe } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
-import dayjs from 'dayjs'
-import { CreatePaymentIntentInput } from '@/features/booking/hooks/useBookings'
 
 export async function POST(req: Request) {
   try {

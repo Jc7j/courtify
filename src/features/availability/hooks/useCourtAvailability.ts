@@ -101,18 +101,7 @@ export function useCompanyCourtAvailabilities(
   startTime?: string,
   endTime?: string
 ): useCompanyCourtAvailabilitiesReturn {
-  const [localAvailabilities, setLocalAvailabilities] = useState<EnhancedAvailability[]>([])
   const [courts, setCourts] = useState<Array<{ court_number: number; name: string }>>([])
-
-  const queryOptions = {
-    variables: {
-      company_id: companyId,
-      start_time: startTime,
-      end_time: endTime,
-    },
-    skip: !companyId || !startTime || !endTime,
-    fetchPolicy: 'network-only' as const,
-  }
 
   const transformBookingMetadata = (metadata: string): Record<string, any> => {
     try {
@@ -123,38 +112,43 @@ export function useCompanyCourtAvailabilities(
     }
   }
 
-  const { loading: queryLoading, error: queryError } = useQuery<CompanyAvailabilitiesData>(
-    GET_COMPANY_COURTS_AVAILABILITIES,
-    {
-      ...queryOptions,
-      onCompleted: (data) => {
-        const availabilities =
-          data?.court_availabilitiesCollection?.edges?.map((edge) => {
-            const availability = edge.node
-            const bookingEdge = availability.booking?.edges[0]
+  const {
+    loading: queryLoading,
+    error: queryError,
+    data,
+  } = useQuery<CompanyAvailabilitiesData>(GET_COMPANY_COURTS_AVAILABILITIES, {
+    variables: {
+      company_id: companyId,
+      start_time: startTime,
+      end_time: endTime,
+    },
+    skip: !companyId || !startTime || !endTime,
+    fetchPolicy: 'network-only' as const,
+    onCompleted: (data) => {
+      const courts = data?.courtsCollection?.edges?.map((edge) => edge.node) || []
+      setCourts(courts)
+    },
+  })
 
-            if (!bookingEdge) return { ...availability, booking: null }
+  const availabilities =
+    data?.court_availabilitiesCollection?.edges?.map((edge) => {
+      const availability = edge.node
+      const bookingEdge = availability.booking?.edges[0]
 
-            return {
-              ...availability,
-              booking: {
-                ...bookingEdge.node,
-                metadata: transformBookingMetadata(bookingEdge.node.metadata),
-              },
-            }
-          }) || []
+      if (!bookingEdge) return { ...availability, booking: null }
 
-        const courts = data?.courtsCollection?.edges?.map((edge) => edge.node) || []
-
-        setLocalAvailabilities(availabilities)
-        setCourts(courts)
-      },
-    }
-  )
+      return {
+        ...availability,
+        booking: {
+          ...bookingEdge.node,
+          metadata: transformBookingMetadata(bookingEdge.node.metadata),
+        },
+      }
+    }) || []
 
   return {
     courts,
-    availabilities: localAvailabilities,
+    availabilities: availabilities as EnhancedAvailability[],
     loading: queryLoading,
     error: queryError ? new Error(queryError.message) : null,
   }

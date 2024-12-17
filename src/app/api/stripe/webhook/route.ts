@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server'
+import dayjs from 'dayjs'
 import { headers } from 'next/headers'
+import { NextResponse } from 'next/server'
+import { Resend } from 'resend'
+import Stripe from 'stripe'
+
+import { ConfirmationEmail } from '@/features/booking/components/confirmation-email'
+import { GuestInfo } from '@/features/booking/components/GuestInfoForm'
+
+import { stripe } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
 import { BookingStatus, PaymentStatus, ProductType } from '@/shared/types/graphql'
-import { stripe } from '@/shared/lib/stripe/stripe'
-import Stripe from 'stripe'
-import { Resend } from 'resend'
-import { ConfirmationEmail } from '@/features/booking/components/confirmation-email'
-import dayjs from 'dayjs'
-import { GuestInfo } from '@/features/booking/components/GuestInfoForm'
 
 export const maxDuration = 30 // seconds
 

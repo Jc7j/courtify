@@ -1,7 +1,8 @@
-import { create } from 'zustand'
 import dayjs from 'dayjs'
-import type { CourtAvailability } from '@/shared/types/graphql'
+import { create } from 'zustand'
+
 import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'
+import type { CourtAvailability } from '@/shared/types/graphql'
 
 export type BookingStep = 'select-time' | 'guest-info' | 'payment'
 
@@ -51,7 +52,7 @@ const initialState = {
 
 export const HOLD_DURATION_MS = 10 * 60 * 1000 // 10 minutes
 
-export const useGuestStore = create<GuestState>((set) => ({
+export const useBookingStore = create<GuestState>((set) => ({
   ...initialState,
 
   setSelectedDate: (date: Date) =>

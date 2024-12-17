@@ -13,11 +13,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+} from '@/shared/components/ui'
+import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/shared/components/ui'
+} from '@/shared/components/ui/sidebar'
 import { ROUTES } from '@/shared/constants/routes'
 import { cn } from '@/shared/lib/utils/cn'
 import { useAuth } from '@/shared/providers/AuthProvider'
@@ -57,7 +59,8 @@ export function UserMenu() {
                 'data-[state=open]:bg-sidebar-accent',
                 'data-[state=open]:text-sidebar-accent-foreground',
                 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                'transition-colors duration-200'
+                'transition-colors duration-200',
+                isMobile && 'w-auto p-0'
               )}
             >
               <Avatar className="h-8 w-8 rounded-md border border-border">
@@ -65,11 +68,15 @@ export function UserMenu() {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground" />
+              {!isMobile && (
+                <>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{user.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground" />
+                </>
+              )}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -78,7 +85,8 @@ export function UserMenu() {
               'min-w-[256px]',
               'rounded-md',
               'p-2',
-              'border-border'
+              'border-border',
+              isMobile && 'right-0 left-auto'
             )}
             side={isMobile ? 'bottom' : 'right'}
             align="end"

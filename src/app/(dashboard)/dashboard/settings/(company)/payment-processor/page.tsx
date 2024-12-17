@@ -56,9 +56,13 @@ export default function PaymentProcessorPage() {
       </div>
 
       <div className="grid gap-8 mt-8">
-        <StripeConnectProvider companyId={company.id}>
+        {company.stripe_account_id ? (
+          <StripeConnectProvider companyId={company.id}>
+            <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
+          </StripeConnectProvider>
+        ) : (
           <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
-        </StripeConnectProvider>
+        )}
       </div>
     </div>
   )

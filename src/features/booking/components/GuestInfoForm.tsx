@@ -18,7 +18,6 @@ import {
   Checkbox,
   Label,
 } from '@/shared/components/ui'
-
 import { cn } from '@/shared/lib/utils/cn'
 import { CompanyProduct } from '@/shared/types/graphql'
 

@@ -1,9 +1,11 @@
 'use client'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
-import { CompanyProfileSection } from '@/core/company/components/CompanySettings/CompanyProfileSection'
-import { Input, Card, Button, Checkbox, ConfirmationDialog } from '@/shared/components/ui'
 import { useState } from 'react'
+
+import { CompanyProfileSection } from '@/core/company/components/CompanySettings/CompanyProfileSection'
+import { useCompany } from '@/core/company/hooks/useCompany'
+
+import { Input, Card, Button, Checkbox, ConfirmationDialog } from '@/shared/components/ui'
 import { useUserStore } from '@/shared/stores/useUserStore'
 import { MemberRole } from '@/shared/types/graphql'
 

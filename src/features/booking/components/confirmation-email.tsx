@@ -1,4 +1,3 @@
-import * as React from 'react'
 import {
   Body,
   Container,
@@ -12,6 +11,8 @@ import {
   Column,
   Hr,
 } from '@react-email/components'
+import * as React from 'react'
+
 import type { BookingDetails } from './GuestCheckoutForm'
 
 interface EmailProps {
@@ -204,12 +205,6 @@ const totalValue = {
 const divider = {
   borderTop: '1px solid #e5e7eb',
   margin: '24px 0',
-}
-
-const address = {
-  fontSize: '14px',
-  color: '#374151',
-  marginTop: '4px',
 }
 
 const footer = {

@@ -421,7 +421,7 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
       </div>
 
       <FullCalendar
-        schedulerLicenseKey={process.env.FULLCALENDAR_LICENSE_KEY}
+        schedulerLicenseKey={process.env.NEXT_PUBLIC_FULLCALENDAR_LICENSE_KEY}
         plugins={[resourceTimeGridPlugin, interactionPlugin]}
         initialView="resourceTimeGridDay"
         initialDate={selectedDate.toDate()}

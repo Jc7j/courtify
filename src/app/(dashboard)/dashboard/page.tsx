@@ -7,12 +7,12 @@ import { useEffect, useState } from 'react'
 import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
 import { useCompanyCourtAvailabilities } from '@/features/availability/hooks/useCourtAvailability'
 
-import { Button } from '@/shared/components/ui'
 import { useCompany } from '@/core/company/hooks/useCompany'
+
+import { Button } from '@/shared/components/ui'
+import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 import { useCalendarStore } from '@/shared/stores/useCalendarStore'
 import { useUserStore } from '@/shared/stores/useUserStore'
-
-import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 import { Courts } from '@/shared/types/graphql'
 
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'
@@ -105,14 +105,23 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <StripeConnectProvider companyId={company.id}>
+      {company.stripe_account_id ? (
+        <StripeConnectProvider companyId={company.id}>
+          <CourtsCalendar
+            courts={availabilityCourts as Courts[]}
+            loading={availabilitiesLoading}
+            onDateChange={handleDateChange}
+            companyId={company.id}
+          />
+        </StripeConnectProvider>
+      ) : (
         <CourtsCalendar
           courts={availabilityCourts as Courts[]}
           loading={availabilitiesLoading}
           onDateChange={handleDateChange}
           companyId={company.id}
         />
-      </StripeConnectProvider>
+      )}
     </div>
   )
 }

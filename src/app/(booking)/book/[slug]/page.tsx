@@ -3,27 +3,26 @@
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import dayjs from 'dayjs'
-import { notFound, useRouter } from 'next/navigation'
-import { useState, useRef, useEffect, use } from 'react'
+import { notFound, useRouter, useParams } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
 
 import {
   useCompanyCourtAvailabilities,
   useCourtAvailability,
 } from '@/features/availability/hooks/useCourtAvailability'
-
 import { BookingForm } from '@/features/booking/components/BookingForm'
+import { BottomBar, BottomBarContent } from '@/features/booking/components/bottom-bar'
 import { GuestCheckoutForm } from '@/features/booking/components/GuestCheckoutForm'
 import { GuestInfoForm } from '@/features/booking/components/GuestInfoForm'
-import { BottomBar, BottomBarContent } from '@/features/booking/components/bottom-bar'
 import { useBookings } from '@/features/booking/hooks/useBookings'
+
 import { useCompany } from '@/core/company/hooks/useCompany'
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
-import { useGuestStore } from '@/shared/stores/useGuestStore'
 
+import { useBookingStore } from '@/shared/stores/useBookingStore'
 import { AvailabilityStatus } from '@/shared/types/graphql'
 
 import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'
-
 
 function getStripePromise(accountId: string) {
   return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
@@ -31,14 +30,14 @@ function getStripePromise(accountId: string) {
   })
 }
 
-export default function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = use(params)
+export default function BookingPage() {
+  const params = useParams<{ slug: string }>()
   const {
     company,
     loading: companyLoading,
     error: companyError,
   } = useCompany({
-    slug: resolvedParams.slug,
+    slug: params.slug,
   })
   const { products } = useCompanyProducts({ companyId: company?.id })
   const {
@@ -54,7 +53,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     clearHold,
     remainingTime,
     startHold,
-  } = useGuestStore()
+  } = useBookingStore()
   const { createPaymentIntent } = useBookings()
   const { updateAvailability } = useCourtAvailability()
   const router = useRouter()
@@ -86,7 +85,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   }, [company?.stripe_account_id])
 
   function handlePaymentSuccess() {
-    useGuestStore.getState().clearBooking()
+    useBookingStore.getState().clearBooking()
     router.push(`/book/success`)
   }
 
@@ -95,7 +94,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
     try {
       setLoading(true)
-      useGuestStore.getState().setGuestInfo(data)
+      useBookingStore.getState().setGuestInfo(data)
 
       const { paymentIntentId, clientSecret, amount } = await createPaymentIntent({
         companyId: company.id,
@@ -177,7 +176,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       startHold()
 
       intervalId = setInterval(() => {
-        const endTime = useGuestStore.getState().holdEndTime
+        const endTime = useBookingStore.getState().holdEndTime
         if (!endTime) return
 
         const remaining = endTime - Date.now()

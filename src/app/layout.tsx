@@ -6,7 +6,8 @@ import { ApolloProvider } from '@/shared/providers/ApolloProvider'
 import { AuthProvider } from '@/shared/providers/AuthProvider'
 import { ThemeProvider } from '@/shared/providers/ThemeProvider'
 
-import '@/shared/styles/globals.css'
+import '@/styles/modern-normalize.css'
+import '@/styles/globals.css'
 
 const openSans = Open_Sans({
   subsets: ['latin'],

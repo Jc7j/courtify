@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+
 import type { BaseUser, AuthSession } from '@/shared/types/auth'
 
 interface UserState {

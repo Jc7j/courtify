@@ -19,32 +19,35 @@ import {
 } from '@/shared/components/ui'
 import { useUserStore } from '@/shared/stores/useUserStore'
 
+import type { Libraries } from '@react-google-maps/api'
+
 const createCompanySchema = z.object({
   name: z
     .string()
     .min(2, 'Company name must be at least 2 characters')
     .max(50, 'Company name must be less than 50 characters'),
-  sports: z.string(),
+  sports: z.enum(['volleyball']),
   address: z.string(),
 })
 
 type CreateCompanyFormData = z.infer<typeof createCompanySchema>
 
-interface CreateCompanyProps {
-  onBack?: () => void
-}
+// Define libraries array outside component to prevent rerenders
+const libraries: Libraries = ['places']
 
-export function CreateCompany({ onBack }: CreateCompanyProps) {
+export function CreateCompany({ onBack }: { onBack?: () => void }) {
   const { createCompany, creating } = useCompany()
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.GOOGLE_MAP_API_KEY!,
-    libraries: ['places'],
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries,
   })
-  const inputRef = useRef(null)
+
+  const searchBoxRef = useRef<any | null>(null)
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<CreateCompanyFormData>({
     resolver: zodResolver(createCompanySchema),
@@ -55,7 +58,17 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
     },
   })
 
-  async function onSubmit(data: CreateCompanyFormData) {
+  const handlePlacesChanged = () => {
+    const places = searchBoxRef.current?.getPlaces()
+    if (!places?.length) return
+
+    const place = places[0]
+    if (place.formatted_address) {
+      setValue('address', place.formatted_address)
+    }
+  }
+
+  const onSubmit = async (data: CreateCompanyFormData) => {
     try {
       await createCompany(data.name.trim(), data.address, data.sports)
 
@@ -67,22 +80,8 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
       SuccessToast('Company created successfully!')
     } catch (err) {
       console.error('Error creating company:', err)
-
-      if (err instanceof Error) {
-        if (err.message.includes('user state not updated')) {
-          ErrorToast('Company created but failed to update session. Please try refreshing.')
-        } else {
-          ErrorToast(err.message)
-        }
-      } else {
-        ErrorToast('Failed to create company')
-      }
+      ErrorToast(err instanceof Error ? err.message : 'Failed to create company')
     }
-  }
-
-  const handleonPlacesChanged = () => {
-    const address = inputRef.current.getPlaces()
-    console.log('address:', address)
   }
 
   return (
@@ -95,10 +94,9 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Company Name */}
         <div className="space-y-2">
-          <label htmlFor="name" className="text-sm font-medium">
-            Company name
-          </label>
+          <Label htmlFor="name">Company name</Label>
           <Input
             id="name"
             placeholder="Enter your company name"
@@ -115,27 +113,25 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
             </p>
           )}
         </div>
-        {/* Sports */}
+
+        {/* Sports Category */}
         <div className="space-y-2">
-          <label htmlFor="address" className="text-sm font-medium">
-            Sports category
-          </label>
-          <RadioGroup defaultValue="sports" {...register('sports')}>
+          <Label>Sports category</Label>
+          <RadioGroup defaultValue="volleyball" {...register('sports')}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="volleyball" id="volleyball" />
               <Label htmlFor="volleyball">Volleyball</Label>
             </div>
           </RadioGroup>
         </div>
+
         {/* Address */}
         <div className="space-y-2">
-          <label htmlFor="address" className="text-sm font-medium">
-            Address
-          </label>
-          {isLoaded && (
+          <Label htmlFor="address">Address</Label>
+          {isLoaded ? (
             <StandaloneSearchBox
-              onLoad={(ref) => (inputRef.current = ref)}
-              onPlacesChanged={handleonPlacesChanged}
+              onLoad={(ref) => (searchBoxRef.current = ref)}
+              onPlacesChanged={handlePlacesChanged}
             >
               <Input
                 id="address"
@@ -146,10 +142,13 @@ export function CreateCompany({ onBack }: CreateCompanyProps) {
                 aria-invalid={errors.address ? 'true' : 'false'}
               />
             </StandaloneSearchBox>
+          ) : (
+            <Input disabled placeholder="Loading address search..." className="bg-muted" />
           )}
           {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
         </div>
-        {/* back and create buttons */}
+
+        {/* Actions */}
         <div className="flex gap-3 pt-4">
           {onBack && (
             <Button
