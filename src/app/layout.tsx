@@ -1,11 +1,12 @@
-import { ReactNode } from 'react'
-import { ThemeProvider } from '@/providers/ThemeProvider'
-import { ApolloProvider } from '@/providers/ApolloProvider'
-import { AuthProvider } from '../providers/AuthProvider'
-import { Toaster } from '@/components/ui'
 import { Open_Sans } from 'next/font/google'
+import { ReactNode } from 'react'
 
-import '@/styles/globals.css'
+import { Toaster } from '@/shared/components/ui'
+import { ApolloProvider } from '@/shared/providers/ApolloProvider'
+import { AuthProvider } from '@/shared/providers/AuthProvider'
+import { ThemeProvider } from '@/shared/providers/ThemeProvider'
+
+import '@/shared/styles/globals.css'
 
 const openSans = Open_Sans({
   subsets: ['latin'],

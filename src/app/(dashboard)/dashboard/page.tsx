@@ -1,16 +1,19 @@
 'use client'
 
-import { useUserStore } from '@/stores/useUserStore'
-import { Button } from '@/components/ui'
-import { useCompany } from '@/hooks/useCompany'
+import dayjs from 'dayjs'
 import { Copy, Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { CourtsCalendar } from '@/components/courts/CourtsCalendar'
-import { useCompanyCourtAvailabilities } from '@/hooks/useCourtAvailability'
-import dayjs from 'dayjs'
-import { Courts } from '@/types/graphql'
-import StripeConnectProvider from '@/providers/StripeConnectProvider'
-import { useCalendarStore } from '@/stores/useCalendarStore'
+
+import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
+import { useCompanyCourtAvailabilities } from '@/features/availability/hooks/useCourtAvailability'
+
+import { Button } from '@/shared/components/ui'
+import { useCompany } from '@/core/company/hooks/useCompany'
+import { useCalendarStore } from '@/shared/stores/useCalendarStore'
+import { useUserStore } from '@/shared/stores/useUserStore'
+
+import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
+import { Courts } from '@/shared/types/graphql'
 
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'
 

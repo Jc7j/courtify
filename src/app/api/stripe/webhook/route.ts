@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { createAdminClient } from '@/lib/supabase/server'
-import { BookingStatus, PaymentStatus, ProductType } from '@/types/graphql'
-import { stripe } from '@/lib/stripe/stripe'
+import { createAdminClient } from '@/shared/lib/supabase/server'
+import { BookingStatus, PaymentStatus, ProductType } from '@/shared/types/graphql'
+import { stripe } from '@/shared/lib/stripe/stripe'
 import Stripe from 'stripe'
 import { Resend } from 'resend'
-import { ConfirmationEmail } from '@/components/booking/confirmation-email'
+import { ConfirmationEmail } from '@/features/booking/components/confirmation-email'
 import dayjs from 'dayjs'
-import { GuestInfo } from '@/components/booking/GuestInfoForm'
+import { GuestInfo } from '@/features/booking/components/GuestInfoForm'
 
 export const maxDuration = 30 // seconds
 

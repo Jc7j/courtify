@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/stripe'
-import { createAdminClient } from '@/lib/supabase/server'
-import { ProductType } from '@/types/graphql'
+import { stripe } from '@/shared/lib/stripe/stripe'
+import { createAdminClient } from '@/shared/lib/supabase/server'
+import { ProductType } from '@/shared/types/graphql'
 
 interface CreateProductRequest {
   name: string

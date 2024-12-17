@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/stripe'
-import { createAdminClient } from '@/lib/supabase/server'
+import { stripe } from '@/shared/lib/stripe/stripe'
+import { createAdminClient } from '@/shared/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {

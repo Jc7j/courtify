@@ -1,21 +1,29 @@
 'use client'
 
-import { useState, useRef, useEffect, use } from 'react'
-import { notFound, useRouter } from 'next/navigation'
-import { useCompany } from '@/hooks/useCompany'
-import { BookingForm } from '@/components/booking/BookingForm'
-import { GuestInfoForm } from '@/components/booking/GuestInfoForm'
-import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
-import { useGuestStore } from '@/stores/useGuestStore'
-import { useCompanyCourtAvailabilities, useCourtAvailability } from '@/hooks/useCourtAvailability'
-import { useCompanyProducts } from '@/hooks/useCompanyProducts'
-import type { GuestInfo } from '@/components/booking/GuestInfoForm'
-import dayjs from 'dayjs'
-import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
-import { useBookings } from '@/hooks/useBookings'
-import { GuestCheckoutForm } from '@/components/booking/GuestCheckoutForm'
-import { AvailabilityStatus } from '@/types/graphql'
+import { loadStripe } from '@stripe/stripe-js'
+import dayjs from 'dayjs'
+import { notFound, useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, use } from 'react'
+
+import {
+  useCompanyCourtAvailabilities,
+  useCourtAvailability,
+} from '@/features/availability/hooks/useCourtAvailability'
+
+import { BookingForm } from '@/features/booking/components/BookingForm'
+import { GuestCheckoutForm } from '@/features/booking/components/GuestCheckoutForm'
+import { GuestInfoForm } from '@/features/booking/components/GuestInfoForm'
+import { BottomBar, BottomBarContent } from '@/features/booking/components/bottom-bar'
+import { useBookings } from '@/features/booking/hooks/useBookings'
+import { useCompany } from '@/core/company/hooks/useCompany'
+import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
+import { useGuestStore } from '@/shared/stores/useGuestStore'
+
+import { AvailabilityStatus } from '@/shared/types/graphql'
+
+import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'
+
 
 function getStripePromise(accountId: string) {
   return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {

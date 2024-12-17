@@ -1,13 +1,13 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
-import { Button, Input } from '@/components/ui'
 import { ArrowLeft, Pencil, Save, Trash2, X } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { useCourt } from '@/hooks/useCourt'
-import { toast } from 'sonner'
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { ROUTES } from '@/constants/routes'
+
+import { useCourt } from '@/features/courts/hooks/useCourt'
+
+import { Button, Input, ConfirmationDialog, SuccessToast, ErrorToast } from '@/shared/components/ui'
+import { ROUTES } from '@/shared/constants/routes'
 
 export default function CourtPage() {
   const params = useParams()
@@ -36,19 +36,19 @@ export default function CourtPage() {
     try {
       await updateCourt(courtNumber, newName)
       setIsEditing(false)
-      toast.success('Court updated successfully')
+      SuccessToast('Court updated successfully')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update court')
+      ErrorToast(err instanceof Error ? err.message : 'Failed to update court')
     }
   }
 
   async function handleDelete() {
     try {
       await deleteCourt(courtNumber)
-      toast.success('Court deleted successfully')
+      SuccessToast('Court deleted successfully')
       router.push(`${ROUTES.DASHBOARD.HOME}/courts?tab=courts`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete court')
+      ErrorToast(err instanceof Error ? err.message : 'Failed to delete court')
     }
   }
 

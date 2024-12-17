@@ -1,9 +1,10 @@
 'use client'
 
-import { AppSidebar, SidebarProvider } from '@/components/ui'
-import { useCompany } from '@/hooks/useCompany'
 import { ReactNode, Suspense } from 'react'
 
+import { useCompany } from '@/core/company/hooks/useCompany'
+
+import { AppSidebar, SidebarProvider } from '@/shared/components/ui'
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { company } = useCompany()
   return (

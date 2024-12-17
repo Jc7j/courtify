@@ -1,4 +1,4 @@
-import { ConfirmationEmail } from '@/components/booking/confirmation-email'
+import { ConfirmationEmail } from '@/features/booking/components/confirmation-email'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)

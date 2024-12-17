@@ -1,5 +1,6 @@
-import type { CodegenConfig } from '@graphql-codegen/cli'
 import { addTypenameSelectionDocumentTransform } from '@graphql-codegen/client-preset'
+
+import type { CodegenConfig } from '@graphql-codegen/cli'
 
 const config: CodegenConfig = {
   schema: 'http://localhost:54321/graphql/v1',
@@ -7,7 +8,7 @@ const config: CodegenConfig = {
   overwrite: true,
   ignoreNoDocuments: true,
   generates: {
-    'src/gql/': {
+    'src/shared/gql/': {
       preset: 'client',
       documentTransforms: [addTypenameSelectionDocumentTransform],
       plugins: [],

@@ -1,22 +1,25 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { Button, error as toastError, success as toastSuccess, Card } from '@/components/ui'
-import { useCourt } from '@/hooks/useCourt'
-import { useRouter } from 'next/navigation'
-import { ROUTES } from '@/constants/routes'
-import { useCompany } from '@/hooks/useCompany'
-import { useStripe } from '@/hooks/useStripe'
-import { StripeStatus } from '@/types/stripe'
-import { toast } from 'sonner'
-import { ProductList } from '@/components/stripe/ProductList'
-import { useCompanyProducts } from '@/hooks/useCompanyProducts'
-import type { CompanyProduct } from '@/types/graphql'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { CourtsList } from '@/components/courts/CourtsList'
 import { Info, Plus } from 'lucide-react'
-import { ProductDialog } from '@/components/stripe/ProductDialog'
+import { useRouter } from 'next/navigation'
+import { useState, useCallback, useEffect } from 'react'
+
+import { CourtsList } from '@/features/courts/components/CourtsList'
+import { useCourt } from '@/features/courts/hooks/useCourt'
+import { ProductDialog } from '@/features/stripe/components/ProductDialog'
+import { ProductList } from '@/features/stripe/components/ProductList'
+import { useStripe } from '@/features/stripe/hooks/useStripe'
+
+import { useCompany } from '@/core/company/hooks/useCompany'
+import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
+
+import { Button, Card, ErrorToast, SuccessToast } from '@/shared/components/ui'
+import { ROUTES } from '@/shared/constants/routes'
+import { StripeStatus } from '@/shared/types/stripe'
+
+import type { CompanyProduct } from '@/shared/types/graphql'
 
 dayjs.extend(relativeTime)
 
@@ -51,9 +54,9 @@ export default function CourtsPage() {
   async function handleCreateCourt(name: string) {
     try {
       await createCourt(name)
-      toastSuccess('Court created successfully')
+      SuccessToast('Court created successfully')
     } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Failed to create court')
+      ErrorToast(err instanceof Error ? err.message : 'Failed to create court')
     }
   }
 
@@ -71,7 +74,7 @@ export default function CourtsPage() {
         if (!mounted) return
 
         if (status.error) {
-          toast.error(status.error)
+          ErrorToast(status.error)
           return
         }
 
@@ -80,14 +83,14 @@ export default function CourtsPage() {
         if (status.isConnected && status.isEnabled) {
           const result = await listProducts()
           if (result.error) {
-            toast.error(result.error)
+            ErrorToast(result.error)
             return
           }
           setSyncNeeded(result.syncNeeded)
         }
       } catch (error) {
         console.error('[CourtsPage] Error fetching data:', error)
-        toast.error('Failed to fetch data')
+        ErrorToast('Failed to fetch data')
       }
     }
 

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/stripe'
-import { createAdminClient } from '@/lib/supabase/server'
+import { stripe } from '@/shared/lib/stripe/stripe'
+import { createAdminClient } from '@/shared/lib/supabase/server'
 import dayjs from 'dayjs'
-import { CreatePaymentIntentInput } from '@/hooks/useBookings'
+import { CreatePaymentIntentInput } from '@/features/booking/hooks/useBookings'
 
 export async function POST(req: Request) {
   try {

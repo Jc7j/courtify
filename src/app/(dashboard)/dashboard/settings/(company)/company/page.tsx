@@ -1,11 +1,11 @@
 'use client'
 
-import { useCompany } from '@/hooks/useCompany'
-import { CompanyProfileSection } from '@/components/settings/CompanyProfileSection'
-import { Input, Card, Button, Checkbox, ConfirmationDialog } from '@/components/ui'
+import { useCompany } from '@/core/company/hooks/useCompany'
+import { CompanyProfileSection } from '@/core/company/components/CompanySettings/CompanyProfileSection'
+import { Input, Card, Button, Checkbox, ConfirmationDialog } from '@/shared/components/ui'
 import { useState } from 'react'
-import { useUserStore } from '@/stores/useUserStore'
-import { MemberRole } from '@/types/graphql'
+import { useUserStore } from '@/shared/stores/useUserStore'
+import { MemberRole } from '@/shared/types/graphql'
 
 export default function SettingsPage() {
   const { user } = useUserStore()

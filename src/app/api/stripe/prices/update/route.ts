@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/stripe'
-import { createAdminClient } from '@/lib/supabase/server'
-import { ProductType, StripePaymentType } from '@/types/graphql'
+import { stripe } from '@/shared/lib/stripe/stripe'
+import { createAdminClient } from '@/shared/lib/supabase/server'
+import { ProductType, StripePaymentType } from '@/shared/types/graphql'
 
 interface UpdatePriceInput {
   companyId: string

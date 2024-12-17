@@ -1,12 +1,15 @@
 'use client'
 
-import { useCompany } from '@/hooks/useCompany'
-import { ConnectedAccount } from '@/components/stripe/ConnectedAccount'
-import { useStripe } from '@/hooks/useStripe'
 import { useEffect, useState } from 'react'
-import { StripeStatus } from '@/types/stripe'
-import { toast } from 'sonner'
-import StripeConnectProvider from '@/providers/StripeConnectProvider'
+
+import { ConnectedAccount } from '@/features/stripe/components/ConnectedAccount'
+import { useStripe } from '@/features/stripe/hooks/useStripe'
+
+import { useCompany } from '@/core/company/hooks/useCompany'
+
+import { ErrorToast } from '@/shared/components/ui'
+import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
+import { StripeStatus } from '@/shared/types/stripe'
 
 export default function PaymentProcessorPage() {
   const { company } = useCompany()
@@ -23,14 +26,14 @@ export default function PaymentProcessorPage() {
         if (!mounted) return
 
         if (status.error) {
-          toast.error(status.error)
+          ErrorToast(status.error)
           return
         }
 
         setStripeStatus(status)
       } catch (error) {
         console.error('[PaymentProcessorPage] Error fetching status:', error)
-        toast.error('Failed to fetch Stripe status')
+        ErrorToast('Failed to fetch Stripe status')
       }
     }
 

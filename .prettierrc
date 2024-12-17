@@ -3,5 +3,16 @@
   "semi": false,
   "singleQuote": true,
   "arrowParens": "always",
-  "printWidth": 100
+  "printWidth": 100,
+  "importOrder": [
+    "^(react/(.*)$)|^(react$)",
+    "^(next/(.*)$)|^(next$)",
+    "<THIRD_PARTY_MODULES>",
+    "^@/features/(.*)$",
+    "^@/shared/(.*)$",
+    "^@/types/(.*)$",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }
