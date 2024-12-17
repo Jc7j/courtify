@@ -91,7 +91,7 @@ export function CourtAvailabilityDialog({
     startTime: dayjs(availability.start_time).startOf('day').toISOString(),
     endTime: dayjs(availability.start_time).endOf('day').toISOString(),
   })
-  console.log('availability', availability)
+
   const isBooked = availability.status === AvailabilityStatus.Booked
   const isHeld = availability.status === AvailabilityStatus.Held
   const isPast = dayjs(availability.end_time).isBefore(dayjs())
@@ -116,6 +116,7 @@ export function CourtAvailabilityDialog({
       }
 
       await updateAvailability({
+        companyId: availability.company_id,
         courtNumber: availability.court_number,
         startTime: availability.start_time,
         update: {

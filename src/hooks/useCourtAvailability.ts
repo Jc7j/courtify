@@ -14,7 +14,6 @@ import {
 import { useUserStore } from '@/stores/useUserStore'
 import type {
   CourtAvailability,
-  CourtAvailabilityConnection,
   AvailabilityStatus,
   Courts,
   EnhancedAvailability,
@@ -30,6 +29,7 @@ interface CreateAvailabilityInput {
 }
 
 interface UpdateAvailabilityInput {
+  companyId: string
   courtNumber: number
   startTime: string
   update: {
@@ -43,10 +43,6 @@ interface UpdateAvailabilityInput {
 interface DeleteAvailabilityInput {
   courtNumber: number
   startTime: string
-}
-
-interface AvailabilitiesQueryData {
-  court_availabilitiesCollection: CourtAvailabilityConnection
 }
 
 interface CompanyAvailabilitiesData {
@@ -90,28 +86,28 @@ interface CompanyAvailabilitiesData {
   }
 }
 
-interface UseCompanyAvailabilitiesReturn {
+interface useCompanyCourtAvailabilitiesReturn {
   courts: Pick<Courts, 'court_number' | 'name'>[]
   availabilities: EnhancedAvailability[]
   loading: boolean
   error: Error | null
 }
 
-export function useCompanyAvailabilities(
+export function useCompanyCourtAvailabilities(
+  companyId: string,
   startTime?: string,
   endTime?: string
-): UseCompanyAvailabilitiesReturn {
-  const { user, isAuthenticated, isLoading } = useUserStore()
+): useCompanyCourtAvailabilitiesReturn {
   const [localAvailabilities, setLocalAvailabilities] = useState<EnhancedAvailability[]>([])
   const [courts, setCourts] = useState<Array<{ court_number: number; name: string }>>([])
 
   const queryOptions = {
     variables: {
-      company_id: user?.company_id,
+      company_id: companyId,
       start_time: startTime,
       end_time: endTime,
     },
-    skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
+    skip: !companyId || !startTime || !endTime,
     fetchPolicy: 'network-only' as const,
   }
 
@@ -156,7 +152,7 @@ export function useCompanyAvailabilities(
   return {
     courts,
     availabilities: localAvailabilities,
-    loading: isLoading || queryLoading,
+    loading: queryLoading,
     error: queryError ? new Error(queryError.message) : null,
   }
 }
@@ -171,7 +167,6 @@ export function useCourtAvailability({
   endTime?: string
 } = {}) {
   const { user, isAuthenticated } = useUserStore()
-  const [localAvailabilities, setLocalAvailabilities] = useState<CourtAvailability[]>([])
 
   const [createAvailabilityMutation] = useMutation(CREATE_COURT_AVAILABILITY, {
     refetchQueries: ['GetCompanyAvailabilities'],
@@ -236,21 +231,6 @@ export function useCourtAvailability({
     skip: !isAuthenticated || !user?.company_id || !startTime || !endTime,
   }
 
-  const { loading: queryLoading, error: queryError } = useQuery<AvailabilitiesQueryData>(
-    courtNumber ? GET_COURT_AVAILABILITIES : GET_COURT_AVAILABILITIES_BY_DATE_RANGE,
-    {
-      ...queryOptions,
-      fetchPolicy: 'cache-and-network',
-      onCompleted: (data) => {
-        const availabilities =
-          data?.court_availabilitiesCollection?.edges?.map(
-            (edge) => edge.node as CourtAvailability
-          ) || []
-        setLocalAvailabilities(availabilities)
-      },
-    }
-  )
-
   const [updateAvailabilityMutation] = useMutation(UPDATE_COURT_AVAILABILITY, {
     refetchQueries: [
       {
@@ -272,14 +252,10 @@ export function useCourtAvailability({
   })
 
   async function updateAvailability(input: UpdateAvailabilityInput): Promise<CourtAvailability> {
-    if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication required')
-    }
-
     try {
       const { data } = await updateAvailabilityMutation({
         variables: {
-          company_id: user.company_id,
+          company_id: input.companyId,
           court_number: input.courtNumber,
           start_time: input.startTime,
           set: {
@@ -294,15 +270,6 @@ export function useCourtAvailability({
         throw new Error('Failed to update availability')
       }
 
-      // Update local state with server response
-      setLocalAvailabilities((prev) =>
-        prev.map((a) =>
-          a.court_number === input.courtNumber && a.start_time === input.startTime
-            ? serverAvailability
-            : a
-        )
-      )
-
       return serverAvailability
     } catch (err) {
       console.error('Update failed:', err)
@@ -315,26 +282,6 @@ export function useCourtAvailability({
       throw new Error('Authentication required')
     }
 
-    const availabilityToDelete = localAvailabilities.find(
-      (a) => a.court_number === input.courtNumber && a.start_time === input.startTime
-    )
-
-    if (!availabilityToDelete) {
-      throw new Error('Availability not found')
-    }
-
-    // Allow deleting if it's today or in the future
-    if (dayjs(availabilityToDelete.start_time).isBefore(dayjs().startOf('day'))) {
-      throw new Error('Cannot delete past availability')
-    }
-
-    // Optimistic update
-    setLocalAvailabilities((prev) =>
-      prev.filter(
-        (a) => !(a.court_number === input.courtNumber && a.start_time === input.startTime)
-      )
-    )
-
     try {
       await deleteAvailabilityMutation({
         variables: {
@@ -344,18 +291,11 @@ export function useCourtAvailability({
         },
       })
     } catch (err) {
-      // Rollback optimistic update if deletion fails
-      if (availabilityToDelete) {
-        setLocalAvailabilities((prev) => [...prev, availabilityToDelete])
-      }
       throw err instanceof Error ? err : new Error('Failed to delete availability')
     }
   }
 
   return {
-    availabilities: localAvailabilities,
-    loading: queryLoading,
-    error: queryError ? new Error(queryError.message) : null,
     createAvailability,
     updateAvailability,
     deleteAvailability,

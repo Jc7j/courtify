@@ -105,7 +105,6 @@ export async function POST(request: Request) {
   const supabaseAdmin = createAdminClient()
 
   try {
-    console.log('event.data.object:', JSON.stringify(event.data.object, null, 2))
     const paymentIntent = event.data.object as Stripe.PaymentIntent
     const companyId = paymentIntent.metadata.companyId
 
@@ -122,7 +121,7 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
-        console.log('paymentIntent', paymentIntent)
+
         const updatedMetadata = {
           payment_details: {
             payment_method: paymentIntent.payment_method_types[0],

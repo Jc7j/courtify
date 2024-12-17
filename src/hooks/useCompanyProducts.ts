@@ -43,9 +43,11 @@ interface StripeProduct {
   }
 }
 
-export function useCompanyProducts() {
-  const { user } = useUserStore()
-  const { company } = useCompany()
+interface useCompanyProductsProps {
+  companyId?: string
+}
+
+export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
   const [error, setError] = useState<string | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)
 
@@ -54,8 +56,8 @@ export function useCompanyProducts() {
     loading: loadingProducts,
     refetch,
   } = useQuery(GET_COMPANY_PRODUCTS, {
-    variables: { companyId: company?.id },
-    skip: !company?.id,
+    variables: { companyId },
+    skip: !companyId,
   })
 
   const [createProductMutation, { loading: creating }] = useMutation(CREATE_PRODUCT, {
@@ -87,8 +89,8 @@ export function useCompanyProducts() {
     try {
       setError(null)
 
-      if (!user?.company_id) {
-        throw new Error('No company found')
+      if (!companyId) {
+        throw new Error('No company ID provided')
       }
 
       const stripeResponse = await fetch('/api/stripe/prices/create', {
@@ -96,7 +98,7 @@ export function useCompanyProducts() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...input,
-          company_id: user.company_id,
+          companyId,
         }),
       })
 
@@ -109,7 +111,7 @@ export function useCompanyProducts() {
       const result = await createProductMutation({
         variables: {
           input: {
-            company_id: user.company_id,
+            company_id: companyId,
             name: input.name,
             description: input.description || null,
             type: input.type,
@@ -161,8 +163,8 @@ export function useCompanyProducts() {
         throw new Error('Product not found')
       }
 
-      if (!user?.company_id) {
-        throw new Error('No company found')
+      if (!companyId) {
+        throw new Error('No company ID provided')
       }
 
       if (!product.stripe_price_id || !product.stripe_product_id) {
@@ -179,7 +181,7 @@ export function useCompanyProducts() {
         body: JSON.stringify({
           stripe_product_id: product.stripe_product_id,
           stripe_price_id: product.stripe_price_id,
-          company_id: user.company_id,
+          company_id: companyId,
           active: newActiveStatus,
         }),
       })
@@ -219,14 +221,14 @@ export function useCompanyProducts() {
   // @TODO return products from database since it should be in sync with stripe
   async function listProducts() {
     try {
-      if (!user?.company_id) {
-        throw new Error('No company found')
+      if (!companyId) {
+        throw new Error('No company ID provided')
       }
 
       const response = await fetch('/api/stripe/prices/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_id: user.company_id }),
+        body: JSON.stringify({ company_id: companyId }),
       })
 
       const data = await response.json()
@@ -274,8 +276,8 @@ export function useCompanyProducts() {
 
   async function syncProducts() {
     try {
-      if (!user?.company_id) {
-        throw new Error('No company found')
+      if (!companyId) {
+        throw new Error('No company ID provided')
       }
 
       const { data: queryData } = await refetch()
@@ -287,7 +289,7 @@ export function useCompanyProducts() {
       const stripeResponse = await fetch('/api/stripe/prices/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_id: user.company_id }),
+        body: JSON.stringify({ company_id: companyId }),
       })
 
       if (!stripeResponse.ok) {
@@ -310,7 +312,7 @@ export function useCompanyProducts() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            company_id: user.company_id,
+            company_id: companyId,
             name: product.name,
             description: product.description,
             type: product.type,
@@ -362,8 +364,8 @@ export function useCompanyProducts() {
     try {
       setError(null)
 
-      if (!user?.company_id) {
-        throw new Error('No company found')
+      if (!companyId) {
+        throw new Error('No company ID provided')
       }
 
       // Find existing product
@@ -378,7 +380,7 @@ export function useCompanyProducts() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...input,
-          companyId: user.company_id,
+          companyId,
           productId: existingProduct.id,
           stripePriceId: existingProduct.stripe_price_id,
           stripeProductId: existingProduct.stripe_product_id,

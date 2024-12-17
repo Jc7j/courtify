@@ -26,53 +26,11 @@ EXCLUDE USING gist (
     tstzrange(start_time, end_time) WITH &&
 );
 
-CREATE POLICY "court_availabilities_select_auth" ON court_availabilities
-    FOR SELECT TO authenticated
-    USING (
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE users.id = auth.uid()
-        )
-    );
+CREATE POLICY "Public can manage courts" ON court_availabilities
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
 
-CREATE POLICY "court_availabilities_insert_auth" ON court_availabilities
-    FOR INSERT TO authenticated
-    WITH CHECK (
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE users.id = auth.uid()
-        )
-    );
 
-CREATE POLICY "court_availabilities_update_auth" ON court_availabilities
-    FOR UPDATE TO authenticated
-    USING (
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE users.id = auth.uid()
-        )
-    );
-
-CREATE POLICY "court_availabilities_delete_auth" ON court_availabilities
-    FOR DELETE TO authenticated
-    USING (
-        company_id IN (
-            SELECT company_id 
-            FROM users 
-            WHERE users.id = auth.uid()
-        )
-    );
-
-CREATE POLICY "court_availabilities_select_anon" ON court_availabilities
-    FOR SELECT TO anon
-    USING (status = 'available');
-
-CREATE POLICY "Public can view available courts"
-  ON court_availabilities FOR SELECT
-  USING (
-    status = 'available' AND
-    end_time > CURRENT_TIMESTAMP
-  );
+-- Enable realtime for court_availabilities
+alter publication supabase_realtime add table court_availabilities;

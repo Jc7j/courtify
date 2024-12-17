@@ -7,7 +7,7 @@ import { BookingForm } from '@/components/booking/BookingForm'
 import { GuestInfoForm } from '@/components/booking/GuestInfoForm'
 import { BottomBar, BottomBarContent } from '@/components/ui/bottom-bar'
 import { useGuestStore } from '@/stores/useGuestStore'
-import { useCompanyAvailabilities, useCourtAvailability } from '@/hooks/useCourtAvailability'
+import { useCompanyCourtAvailabilities, useCourtAvailability } from '@/hooks/useCourtAvailability'
 import { useCompanyProducts } from '@/hooks/useCompanyProducts'
 import type { GuestInfo } from '@/components/booking/GuestInfoForm'
 import dayjs from 'dayjs'
@@ -32,7 +32,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   } = useCompany({
     slug: resolvedParams.slug,
   })
-  const { products } = useCompanyProducts()
+  const { products } = useCompanyProducts({ companyId: company?.id })
   const {
     selectedAvailability,
     guestInfo,
@@ -61,7 +61,8 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     availabilities,
     loading: availabilitiesLoading,
     error: availabilitiesError,
-  } = useCompanyAvailabilities(
+  } = useCompanyCourtAvailabilities(
+    company?.id || '',
     dayjs(weekStartDate).startOf('day').toISOString(),
     dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
   )
@@ -132,6 +133,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       if (selectedAvailability) {
         try {
           await updateAvailability({
+            companyId: company?.id || '',
             courtNumber: selectedAvailability.court_number,
             startTime: selectedAvailability.start_time,
             update: { status: AvailabilityStatus.Available },
@@ -176,6 +178,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           setRemainingTime('0:00')
 
           updateAvailability({
+            companyId: company?.id || '',
             courtNumber: selectedAvailability.court_number,
             startTime: selectedAvailability.start_time,
             update: { status: AvailabilityStatus.Available },

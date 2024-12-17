@@ -75,9 +75,9 @@ export function MembersSection({ members, loading }: MembersSectionProps) {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" className="shrink-0">
+        {/* <Button variant="outline" className="shrink-0">
           Invite people
-        </Button>
+        </Button> */}
       </div>
 
       <div className="text-sm text-muted-foreground">

@@ -26,7 +26,7 @@ export default function CourtsPage() {
   const { checkStripeStatus } = useStripe()
   const { courts, loading: courtsLoading, error, createCourt, creating, refetch } = useCourt()
   const { listProducts, archiveProduct, syncProducts, products, loadingProducts } =
-    useCompanyProducts()
+    useCompanyProducts({ companyId: company?.id })
 
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)

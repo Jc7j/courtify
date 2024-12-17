@@ -31,10 +31,17 @@ interface ProductDialogProps {
   trigger?: ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  companyId?: string
 }
 
-export function ProductDialog({ product, open, onOpenChange, trigger }: ProductDialogProps) {
-  const { createProduct, updateProduct, creating } = useCompanyProducts()
+export function ProductDialog({
+  product,
+  open,
+  onOpenChange,
+  trigger,
+  companyId,
+}: ProductDialogProps) {
+  const { createProduct, updateProduct, creating } = useCompanyProducts({ companyId })
   const [formData, setFormData] = useState({
     name: '',
     description: '',

@@ -1,21 +1,23 @@
 'use client'
 
 import { useUserStore } from '@/stores/useUserStore'
-import { Button, Card } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { useCompany } from '@/hooks/useCompany'
 import { Copy, Check } from 'lucide-react'
-import { useState } from 'react'
-import { CompanyCourtCalendar } from '@/components/courts/CompanyCourtCalendar'
-import { useCompanyAvailabilities } from '@/hooks/useCourtAvailability'
+import { useEffect, useState } from 'react'
+import { CourtsCalendar } from '@/components/courts/CourtsCalendar'
+import { useCompanyCourtAvailabilities } from '@/hooks/useCourtAvailability'
 import dayjs from 'dayjs'
 import { Courts } from '@/types/graphql'
 import StripeConnectProvider from '@/providers/StripeConnectProvider'
+import { useCalendarStore } from '@/stores/useCalendarStore'
 
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'
 
 export default function DashboardPage() {
   const { company, loading: companyLoading, error: companyError } = useCompany()
   const { user } = useUserStore()
+  const { setAvailabilities } = useCalendarStore()
   const [copied, setCopied] = useState(false)
   const [selectedDate, setSelectedDate] = useState({
     start: dayjs().startOf('day').toISOString(),
@@ -24,9 +26,15 @@ export default function DashboardPage() {
 
   const {
     courts: availabilityCourts,
-    availabilities,
     loading: availabilitiesLoading,
-  } = useCompanyAvailabilities(selectedDate.start, selectedDate.end)
+    availabilities,
+  } = useCompanyCourtAvailabilities(company?.id || '', selectedDate.start, selectedDate.end)
+
+  useEffect(() => {
+    if (availabilityCourts) {
+      setAvailabilities(availabilities)
+    }
+  }, [availabilityCourts])
 
   const handleDateChange = (start: string, end: string) => {
     setSelectedDate({ start, end })
@@ -94,25 +102,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Calendar Section */}
-      {/* <Card className="p-6 hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-semibold">Today&apos;s Schedule</h2>
-            <p className="text-sm text-muted-foreground">
-              View and manage court bookings and availability
-            </p>
-          </div>
-        </div> */}
       <StripeConnectProvider companyId={company.id}>
-        <CompanyCourtCalendar
+        <CourtsCalendar
           courts={availabilityCourts as Courts[]}
-          availabilities={availabilities}
           loading={availabilitiesLoading}
           onDateChange={handleDateChange}
+          companyId={company.id}
         />
       </StripeConnectProvider>
-      {/* </Card> */}
     </div>
   )
 }

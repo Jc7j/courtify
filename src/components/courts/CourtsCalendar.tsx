@@ -1,46 +1,125 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import dayjs from 'dayjs'
-import { Skeleton, Button } from '@/components/ui'
+import { Skeleton, Button, Switch } from '@/components/ui'
 import type { DatesSetArg, EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core'
 import { getAvailabilityColor } from '@/lib/utils/availability-color'
 import { Courts, AvailabilityStatus, EnhancedAvailability } from '@/types/graphql'
 import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
 import { toast } from 'sonner'
 import { useCourtAvailability } from '@/hooks/useCourtAvailability'
-import { Expand, Shrink, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { EventResizeDoneArg } from '@fullcalendar/interaction'
+import { CalendarOptionsMenu } from './CalendarOptionsMenu'
+import { useCalendarStore } from '@/stores/useCalendarStore'
+import { supabase } from '@/lib/supabase/client'
 
 // @TODO a quick button set availabilities for a day. Recurring availability, etc.
-interface CompanyCourtCalendarProps {
+interface CourtsCalendarProps {
   courts: Courts[]
-  availabilities: EnhancedAvailability[]
   loading: boolean
   onDateChange: (startDate: string, endDate: string) => void
+  companyId: string
 }
 
-export function CompanyCourtCalendar({
-  courts,
-  availabilities,
-  loading,
-  onDateChange,
-}: CompanyCourtCalendarProps) {
+export function CourtsCalendar({ courts, loading, onDateChange, companyId }: CourtsCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [selectedAvailability, setSelectedAvailability] = useState<EnhancedAvailability | null>(
     null
   )
-  const [isFullHeight, setIsFullHeight] = useState(false)
+  const { settings, availabilities, setAvailabilities } = useCalendarStore()
+  const [isEditMode, setIsEditMode] = useState(false)
 
   const { createAvailability, updateAvailability } = useCourtAvailability({
     startTime: selectedDate.startOf('day').toISOString(),
     endTime: selectedDate.endOf('day').toISOString(),
   })
+
+  useEffect(() => {
+    if (!companyId) return
+
+    const channel = supabase
+      .channel('court-availabilities')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'court_availabilities',
+          filter: `company_id=eq.${companyId}`,
+        },
+        (payload: any) => {
+          console.log('Received realtime update:', payload)
+
+          if (payload.errors) {
+            console.error('Realtime payload error:', payload.errors)
+            return
+          }
+
+          switch (payload.eventType) {
+            case 'INSERT': {
+              const exists = availabilities.some(
+                (avail) =>
+                  avail.court_number === payload.new.court_number &&
+                  avail.start_time === payload.new.start_time
+              )
+              if (exists) return
+
+              // Preserve existing booking if it exists
+              const existingAvailability = availabilities.find(
+                (avail) =>
+                  avail.court_number === payload.new.court_number &&
+                  avail.start_time === payload.new.start_time
+              )
+
+              const newAvailability: EnhancedAvailability = {
+                ...payload.new,
+                booking: existingAvailability?.booking || null,
+              }
+              setAvailabilities([...availabilities, newAvailability])
+              break
+            }
+            case 'UPDATE': {
+              const updatedAvailabilities = availabilities.map((avail) =>
+                avail.court_number === payload.new.court_number &&
+                avail.start_time === payload.new.start_time
+                  ? {
+                      ...avail, // Preserve existing fields
+                      ...payload.new, // Update with new data
+                      booking: avail.booking, // Explicitly preserve booking
+                      status: payload.new.status, // Ensure status is updated
+                    }
+                  : avail
+              )
+              setAvailabilities(updatedAvailabilities)
+              break
+            }
+            case 'DELETE': {
+              const filteredAvailabilities = availabilities.filter(
+                (avail) =>
+                  !(
+                    avail.court_number === payload.old.court_number &&
+                    avail.start_time === payload.old.start_time
+                  )
+              )
+              setAvailabilities(filteredAvailabilities)
+              break
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [companyId, availabilities, setAvailabilities])
 
   const handleDatesSet = useCallback(
     ({ start }: DatesSetArg) => {
@@ -71,15 +150,18 @@ export function CompanyCourtCalendar({
       const calendarApi = selectInfo.view.calendar
       calendarApi.unselect()
 
-      calendarApi.addEvent({
-        id: 'temp',
-        resourceId: resourceId.toString().padStart(2, '0'),
-        title: 'Creating...',
-        start: selectInfo.startStr,
-        end: selectInfo.endStr,
-        backgroundColor: getAvailabilityColor(AvailabilityStatus.Available),
-        classNames: ['opacity-50'],
-      })
+      const newAvailability = {
+        company_id: companyId,
+        court_number: resourceId,
+        start_time: selectInfo.startStr,
+        end_time: selectInfo.endStr,
+        status: AvailabilityStatus.Available,
+        booking: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      setAvailabilities([...availabilities, newAvailability as EnhancedAvailability])
 
       try {
         await createAvailability({
@@ -90,12 +172,11 @@ export function CompanyCourtCalendar({
         })
         toast.success('Availability created')
       } catch (error) {
-        console.error('Failed to create availability:', error)
+        setAvailabilities(availabilities)
         toast.error(error instanceof Error ? error.message : 'Failed to create availability')
-        calendarApi.getEventById('temp')?.remove()
       }
     },
-    [createAvailability]
+    [availabilities, createAvailability, companyId, setAvailabilities]
   )
 
   const handleEventClick = useCallback(
@@ -129,12 +210,28 @@ export function CompanyCourtCalendar({
         return
       }
 
-      // Get new court number from the resource ID
       const newCourtNumber = parseInt(event.getResources()[0]?.id || '0', 10)
       const oldCourtNumber = parseInt(oldEvent.getResources()[0]?.id || '0', 10)
 
+      const updatedAvailability = {
+        ...availability,
+        court_number: newCourtNumber,
+        start_time: event.start?.toISOString() || '',
+        end_time: event.end?.toISOString() || '',
+        updated_at: new Date().toISOString(),
+      }
+
+      setAvailabilities(
+        availabilities.map((a) =>
+          a.court_number === oldCourtNumber && a.start_time === availability.start_time
+            ? updatedAvailability
+            : a
+        )
+      )
+
       try {
         await updateAvailability({
+          companyId: companyId,
           courtNumber: oldCourtNumber,
           startTime: oldEvent.start?.toISOString() || '',
           update: {
@@ -145,12 +242,12 @@ export function CompanyCourtCalendar({
         })
         toast.success('Availability updated')
       } catch (error) {
-        console.error('Failed to update availability:', error)
-        toast.error(error instanceof Error ? error.message : 'Failed to update availability')
+        setAvailabilities(availabilities)
         dropInfo.revert()
+        toast.error(error instanceof Error ? error.message : 'Failed to update availability')
       }
     },
-    [availabilities, updateAvailability]
+    [availabilities, updateAvailability, setAvailabilities]
   )
 
   const handleEventResize = useCallback(
@@ -168,8 +265,24 @@ export function CompanyCourtCalendar({
         return
       }
 
+      const updatedAvailability = {
+        ...availability,
+        start_time: event.start?.toISOString() || '',
+        end_time: event.end?.toISOString() || '',
+        updated_at: new Date().toISOString(),
+      }
+
+      setAvailabilities(
+        availabilities.map((a) =>
+          a.court_number === availability.court_number && a.start_time === availability.start_time
+            ? updatedAvailability
+            : a
+        )
+      )
+
       try {
         await updateAvailability({
+          companyId: companyId,
           courtNumber: availability.court_number,
           startTime: oldEvent.start?.toISOString() || '',
           update: {
@@ -179,12 +292,12 @@ export function CompanyCourtCalendar({
         })
         toast.success('Availability updated')
       } catch (error) {
-        console.error('Failed to update availability:', error)
-        toast.error(error instanceof Error ? error.message : 'Failed to update availability')
+        setAvailabilities(availabilities)
         resizeInfo.revert()
+        toast.error(error instanceof Error ? error.message : 'Failed to update availability')
       }
     },
-    [availabilities, updateAvailability]
+    [availabilities, updateAvailability, setAvailabilities]
   )
 
   if (loading) {
@@ -198,20 +311,51 @@ export function CompanyCourtCalendar({
       </div>
     )
   }
-  console.log('availabilities', availabilities)
+
   const resources = courts.map((court) => ({
     id: court.court_number.toString().padStart(2, '0'),
     title: court.name || `Court ${court.court_number}`,
     courtNumber: court.court_number,
   }))
 
+  console.log('availabilities', availabilities)
+
+  // Helper function to safely access booking metadata
+  const getBookingTitle = (availability: EnhancedAvailability) => {
+    if (!availability.booking) return ''
+
+    try {
+      const metadata =
+        typeof availability.booking.metadata === 'string'
+          ? JSON.parse(availability.booking.metadata)
+          : availability.booking.metadata
+
+      const courtRental = metadata.products?.court_rental?.name || ''
+      const netHeight = metadata.customer_preferences?.net_height || ''
+      const equipment =
+        metadata.products?.equipment?.map((eq: { name: string }) => eq.name).join(', ') || ''
+
+      return `${availability.booking.customer_name} • ${courtRental} ${netHeight} • ${equipment}`
+    } catch (error) {
+      console.error('Error parsing booking metadata:', error)
+      return availability.booking.customer_name || ''
+    }
+  }
+
   return (
     <div className="bg-background border rounded-lg p-2 sm:p-6 overflow-hidden">
       <div className="flex items-center justify-between mb-4">
-        <div className="w-[200px]">{/* Spacer div */}</div>
+        <div className="w-[200px] flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {isEditMode ? 'Edit Mode' : 'Read Only'}
+            </span>
+            <Switch checked={isEditMode} onCheckedChange={setIsEditMode} />
+          </div>
+        </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-background/50 ">
+          <div className="flex items-center gap-2 bg-background/50">
             <Button
               variant="outline-primary"
               size="icon"
@@ -263,24 +407,7 @@ export function CompanyCourtCalendar({
         </div>
 
         <div className="w-[200px] flex justify-end">
-          <Button
-            size="sm"
-            variant="outline-primary"
-            onClick={() => setIsFullHeight(!isFullHeight)}
-            className="gap-2 hover:bg-background/80"
-          >
-            {isFullHeight ? (
-              <>
-                <Shrink className="h-4 w-4" />
-                Compact View
-              </>
-            ) : (
-              <>
-                <Expand className="h-4 w-4" />
-                Full View
-              </>
-            )}
-          </Button>
+          <CalendarOptionsMenu />
         </div>
       </div>
 
@@ -299,12 +426,12 @@ export function CompanyCourtCalendar({
         slotLabelClassNames="text-muted-foreground text-3xl sm:text-sm"
         resourceLabelClassNames="text-muted-foreground text-xs sm:text-sm font-medium"
         datesSet={handleDatesSet}
-        slotMinTime="00:00:00"
-        slotMaxTime="24:00:00"
+        slotMinTime={settings.slotMinTime}
+        slotMaxTime={settings.slotMaxTime}
         allDaySlot={false}
-        height={isFullHeight ? 'auto' : '1000px'}
+        height={settings.isFullHeight ? 'auto' : '800px'}
         nowIndicator
-        selectable
+        selectable={isEditMode}
         selectMirror
         slotDuration="00:15:00"
         timeZone="local"
@@ -312,9 +439,7 @@ export function CompanyCourtCalendar({
         events={availabilities.map((availability) => ({
           id: `${availability.court_number}-${availability.start_time}`,
           resourceId: availability.court_number.toString().padStart(2, '0'),
-          title: availability.booking
-            ? `${availability.booking.customer_name} • ${availability.booking.metadata.products.court_rental.name} ${availability.booking.metadata?.customer_preferences?.net_height} • ${availability.booking.metadata.products.equipment?.map((equipment: { name: string }) => equipment.name).join(', ')}`
-            : '',
+          title: getBookingTitle(availability),
           start: availability.start_time,
           end: availability.end_time,
           backgroundColor: getAvailabilityColor(availability.status),
@@ -328,7 +453,7 @@ export function CompanyCourtCalendar({
         eventResize={handleEventResize}
         snapDuration="00:30:00"
         slotEventOverlap={false}
-        editable
+        editable={isEditMode}
         eventDurationEditable
         eventResizableFromStart
       />

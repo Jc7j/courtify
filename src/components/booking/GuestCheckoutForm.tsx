@@ -71,7 +71,7 @@ export function GuestCheckoutForm({
       setIsProcessing(false)
     }
   }
-  console.log('bookingDetails', bookingDetails)
+
   return (
     <div className="space-y-8">
       {/* Order Summary */}
@@ -103,7 +103,7 @@ export function GuestCheckoutForm({
 
           {/* Customer Details */}
           <div className="space-y-2">
-            <h4 className="font-medium">Customer Information</h4>
+            <h4 className="font-medium">Your Information</h4>
             <div className="grid gap-1 text-sm">
               <p>Name: {bookingDetails.guestInfo.name}</p>
               <p>Email: {bookingDetails.guestInfo.email}</p>

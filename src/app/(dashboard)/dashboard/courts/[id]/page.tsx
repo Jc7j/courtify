@@ -6,13 +6,11 @@ import { ArrowLeft, Pencil, Save, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { useCourt } from '@/hooks/useCourt'
 import { toast } from 'sonner'
-import { CourtCalendar } from '@/components/courts/CourtCalendar'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { ROUTES } from '@/constants/routes'
 
 export default function CourtPage() {
   const params = useParams()
-  console.log('params', params)
   const router = useRouter()
   const courtNumber = parseInt(params.id as string)
   const { court, courtLoading, updateCourt, deleteCourt, updating, deleting } =
@@ -116,21 +114,6 @@ export default function CourtPage() {
           Delete Court
         </Button>
       </div>
-
-      {courtLoading ? (
-        <div className="mt-8 bg-background border rounded-lg p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-12 bg-muted rounded w-full" />
-            <div className="grid grid-cols-7 gap-2">
-              {[...Array(7)].map((_, i) => (
-                <div key={i} className="h-96 bg-muted rounded" />
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        court && <CourtCalendar court={court} />
-      )}
 
       <ConfirmationDialog
         open={showDeleteDialog}
