@@ -1,9 +1,10 @@
 'use client'
 
-import { ProfileSection } from '@/core/user/components/UserSettings/ProfileSection'
+import { ProfileSection } from '@/features/settings/components/UserSettings/ProfileSection'
+
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { Skeleton } from '@/shared/components/ui'
-import { useUserStore } from '@/shared/stores/useUserStore'
 
 export default function AccountPage() {
   const { user, isLoading } = useUserStore()

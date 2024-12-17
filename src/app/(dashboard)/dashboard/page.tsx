@@ -5,14 +5,14 @@ import { Copy, Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
+import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { useCompanyCourtAvailabilities } from '@/features/availability/hooks/useCourtAvailability'
 
 import { useCompany } from '@/core/company/hooks/useCompany'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { Button } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
-import { useCalendarStore } from '@/shared/stores/useCalendarStore'
-import { useUserStore } from '@/shared/stores/useUserStore'
 import { Courts } from '@/shared/types/graphql'
 
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'

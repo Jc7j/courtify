@@ -1,15 +1,14 @@
 'use client'
 
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import { Info, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState, useCallback, useEffect } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 
-import { CourtsList } from '@/features/courts/components/CourtsList'
+import { CourtList } from '@/features/courts/components/CourtList'
+import { CourtsErrorBoundary } from '@/features/courts/components/CourtsErrorBoundary'
+import { QuickStatsSkeleton } from '@/features/courts/components/Skeletons'
 import { useCourt } from '@/features/courts/hooks/useCourt'
-import { ProductDialog } from '@/features/stripe/components/ProductDialog'
-import { ProductList } from '@/features/stripe/components/ProductList'
+import { ProductsSection } from '@/features/stripe/components/ProductsSection'
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
 import { useCompany } from '@/core/company/hooks/useCompany'
@@ -17,57 +16,99 @@ import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
 
 import { Button, Card, ErrorToast, SuccessToast } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
-import { StripeStatus } from '@/shared/types/stripe'
 
 import type { CompanyProduct } from '@/shared/types/graphql'
+import type { StripeStatus } from '@/shared/types/stripe'
 
-dayjs.extend(relativeTime)
+function QuickStats({
+  courts,
+  products,
+  stripeStatus,
+}: {
+  courts: number
+  products: number
+  stripeStatus: string
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      <Card className="p-6 hover:shadow-md transition-shadow">
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-muted-foreground">Total Courts</span>
+          <span className="text-2xl font-bold mt-2">{courts}</span>
+          <span className="text-xs text-muted-foreground mt-1">
+            {courts === 0 ? 'No courts added yet' : 'Courts available for booking'}
+          </span>
+        </div>
+      </Card>
+      <Card className="p-6 hover:shadow-md transition-shadow">
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-muted-foreground">Active Products</span>
+          <span className="text-2xl font-bold mt-2">{products}</span>
+          <span className="text-xs text-muted-foreground mt-1">
+            Products available for purchase
+          </span>
+        </div>
+      </Card>
+      <Card className="p-6 hover:shadow-md transition-shadow">
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-muted-foreground">Payment Status</span>
+          <span className="text-2xl font-bold mt-2">{stripeStatus}</span>
+          <span className="text-xs text-muted-foreground mt-1">
+            {stripeStatus === 'Ready'
+              ? 'Ready to accept payments'
+              : 'Connect Stripe to accept payments'}
+          </span>
+        </div>
+      </Card>
+    </div>
+  )
+}
 
 export default function CourtsPage() {
   const router = useRouter()
   const { company } = useCompany()
   const { checkStripeStatus } = useStripe()
-  const { courts, loading: courtsLoading, error, createCourt, creating, refetch } = useCourt()
+  const { courts, loading: courtsLoading, createCourt, creating } = useCourt()
   const { listProducts, archiveProduct, syncProducts, products, loadingProducts } =
     useCompanyProducts({ companyId: company?.id })
 
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)
 
-  const handleSync = useCallback(async () => {
-    await syncProducts()
-  }, [syncProducts])
-
-  const handleArchive = useCallback(
-    async (productId: string) => {
-      const result = await archiveProduct(productId)
-      if (!result.error) {
-        const productsResult = await listProducts()
-        if (!productsResult.error) {
-          setSyncNeeded(productsResult.syncNeeded)
-        }
+  const handleCreateCourt = useCallback(
+    async (name: string) => {
+      try {
+        await createCourt(name)
+        SuccessToast('Court created successfully')
+      } catch (err) {
+        ErrorToast(err instanceof Error ? err.message : 'Failed to create court')
       }
     },
-    [archiveProduct, listProducts]
+    [createCourt]
   )
 
-  async function handleCreateCourt(name: string) {
-    try {
-      await createCourt(name)
-      SuccessToast('Court created successfully')
-    } catch (err) {
-      ErrorToast(err instanceof Error ? err.message : 'Failed to create court')
-    }
-  }
+  const handleCourtClick = useCallback(
+    (courtNumber: number) => {
+      router.push(`${ROUTES.DASHBOARD.HOME}/courts/${courtNumber}`)
+    },
+    [router]
+  )
 
-  function handleCourtClick(courtNumber: number) {
-    router.push(`${ROUTES.DASHBOARD.HOME}/courts/${courtNumber}`)
+  const handleSync = () => syncProducts()
+  const handleArchive = async (productId: string) => {
+    const result = await archiveProduct(productId)
+    if (!result.error) {
+      const productsResult = await listProducts()
+      if (!productsResult.error) {
+        setSyncNeeded(productsResult.syncNeeded)
+      }
+    }
   }
 
   useEffect(() => {
     let mounted = true
 
-    async function fetchData() {
+    async function fetchStripeStatus() {
       if (!company?.id || !company.stripe_account_id) return
       try {
         const status = await checkStripeStatus()
@@ -79,179 +120,110 @@ export default function CourtsPage() {
         }
 
         setStripeStatus(status)
-
-        if (status.isConnected && status.isEnabled) {
-          const result = await listProducts()
-          if (result.error) {
-            ErrorToast(result.error)
-            return
-          }
-          setSyncNeeded(result.syncNeeded)
-        }
       } catch (error) {
+        if (!mounted) return
         console.error('[CourtsPage] Error fetching data:', error)
         ErrorToast('Failed to fetch data')
       }
     }
 
-    fetchData()
-
+    fetchStripeStatus()
     return () => {
       mounted = false
     }
-  }, [company?.id, company?.stripe_account_id])
+  }, [company?.id, company?.stripe_account_id, checkStripeStatus])
 
-  if (error) {
-    return (
-      <div className="p-8 space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold text-foreground">Courts</h1>
-        </div>
-        <div className="rounded-lg bg-destructive/10 p-4 text-destructive">
-          <p>Failed to load courts. Please try again later.</p>
-          <Button variant="outline" onClick={() => refetch()} className="mt-2">
-            Retry
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (!stripeStatus?.isConnected || !stripeStatus.isEnabled) return
+
+    let mounted = true
+
+    async function syncProductsStatus() {
+      try {
+        const result = await listProducts()
+        if (!mounted) return
+
+        if (result.error) {
+          ErrorToast(result.error)
+          return
+        }
+        setSyncNeeded(result.syncNeeded)
+      } catch (error) {
+        if (!mounted) return
+        ErrorToast(
+          `Failed to sync products: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
+      }
+    }
+
+    syncProductsStatus()
+    return () => {
+      mounted = false
+    }
+  }, [stripeStatus?.isConnected, stripeStatus?.isEnabled, listProducts])
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Court & Product Management</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your courts, schedules, and rental products all in one place.
-        </p>
-      </div>
-
-      <div className="grid gap-8">
-        {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-muted-foreground">Total Courts</span>
-              <span className="text-2xl font-bold mt-2">{courts.length}</span>
-              <span className="text-xs text-muted-foreground mt-1">
-                {courts.length === 0 ? 'No courts added yet' : 'Courts available for booking'}
-              </span>
-            </div>
-          </Card>
-          <Card className="p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-muted-foreground">Active Products</span>
-              <span className="text-2xl font-bold mt-2">
-                {products.filter((p: CompanyProduct) => p.is_active).length}
-              </span>
-              <span className="text-xs text-muted-foreground mt-1">
-                Products available for purchase
-              </span>
-            </div>
-          </Card>
-          <Card className="p-6 hover:shadow-md transition-shadow">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-muted-foreground">Payment Status</span>
-              <span className="text-2xl font-bold mt-2">
-                {stripeStatus?.isEnabled ? 'Ready' : 'Not Connected'}
-              </span>
-              <span className="text-xs text-muted-foreground mt-1">
-                {stripeStatus?.isEnabled
-                  ? 'Ready to accept payments'
-                  : 'Connect Stripe to accept payments'}
-              </span>
-            </div>
-          </Card>
+    <CourtsErrorBoundary>
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Court & Product Management</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your courts, schedules, and rental products all in one place.
+          </p>
         </div>
 
-        {/* Courts Section */}
-        <Card className="p-6 space-y-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-foreground">Court Management</h2>
-              <p className="text-sm text-muted-foreground">
-                Add and manage courts, set schedules, and track bookings
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              className="text-primary hover:text-primary-foreground hover:bg-primary"
-              onClick={() => handleCreateCourt('New Court')}
-              disabled={creating}
-            >
-              {creating ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-              )}
-              Add Court
-            </Button>
-          </div>
-          <CourtsList
-            courts={courts}
-            loading={courtsLoading}
-            creating={creating}
-            onCreateCourt={handleCreateCourt}
-            onCourtClick={handleCourtClick}
-          />
-        </Card>
+        <div className="grid gap-8">
+          <Suspense fallback={<QuickStatsSkeleton />}>
+            <QuickStats
+              courts={courts.length}
+              products={products.filter((p: CompanyProduct) => p.is_active).length}
+              stripeStatus={stripeStatus?.isEnabled ? 'Ready' : 'Not Connected'}
+            />
+          </Suspense>
 
-        {/* Products Section */}
-        <Card className="p-6 hover:shadow-md transition-shadow">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground">Products & Pricing</h2>
+          <Card className="p-6 space-y-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold text-foreground">Court Management</h2>
                 <p className="text-sm text-muted-foreground">
-                  Configure court rentals and equipment offerings
+                  Add and manage courts, set schedules, and track bookings
                 </p>
               </div>
-              {stripeStatus?.isConnected && stripeStatus.isEnabled && (
-                <ProductDialog
-                  trigger={
-                    <Button variant="outline" className="gap-2">
-                      <Plus className="h-4 w-4" />
-                      Create Product
-                    </Button>
-                  }
-                />
-              )}
+              <Button
+                variant="outline"
+                className="text-primary hover:text-primary-foreground hover:bg-primary"
+                onClick={() => handleCreateCourt('New Court')}
+                disabled={creating}
+              >
+                {creating ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                Add Court
+              </Button>
             </div>
+            <CourtList
+              courts={courts}
+              loading={courtsLoading}
+              creating={creating}
+              onCreateCourt={handleCreateCourt}
+              onCourtClick={handleCourtClick}
+            />
+          </Card>
 
-            {stripeStatus?.isConnected && stripeStatus.isEnabled ? (
-              <ProductList
-                products={products}
-                loading={loadingProducts}
-                syncNeeded={syncNeeded}
-                onSync={handleSync}
-                onArchive={handleArchive}
-              />
-            ) : (
-              <div className="rounded-lg border bg-muted/5 p-8">
-                <div className="flex items-start space-x-4">
-                  <Info className="h-6 w-6 text-muted-foreground mt-1" />
-                  <div>
-                    <h3 className="font-semibold mb-2">Payment Processing Required</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Connect your Stripe account to start managing products and accepting payments.
-                    </p>
-                    <a
-                      href={ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}
-                      className="inline-flex items-center text-primary hover:underline text-sm font-medium group"
-                    >
-                      Go to Payment Settings
-                      <span className="ml-1 group-hover:translate-x-0.5 transition-transform">
-                        →
-                      </span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
+          <Card className="p-6 hover:shadow-md transition-shadow">
+            <ProductsSection
+              stripeStatus={stripeStatus}
+              products={products}
+              loadingProducts={loadingProducts}
+              syncNeeded={syncNeeded}
+              onSync={handleSync}
+              onArchive={handleArchive}
+            />
+          </Card>
+        </div>
       </div>
-    </div>
+    </CourtsErrorBoundary>
   )
 }

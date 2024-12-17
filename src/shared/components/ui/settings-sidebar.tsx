@@ -17,7 +17,7 @@ import {
 import { ROUTES } from '@/shared/constants/routes'
 import { hasAdminAccess } from '@/shared/lib/utils/admin-access'
 import { cn } from '@/shared/lib/utils/cn'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 const workspaceSettings = [
   {

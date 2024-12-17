@@ -5,7 +5,7 @@ import { useCallback } from 'react'
 
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuth } from '@/shared/providers/AuthProvider'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 export type OnboardingStep = 'signup' | 'create-intro' | 'create' | 'invite-team'
 

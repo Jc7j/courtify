@@ -1,165 +1,176 @@
 'use client'
 
-import { useMutation, useQuery } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
+import { useCallback, useState, useEffect, useMemo } from 'react'
 
-import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '@/features/courts/graphql/mutations'
-import { GET_COMPANY_COURTS, GET_COURT } from '@/features/courts/graphql/queries'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { CourtClientService } from '../services/courtClientService'
+import { CourtServerService } from '../services/courtServerService'
 
 import type { Courts } from '@/shared/types/graphql'
 
-interface UseCourtReturn {
-  court: Courts | null
-  courtLoading: boolean
-  courtError: Error | null
+interface UseCourtState {
   courts: Courts[]
+  court: Courts | null
   loading: boolean
   error: Error | null
-  createCourt: (name: string) => Promise<Courts>
-  updateCourt: (courtNumber: number, name: string) => Promise<Courts>
-  deleteCourt: (courtNumber: number) => Promise<Courts>
-  creating: boolean
-  updating: boolean
-  deleting: boolean
-  refetch: () => Promise<void>
 }
 
-export function useCourt(courtNumber?: number): UseCourtReturn {
-  const { user, isAuthenticated, isLoading } = useUserStore()
+export function useCourt(courtNumber?: number) {
+  const client = useApolloClient()
+  const { user, isAuthenticated } = useUserStore()
 
-  const {
-    data: courtData,
-    loading: singleCourtLoading,
-    error: singleCourtError,
-  } = useQuery(GET_COURT, {
-    variables: {
-      company_id: user?.company_id,
-      court_number: courtNumber ? Number(courtNumber) : 0,
+  // Create service instance only once
+  const courtServerService = useMemo(() => new CourtServerService(client), [client])
+
+  const [state, setState] = useState<UseCourtState>({
+    courts: [],
+    court: null,
+    loading: false,
+    error: null,
+  })
+  const [creating, setCreating] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // Memoize the company ID check
+  const companyId = useMemo(() => {
+    if (!isAuthenticated || !user?.company_id) return null
+    return user.company_id
+  }, [isAuthenticated, user?.company_id])
+
+  const fetchCourts = useCallback(async () => {
+    if (!companyId) return
+
+    setState((prev) => ({ ...prev, loading: true, error: null }))
+    try {
+      const courts = await courtServerService.getCourts(companyId)
+      setState((prev) => ({ ...prev, courts, loading: false }))
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error : new Error('Failed to fetch courts'),
+        loading: false,
+      }))
+    }
+  }, [companyId, courtServerService])
+
+  const createCourt = useCallback(
+    async (name: string): Promise<Courts> => {
+      if (!isAuthenticated || !user?.company_id) {
+        throw new Error('Authentication required')
+      }
+
+      const { isValid, error } = CourtClientService.validateCourtName(name)
+      if (!isValid) {
+        throw new Error(error)
+      }
+
+      const formattedName = CourtClientService.formatCourtName(name)
+
+      setCreating(true)
+      try {
+        const newCourt = await courtServerService.createCourt(user.company_id, formattedName)
+        await fetchCourts()
+        return newCourt
+      } finally {
+        setCreating(false)
+      }
     },
-    skip: !isAuthenticated || !user?.company_id || !courtNumber,
-    fetchPolicy: 'network-only',
-  })
+    [isAuthenticated, user?.company_id, courtServerService, fetchCourts]
+  )
 
-  const {
-    data: courtsData,
-    loading: courtsLoading,
-    error: courtsError,
-    refetch,
-  } = useQuery(GET_COMPANY_COURTS, {
-    variables: { company_id: user?.company_id },
-    skip: !isAuthenticated || !user?.company_id,
-    fetchPolicy: 'network-only',
-  })
-
-  const [createCourtMutation, { loading: creating }] = useMutation(CREATE_COURT)
-  const [updateCourtMutation, { loading: updating }] = useMutation(UPDATE_COURT)
-  const [deleteCourtMutation, { loading: deleting }] = useMutation(DELETE_COURT)
-
-  async function createCourt(name: string): Promise<Courts> {
-    if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication and company required')
-    }
-
-    try {
-      const now = new Date().toISOString()
-      const courtInput = {
-        company_id: user.company_id,
-        court_number: getNextCourtNumber(),
-        name,
-        created_at: now,
-        updated_at: now,
+  const updateCourt = useCallback(
+    async (courtNumber: number, name: string): Promise<Courts> => {
+      if (!isAuthenticated || !user?.company_id) {
+        throw new Error('Authentication required')
       }
 
-      const { data } = await createCourtMutation({
-        variables: { objects: [courtInput] },
-      })
-
-      const newCourt = data?.insertIntocourtsCollection?.records?.[0]
-      if (!newCourt) {
-        throw new Error('Failed to create court')
+      const { isValid, error } = CourtClientService.validateCourtName(name)
+      if (!isValid) {
+        throw new Error(error)
       }
 
-      await refetch()
-      return newCourt
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to create court')
-    }
-  }
+      const formattedName = CourtClientService.formatCourtName(name)
 
-  async function updateCourt(courtNumber: number, name: string): Promise<Courts> {
-    if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication and company required')
-    }
+      setUpdating(true)
+      try {
+        const updatedCourt = await courtServerService.updateCourt(
+          user.company_id,
+          courtNumber,
+          formattedName
+        )
+        await fetchCourts()
+        return updatedCourt
+      } finally {
+        setUpdating(false)
+      }
+    },
+    [isAuthenticated, user?.company_id, courtServerService, fetchCourts]
+  )
 
-    try {
-      const { data } = await updateCourtMutation({
-        variables: {
-          company_id: user.company_id,
-          court_number: courtNumber,
-          set: {
-            name,
-            updated_at: new Date().toISOString(),
-          },
-        },
-      })
-
-      if (!data?.updatecourtsCollection?.records?.[0]) {
-        throw new Error('Failed to update court')
+  const deleteCourt = useCallback(
+    async (courtNumber: number): Promise<Courts> => {
+      if (!isAuthenticated || !user?.company_id) {
+        throw new Error('Authentication required')
       }
 
-      await refetch()
-      return data.updatecourtsCollection.records[0]
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update court')
-    }
-  }
-
-  async function deleteCourt(courtNumber: number): Promise<Courts> {
-    if (!isAuthenticated || !user?.company_id) {
-      throw new Error('Authentication and company required')
-    }
-
-    try {
-      const { data } = await deleteCourtMutation({
-        variables: {
-          company_id: user.company_id,
-          court_number: courtNumber,
-        },
-      })
-
-      if (!data?.deleteFromcourtsCollection?.records?.[0]) {
-        throw new Error('Failed to delete court')
+      setDeleting(true)
+      try {
+        const deletedCourt = await courtServerService.deleteCourt(user.company_id, courtNumber)
+        await fetchCourts()
+        return deletedCourt
+      } finally {
+        setDeleting(false)
       }
+    },
+    [isAuthenticated, user?.company_id, courtServerService, fetchCourts]
+  )
 
-      await refetch()
-      return data.deleteFromcourtsCollection.records[0]
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to delete court')
+  // Only fetch courts once when mounted or when companyId changes
+  useEffect(() => {
+    if (!companyId) return
+    fetchCourts()
+  }, [companyId]) // Remove fetchCourts from dependencies
+
+  // Only fetch single court when courtNumber changes
+  useEffect(() => {
+    let mounted = true
+
+    async function fetchSingleCourt() {
+      if (!companyId || !courtNumber) return
+      setState((prev) => ({ ...prev, loading: true, error: null }))
+      try {
+        const court = await courtServerService.getCourt(companyId, courtNumber)
+        if (mounted) {
+          setState((prev) => ({ ...prev, court, loading: false }))
+        }
+      } catch (error) {
+        if (mounted) {
+          setState((prev) => ({
+            ...prev,
+            error: error instanceof Error ? error : new Error('Failed to fetch court'),
+            loading: false,
+          }))
+        }
+      }
     }
-  }
 
-  function getNextCourtNumber(): number {
-    if (!courtsData?.courtsCollection?.edges) return 1
-    const existingCourts = courtsData.courtsCollection.edges.map(
-      (edge: { node: Courts }) => edge.node
-    )
-    return Math.max(0, ...existingCourts.map((c: Courts) => c.court_number)) + 1
-  }
+    fetchSingleCourt()
+    return () => {
+      mounted = false
+    }
+  }, [companyId, courtNumber, courtServerService])
 
   return {
-    court: courtData?.courtsCollection?.edges?.[0]?.node || null,
-    courtLoading: isLoading || singleCourtLoading,
-    courtError: singleCourtError ? new Error(singleCourtError.message) : null,
-    courts: courtsData?.courtsCollection?.edges?.map((edge: { node: Courts }) => edge.node) || [],
-    loading: isLoading || courtsLoading,
-    error: courtsError ? new Error(courtsError.message) : null,
-    createCourt,
-    updateCourt,
-    deleteCourt,
+    ...state,
     creating,
     updating,
     deleting,
-    refetch: refetch as unknown as () => Promise<void>,
+    createCourt,
+    updateCourt,
+    deleteCourt,
+    refetch: fetchCourts,
   }
 }

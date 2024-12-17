@@ -15,7 +15,7 @@ import {
   GET_COMPANY_COURTS_AVAILABILITIES,
 } from '@/features/availability/graphql/queries'
 
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import type {
   CourtAvailability,

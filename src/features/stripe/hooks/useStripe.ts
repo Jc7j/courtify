@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 import { StripeAccountDetails } from '@/shared/types/stripe'
 
 import { useCompany } from '../../../core/company/hooks/useCompany'

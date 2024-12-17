@@ -8,7 +8,7 @@ import { GET_COMPANY_BY_SLUG, GET_COMPANY_BY_ID } from '@/core/company/graphql/q
 
 import { supabase } from '@/shared/lib/supabase/client'
 import { generateSlug } from '@/shared/lib/utils/generate-slug'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 import { BaseUser } from '@/shared/types/auth'
 
 import { useOnboarding } from '../../../features/onboarding/hooks/useOnboarding'

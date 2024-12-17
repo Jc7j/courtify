@@ -2,12 +2,10 @@ import { gql } from '@apollo/client'
 
 export const COURT_FIELDS = gql`
   fragment CourtFields on courts {
-    nodeId
-    company_id
     court_number
     name
-    created_at
     updated_at
+    company_id
   }
 `
 
@@ -31,7 +29,6 @@ export const GET_COURT = gql`
   ${COURT_FIELDS}
   query GetCourt($company_id: UUID!, $court_number: Int!) {
     courtsCollection(
-      first: 1
       filter: { company_id: { eq: $company_id }, court_number: { eq: $court_number } }
     ) {
       edges {

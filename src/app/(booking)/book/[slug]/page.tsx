@@ -15,11 +15,11 @@ import { BottomBar, BottomBarContent } from '@/features/booking/components/botto
 import { GuestCheckoutForm } from '@/features/booking/components/GuestCheckoutForm'
 import { GuestInfoForm } from '@/features/booking/components/GuestInfoForm'
 import { useBookings } from '@/features/booking/hooks/useBookings'
+import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
 
 import { useCompany } from '@/core/company/hooks/useCompany'
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
 
-import { useBookingStore } from '@/shared/stores/useBookingStore'
 import { AvailabilityStatus } from '@/shared/types/graphql'
 
 import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'

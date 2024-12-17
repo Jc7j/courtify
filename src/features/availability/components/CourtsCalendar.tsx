@@ -19,7 +19,7 @@ import {
 } from '@/shared/components/ui'
 import { supabase } from '@/shared/lib/supabase/client'
 import { getAvailabilityColor } from '@/shared/lib/utils/availability-color'
-import { useCalendarStore } from '@/shared/stores/useCalendarStore'
+import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { Courts, AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
 
 import { CalendarOptionsMenu } from './CalendarOptionsMenu'

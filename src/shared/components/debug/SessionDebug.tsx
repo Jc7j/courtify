@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { apolloClient } from '@/shared/lib/apollo/client'
 import { supabase } from '@/shared/lib/supabase/client'
 import { useAuth } from '@/shared/providers/AuthProvider'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 export function SessionDebug() {
   const { user } = useAuth()

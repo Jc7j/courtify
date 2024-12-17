@@ -1,5 +1,5 @@
 import { supabase } from '@/shared/lib/supabase/client'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import type { MemberRole, UserProfile } from '@/shared/types/auth'
 

@@ -8,7 +8,7 @@ import { AUTH_ERRORS, getAuthErrorMessage } from '@/features/auth/utils/auth-err
 import { ROUTES } from '@/shared/constants/routes'
 import { clearApolloCache } from '@/shared/lib/apollo/client'
 import { supabase } from '@/shared/lib/supabase/client'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import type { BaseUser } from '@/shared/types/auth'
 import type { Session } from '@supabase/supabase-js'

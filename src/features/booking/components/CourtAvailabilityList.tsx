@@ -5,7 +5,7 @@ import { Clock } from 'lucide-react'
 import { memo, useMemo } from 'react'
 
 import { cn } from '@/shared/lib/utils/cn'
-import { useBookingStore } from '@/shared/stores/useBookingStore'
+import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
 import { CourtAvailability } from '@/shared/types/graphql'
 
 interface AvailabilitySlotProps {

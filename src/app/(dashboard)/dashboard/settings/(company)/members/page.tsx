@@ -1,9 +1,9 @@
 'use client'
 
-import { MembersSection } from '@/core/company/components/CompanySettings/MembersSection'
+import { MembersSection } from '@/features/settings/components/CompanySettings/MembersSection'
 import { useCompanyMembers } from '@/core/user/hooks/useUser'
 
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 export default function MembersPage() {
   const { user } = useUserStore()

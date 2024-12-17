@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
   Switch,
 } from '@/shared/components/ui'
-import { useCalendarStore } from '@/shared/stores/useCalendarStore'
+import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 
 const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0')

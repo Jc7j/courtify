@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { useCompany } from '@/core/company/hooks/useCompany'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import {
   Input,
@@ -17,7 +18,6 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@/shared/components/ui'
-import { useUserStore } from '@/shared/stores/useUserStore'
 
 import type { Libraries } from '@react-google-maps/api'
 

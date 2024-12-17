@@ -23,7 +23,7 @@ import {
 import { ROUTES } from '@/shared/constants/routes'
 import { cn } from '@/shared/lib/utils/cn'
 import { useAuth } from '@/shared/providers/AuthProvider'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 export function UserMenu() {
   const { user } = useUserStore()

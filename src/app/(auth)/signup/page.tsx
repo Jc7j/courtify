@@ -11,7 +11,7 @@ import { OnboardingStep, useOnboarding } from '@/features/onboarding/hooks/useOn
 
 import { Logo, Progress } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
-import { useUserStore } from '@/shared/stores/useUserStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 import { BaseUser } from '@/shared/types/auth'
 
 const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {
