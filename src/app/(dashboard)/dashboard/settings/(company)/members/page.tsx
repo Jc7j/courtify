@@ -1,13 +1,22 @@
 'use client'
 
-import { MembersSection } from '@/features/settings/components/CompanySettings/MembersSection'
-import { useCompanyMembers } from '@/core/user/hooks/useUser'
+import { Suspense } from 'react'
 
+import { MembersSection } from '@/features/settings/components/CompanySettings/MembersSection'
+import { MembersSkeleton } from '@/features/settings/components/Skeletons'
+
+import { useCompanyMembers } from '@/core/user/hooks/useUser'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
+
+function MembersContent() {
+  const { user } = useUserStore()
+  const { members } = useCompanyMembers(user?.company_id ?? '')
+
+  return <MembersSection members={members} />
+}
 
 export default function MembersPage() {
   const { user } = useUserStore()
-  const { members, loading } = useCompanyMembers(user?.company_id ?? '')
 
   if (!user?.company_id) {
     return (
@@ -25,7 +34,9 @@ export default function MembersPage() {
       </div>
 
       <div className="grid gap-8 mt-8">
-        <MembersSection members={members} loading={loading} />
+        <Suspense fallback={<MembersSkeleton />}>
+          <MembersContent />
+        </Suspense>
       </div>
     </div>
   )

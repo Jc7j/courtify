@@ -1,7 +1,7 @@
 'use client'
 
 import { Search } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState, useMemo } from 'react'
 
 import {
   Avatar,
@@ -18,38 +18,59 @@ import { roleColors } from '@/shared/lib/utils/role-colors'
 
 import type { User } from '@/shared/types/graphql'
 
-interface MembersSectionProps {
+interface MemberListProps {
   members: User[]
-  loading: boolean
 }
 
-export function MembersSection({ members, loading }: MembersSectionProps) {
+const MemberList = memo(function MemberList({ members }: MemberListProps) {
+  return (
+    <div className="space-y-2">
+      {members.map((member) => (
+        <div
+          key={member.id}
+          className="flex items-center justify-between rounded-sm px-2 py-2 hover:bg-muted/50"
+        >
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-xs">
+                {member.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium">{member.name}</p>
+              <p className="text-sm text-muted-foreground">{member.email}</p>
+            </div>
+          </div>
+          <Badge variant="secondary" className={roleColors[member.role]}>
+            {member.role}
+          </Badge>
+        </div>
+      ))}
+    </div>
+  )
+})
+
+interface MembersSectionProps {
+  members: User[]
+}
+
+export function MembersSection({ members }: MembersSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
 
-  const filteredMembers = members.filter((member) => {
-    const matchesSearch =
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesRole = roleFilter === 'all' || member.role === roleFilter
-    return matchesSearch && matchesRole
-  })
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="space-y-1">
-          <div className="h-7 w-32 animate-pulse rounded bg-muted" />
-          <div className="h-5 w-64 animate-pulse rounded bg-muted" />
-        </div>
-        <div className="space-y-4">
-          <div className="h-10 w-full animate-pulse rounded bg-muted" />
-          <div className="h-10 w-full animate-pulse rounded bg-muted" />
-          <div className="h-10 w-full animate-pulse rounded bg-muted" />
-        </div>
-      </div>
-    )
-  }
+  const filteredMembers = useMemo(() => {
+    return members.filter((member) => {
+      const matchesSearch =
+        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.email.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesRole = roleFilter === 'all' || member.role === roleFilter
+      return matchesSearch && matchesRole
+    })
+  }, [members, searchQuery, roleFilter])
 
   return (
     <div className="space-y-6">
@@ -76,42 +97,13 @@ export function MembersSection({ members, loading }: MembersSectionProps) {
             </SelectContent>
           </Select>
         </div>
-        {/* <Button variant="outline" className="shrink-0">
-          Invite people
-        </Button> */}
       </div>
 
       <div className="text-sm text-muted-foreground">
         {filteredMembers.length} active {filteredMembers.length === 1 ? 'member' : 'members'}
       </div>
 
-      <div className="space-y-2">
-        {filteredMembers.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between rounded-sm px-2 py-2 hover:bg-muted/50"
-          >
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
-                  {member.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{member.name}</p>
-                <p className="text-sm text-muted-foreground">{member.email}</p>
-              </div>
-            </div>
-            <Badge variant="secondary" className={roleColors[member.role]}>
-              {member.role}
-            </Badge>
-          </div>
-        ))}
-      </div>
+      <MemberList members={filteredMembers} />
     </div>
   )
 }

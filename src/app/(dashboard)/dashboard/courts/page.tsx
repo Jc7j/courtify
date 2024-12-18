@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 
+import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { CourtList } from '@/features/courts/components/CourtList'
 import { CourtsErrorBoundary } from '@/features/courts/components/CourtsErrorBoundary'
 import { QuickStatsSkeleton } from '@/features/courts/components/Skeletons'
@@ -11,8 +12,8 @@ import { useCourt } from '@/features/courts/hooks/useCourt'
 import { ProductsSection } from '@/features/stripe/components/ProductsSection'
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
 import { Button, Card, ErrorToast, SuccessToast } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
@@ -66,14 +67,26 @@ function QuickStats({
 
 export default function CourtsPage() {
   const router = useRouter()
-  const { company } = useCompany()
+  const company = useCompanyStore((state) => state.company)
   const { checkStripeStatus } = useStripe()
   const { courts, loading: courtsLoading, createCourt, creating } = useCourt()
   const { listProducts, archiveProduct, syncProducts, products, loadingProducts } =
-    useCompanyProducts({ companyId: company?.id })
+    useCompanyProducts({
+      companyId: company?.id,
+    })
+  const setCalendarSettings = useCalendarStore((state) => state.setSettings)
 
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)
+
+  // Initialize calendar settings
+  useEffect(() => {
+    setCalendarSettings({
+      slotMinTime: '06:00:00',
+      slotMaxTime: '23:00:00',
+      isFullHeight: true,
+    })
+  }, [setCalendarSettings])
 
   const handleCreateCourt = useCallback(
     async (name: string) => {

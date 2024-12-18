@@ -4,8 +4,9 @@ import dayjs from 'dayjs'
 import { Clock } from 'lucide-react'
 import { memo, useMemo } from 'react'
 
-import { cn } from '@/shared/lib/utils/cn'
 import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
+
+import { cn } from '@/shared/lib/utils/cn'
 import { CourtAvailability } from '@/shared/types/graphql'
 
 interface AvailabilitySlotProps {
@@ -130,12 +131,7 @@ function CourtAvailabilityListComponent({
               endTime={slot.endTime}
               courtCount={slot.courtCount}
               selected={slotKey === selectedKey}
-              onClick={() => {
-                console.log('slotKey', slotKey)
-                console.log('selectedKey', selectedKey)
-                console.log('slot.firstAvailability', slot.firstAvailability)
-                setSelectedAvailability(slot.firstAvailability)
-              }}
+              onClick={() => setSelectedAvailability(slot.firstAvailability)}
             />
           )
         })}

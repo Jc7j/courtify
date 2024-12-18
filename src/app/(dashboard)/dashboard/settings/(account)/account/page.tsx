@@ -1,31 +1,30 @@
 'use client'
 
-import { ProfileSection } from '@/features/settings/components/UserSettings/ProfileSection'
+import { Suspense } from 'react'
+
+import { AccountSkeleton } from '@/features/settings/components/Skeletons'
+import { AccountSection } from '@/features/settings/components/UserSettings/AccountSection'
 
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
-import { Skeleton } from '@/shared/components/ui'
+function AccountContent() {
+  const { user } = useUserStore()
+
+  if (!user) return null
+
+  return <AccountSection user={user} />
+}
 
 export default function AccountPage() {
-  const { user, isLoading } = useUserStore()
+  const { user } = useUserStore()
 
-  if (isLoading) {
+  if (!user) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
+      <div className="p-8 text-center">
+        <p className="text-muted-foreground">No user found</p>
       </div>
     )
   }
-
-  if (!user) return null
 
   return (
     <div className="p-8">
@@ -35,7 +34,9 @@ export default function AccountPage() {
       </div>
 
       <div className="grid gap-8 mt-8">
-        <ProfileSection user={user} />
+        <Suspense fallback={<AccountSkeleton />}>
+          <AccountContent />
+        </Suspense>
       </div>
     </div>
   )

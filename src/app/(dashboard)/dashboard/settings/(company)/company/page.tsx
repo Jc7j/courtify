@@ -1,72 +1,61 @@
 'use client'
 
-import { useState } from 'react'
+import { memo, useCallback, useState, Suspense } from 'react'
 
 import { CompanyProfileSection } from '@/features/settings/components/CompanySettings/CompanyProfileSection'
-import { useCompany } from '@/core/company/hooks/useCompany'
+import {
+  DeleteSectionSkeleton,
+  CompanyProfileSkeleton,
+} from '@/features/settings/components/Skeletons'
+
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { Input, Card, Button, Checkbox, ConfirmationDialog } from '@/shared/components/ui'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
 import { MemberRole } from '@/shared/types/graphql'
 
-export default function SettingsPage() {
-  const { user } = useUserStore()
-  const { company, loading: companyLoading } = useCompany()
+interface DeleteSectionProps {
+  companyName: string
+  onDelete: () => Promise<void>
+  isDeleting: boolean
+}
+
+const DeleteSection = memo(function DeleteSection({
+  companyName,
+  onDelete,
+  isDeleting,
+}: DeleteSectionProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [confirmName, setConfirmName] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
   const [acknowledged, setAcknowledged] = useState(false)
 
-  const handleDelete = async () => {
-    if (!company || confirmName !== company.name || !acknowledged) return
-    setIsDeleting(true)
-    // TODO: Implement delete functionality
-    setIsDeleting(false)
+  const handleDelete = useCallback(async () => {
+    if (confirmName !== companyName || !acknowledged) return
+    await onDelete()
     setShowDeleteDialog(false)
-  }
-
-  if (!company) {
-    return (
-      <div className="p-8 rounded-lg bg-destructive/10 text-destructive">
-        <p className="font-medium">No company data found</p>
-      </div>
-    )
-  }
+  }, [acknowledged, companyName, confirmName, onDelete])
 
   return (
-    <div className="p-8">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Company Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your company profile and preferences</p>
-      </div>
+    <>
+      <Card>
+        <div className="p-4 flex items-center justify-between gap-4">
+          <div>
+            <label className="text-sm font-medium">Delete Workspace</label>
+            <p className="text-xs text-muted-foreground">
+              Schedule workspace to be permanently deleted
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            Delete
+          </Button>
+        </div>
+      </Card>
 
-      <div className="grid gap-8 mt-8">
-        <CompanyProfileSection company={company} loading={companyLoading} />
-
-        {/* Only show delete section for owners */}
-        {user?.role === MemberRole.Owner && (
-          <Card>
-            <div className="p-4 flex items-center justify-between gap-4">
-              <div>
-                <label className="text-sm font-medium">Delete Workspace</label>
-                <p className="text-xs text-muted-foreground">
-                  Schedule workspace to be permanently deleted
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                Delete
-              </Button>
-            </div>
-          </Card>
-        )}
-      </div>
-
-      {/* Dialog will only be accessible to owners due to conditional rendering above */}
       <ConfirmationDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
@@ -74,7 +63,7 @@ export default function SettingsPage() {
         description={
           <p>
             If you are sure you want to proceed with the deletion of the workspace{' '}
-            <span className="font-medium">{company?.name}</span>, please continue below.
+            <span className="font-medium">{companyName}</span>, please continue below.
           </p>
         }
         actionLabel="Delete my workspace"
@@ -82,7 +71,7 @@ export default function SettingsPage() {
         loading={isDeleting}
         variant="destructive"
         className="sm:max-w-md"
-        disableConfirm={confirmName !== company?.name || !acknowledged}
+        disableConfirm={confirmName !== companyName || !acknowledged}
       >
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -95,13 +84,13 @@ export default function SettingsPage() {
           </p>
           <div className="space-y-2">
             <label htmlFor="confirm-name" className="text-sm font-medium">
-              To confirm, type &quot;{company?.name}&quot; in the box below.
+              To confirm, type &quot;{companyName}&quot; in the box below.
             </label>
             <Input
               id="confirm-name"
               value={confirmName}
               onChange={(e) => setConfirmName(e.target.value)}
-              placeholder={company?.name}
+              placeholder={companyName}
               className="bg-muted border-0"
             />
           </div>
@@ -118,6 +107,44 @@ export default function SettingsPage() {
           </div>
         </div>
       </ConfirmationDialog>
+    </>
+  )
+})
+
+export default function SettingsPage() {
+  const user = useUserStore((state) => state.user)
+  const company = useCompanyStore((state) => state.company)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = useCallback(async () => {
+    if (!company) return
+    setIsDeleting(true)
+    // TODO: Implement delete functionality
+    setIsDeleting(false)
+  }, [company])
+
+  return (
+    <div className="p-8">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Company Settings</h1>
+        <p className="text-sm text-muted-foreground">Manage your company profile and preferences</p>
+      </div>
+
+      <div className="grid gap-8 mt-8">
+        <Suspense fallback={<CompanyProfileSkeleton />}>
+          <CompanyProfileSection />
+        </Suspense>
+
+        {user?.role === MemberRole.Owner && (
+          <Suspense fallback={<DeleteSectionSkeleton />}>
+            <DeleteSection
+              companyName={company?.name ?? ''}
+              onDelete={handleDelete}
+              isDeleting={isDeleting}
+            />
+          </Suspense>
+        )}
+      </div>
     </div>
   )
 }

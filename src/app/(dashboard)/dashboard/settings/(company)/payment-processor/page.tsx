@@ -5,14 +5,14 @@ import { useEffect, useState } from 'react'
 import { ConnectedAccount } from '@/features/stripe/components/ConnectedAccount'
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
 import { ErrorToast } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 import { StripeStatus } from '@/shared/types/stripe'
 
 export default function PaymentProcessorPage() {
-  const { company } = useCompany()
+  const company = useCompanyStore((state) => state.company)
   const { checkStripeStatus, checking } = useStripe()
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
 

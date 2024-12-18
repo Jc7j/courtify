@@ -2,10 +2,10 @@
 
 import { useState, useCallback } from 'react'
 
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
-import { StripeAccountDetails } from '@/shared/types/stripe'
 
-import { useCompany } from '../../../core/company/hooks/useCompany'
+import { StripeAccountDetails } from '@/shared/types/stripe'
 
 interface StripeStatus {
   isConnected: boolean
@@ -31,7 +31,7 @@ interface ConnectStripeOptions {
 
 export function useStripe(): UseStripeReturn {
   const { user } = useUserStore()
-  const { company } = useCompany()
+  const company = useCompanyStore((state) => state.company)
   const [connecting, setConnecting] = useState(false)
   const [checking, setChecking] = useState(false)
 

@@ -9,6 +9,7 @@ import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { supabase } from '@/shared/lib/supabase/client'
 
+import { useCompanyStore } from '../hooks/useCompanyStore'
 import { CompanyClientService } from '../services/companyClientService'
 import { CompanyServerService } from '../services/companyServerService'
 
@@ -42,8 +43,9 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const companyServerService = useMemo(() => new CompanyServerService(client), [client])
   const { user, isLoading: userLoading } = useUserStore()
   const { handleCompanyCreated } = useOnboarding()
+  const companyStore = useCompanyStore()
 
-  const [company, setCompany] = useState<Company | null>(null)
+  const [fullCompanyData, setFullCompanyData] = useState<Company | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [creating, setCreating] = useState(false)
@@ -52,20 +54,32 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   const fetchCompany = useCallback(async () => {
     if (!user?.company_id && !slug) return
 
+    if (companyStore.company?.id === user?.company_id && !slug) {
+      setFullCompanyData(companyStore.company as Company)
+      return
+    }
+
     setLoading(true)
     try {
       const result = slug
         ? await companyServerService.getCompanyBySlug(slug)
         : await companyServerService.getCompanyById(user!.company_id!)
 
-      setCompany(result)
-      setError(null)
+      setFullCompanyData(result)
+
+      companyStore.setCompany({
+        id: result?.id ?? '',
+        name: result?.name ?? '',
+        slug: result?.slug ?? '',
+        stripe_account_id: result?.stripe_account_id ?? null,
+        stripe_account_enabled: result?.stripe_account_enabled ?? false,
+      })
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch company'))
     } finally {
       setLoading(false)
     }
-  }, [user?.company_id, slug, companyServerService])
+  }, [user?.company_id, slug, companyServerService, companyStore])
 
   const createCompany = useCallback(
     async (name: string, address: string, sports: string) => {
@@ -117,7 +131,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
         useUserStore.getState().updateUser({ company_id: newCompany.id })
         await handleCompanyCreated()
 
-        setCompany(newCompany)
+        setFullCompanyData(newCompany)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to create company'))
@@ -131,16 +145,16 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
 
   const updateCompany = useCallback(
     async (data: UpdateCompanyInput) => {
-      if (!company?.id) throw new Error('No company found')
+      if (!fullCompanyData?.id) throw new Error('No company found')
 
       try {
         setUpdating(true)
-        const updatedCompany = await companyServerService.updateCompany(company.id, {
+        const updatedCompany = await companyServerService.updateCompany(fullCompanyData.id, {
           ...data,
           updated_at: new Date().toISOString(),
         })
 
-        setCompany(updatedCompany)
+        setFullCompanyData(updatedCompany)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to update company'))
@@ -149,7 +163,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
         setUpdating(false)
       }
     },
-    [company?.id, companyServerService]
+    [fullCompanyData?.id, companyServerService]
   )
 
   useEffect(() => {
@@ -158,7 +172,7 @@ export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
   }, [fetchCompany, userLoading])
 
   return {
-    company,
+    company: fullCompanyData,
     loading: loading || userLoading,
     error,
     creating,

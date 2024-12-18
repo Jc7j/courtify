@@ -2,7 +2,7 @@
 
 import { loadConnectAndInitialize } from '@stripe/connect-js/pure'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
-import React, { useState, ReactNode } from 'react'
+import React, { useState, ReactNode, useMemo } from 'react'
 
 interface StripeConnectProviderProps {
   children: ReactNode
@@ -11,7 +11,7 @@ interface StripeConnectProviderProps {
 
 export default function StripeConnectProvider({ children, companyId }: StripeConnectProviderProps) {
   // Only initialize when actually needed
-  const [stripeConnectInstance] = useState(() => {
+  const stripeConnectInstance = useMemo(() => {
     // Simple synchronous function that returns a promise
     const fetchClientSecret = () =>
       fetch('/api/stripe/accounts/session', {
@@ -33,7 +33,7 @@ export default function StripeConnectProvider({ children, companyId }: StripeCon
         },
       },
     })
-  })
+  }, [companyId])
 
   return (
     <ConnectComponentsProvider connectInstance={stripeConnectInstance}>

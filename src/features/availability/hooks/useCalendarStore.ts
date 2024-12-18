@@ -13,9 +13,17 @@ interface CalendarStore {
   setSettings: (settings: Partial<CalendarStore['settings']>) => void
 }
 
-export const useCalendarStore = create<CalendarStore>((set) => ({
+export const useCalendarStore = create<CalendarStore>((set, get) => ({
   availabilities: [],
-  setAvailabilities: (availabilities) => set({ availabilities: availabilities || [] }),
+  setAvailabilities: (newAvailabilities) => {
+    const currentAvailabilities = get().availabilities
+    const newAvailabilitiesStr = JSON.stringify(newAvailabilities || [])
+    const currentAvailabilitiesStr = JSON.stringify(currentAvailabilities)
+
+    if (newAvailabilitiesStr !== currentAvailabilitiesStr) {
+      set({ availabilities: newAvailabilities || [] })
+    }
+  },
   settings: {
     slotMinTime: '06:00:00',
     slotMaxTime: '23:00:00',

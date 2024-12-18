@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
 import { useRef, useState, useCallback, useEffect } from 'react'
 
+import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
 
 import {
@@ -19,7 +20,6 @@ import {
 } from '@/shared/components/ui'
 import { supabase } from '@/shared/lib/supabase/client'
 import { getAvailabilityColor } from '@/shared/lib/utils/availability-color'
-import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { Courts, AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
 
 import { CalendarOptionsMenu } from './CalendarOptionsMenu'
@@ -64,8 +64,6 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
           filter: `company_id=eq.${companyId}`,
         },
         (payload: any) => {
-          console.log('Received realtime update:', payload)
-
           if (payload.errors) {
             console.error('Realtime payload error:', payload.errors)
             return
@@ -326,8 +324,6 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
     title: court.name || `Court ${court.court_number}`,
     courtNumber: court.court_number,
   }))
-
-  console.log('availabilities', availabilities)
 
   // Helper function to safely access booking metadata
   const getBookingTitle = (availability: EnhancedAvailability) => {

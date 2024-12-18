@@ -4,6 +4,8 @@ import { Calendar, Home } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+
 import {
   Sidebar,
   SidebarContent,
@@ -19,7 +21,6 @@ import {
 import { UserMenu } from '@/shared/components/ui/user-menu'
 import { ROUTES } from '@/shared/constants/routes'
 import { cn } from '@/shared/lib/utils/cn'
-import { Company } from '@/shared/types/graphql'
 
 const items = [
   {
@@ -36,11 +37,8 @@ const items = [
   },
 ]
 
-interface AppSidebarProps {
-  companyName: Company['name']
-}
-
-export function AppSidebar({ companyName }: AppSidebarProps) {
+export function AppSidebar() {
+  const { company } = useCompanyStore()
   const pathname = usePathname()
 
   const isActivePath = (path: string, exact: boolean) => {
@@ -65,7 +63,9 @@ export function AppSidebar({ companyName }: AppSidebarProps) {
             <SidebarHeader className="border-b border-sidebar-border">
               <div className="flex items-center gap-3 p-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-semibold text-sidebar-foreground">{companyName}</span>
+                  <span className="font-semibold text-sidebar-foreground">
+                    {company?.name || 'Courtify'}
+                  </span>
                 </div>
               </div>
             </SidebarHeader>
