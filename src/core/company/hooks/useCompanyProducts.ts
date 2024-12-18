@@ -223,7 +223,6 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
     }
   }
 
-  // @TODO return products from database since it should be in sync with stripe
   async function listProducts() {
     try {
       if (!companyId) {

@@ -1,6 +1,5 @@
 import { gql } from '@apollo/client'
 
-// Fragment to share common user fields
 const USER_FIELDS = gql`
   fragment UserFields on users {
     id
@@ -16,7 +15,6 @@ const USER_FIELDS = gql`
   }
 `
 
-// Get a single user by ID
 export const GET_USER = gql`
   ${USER_FIELDS}
   query GetUser($id: UUID!) {
@@ -30,7 +28,6 @@ export const GET_USER = gql`
   }
 `
 
-// Get all members of a company
 export const GET_COMPANY_MEMBERS = gql`
   ${USER_FIELDS}
   query GetCompanyMembers($companyId: UUID!) {

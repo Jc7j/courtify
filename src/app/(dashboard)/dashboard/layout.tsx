@@ -2,13 +2,13 @@
 
 import { ReactNode, Suspense } from 'react'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
 import { AppSidebar } from '@/shared/components/ui/app-sidebar'
 import { SidebarProvider } from '@/shared/components/ui/sidebar'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { company } = useCompany()
+  const { company } = useCompanyStore()
   return (
     <SidebarProvider>
       <div className="flex flex-col lg:flex-row min-h-screen w-full">

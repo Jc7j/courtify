@@ -1,18 +1,18 @@
 'use client'
 
-import { useMutation, useQuery } from '@apollo/client'
-import { useEffect } from 'react'
+import { useApolloClient } from '@apollo/client'
+import { useCallback, useState, useEffect, useMemo } from 'react'
 
-import { CREATE_COMPANY, UPDATE_COMPANY } from '@/core/company/graphql/mutations'
-import { GET_COMPANY_BY_SLUG, GET_COMPANY_BY_ID } from '@/core/company/graphql/queries'
+import { useOnboarding } from '@/features/onboarding/hooks/useOnboarding'
+
+import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { supabase } from '@/shared/lib/supabase/client'
-import { generateSlug } from '@/shared/lib/utils/generate-slug'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
-import { BaseUser } from '@/shared/types/auth'
 
-import { useOnboarding } from '../../../features/onboarding/hooks/useOnboarding'
+import { CompanyClientService } from '../services/companyClientService'
+import { CompanyServerService } from '../services/companyServerService'
 
+import type { BaseUser } from '@/shared/types/auth'
 import type { Company } from '@/shared/types/graphql'
 
 interface UseCompanyReturn {
@@ -24,6 +24,7 @@ interface UseCompanyReturn {
   createCompany: (name: string, address: string, sports: string) => Promise<void>
   updateCompany: (data: UpdateCompanyInput) => Promise<void>
 }
+
 interface UseCompanyProps {
   slug?: string
 }
@@ -37,137 +38,129 @@ interface UpdateCompanyInput {
 }
 
 export function useCompany({ slug }: UseCompanyProps = {}): UseCompanyReturn {
+  const client = useApolloClient()
+  const companyServerService = useMemo(() => new CompanyServerService(client), [client])
   const { user, isLoading: userLoading } = useUserStore()
   const { handleCompanyCreated } = useOnboarding()
 
-  const queryToUse = slug ? GET_COMPANY_BY_SLUG : GET_COMPANY_BY_ID
-  const variables = slug ? { slug } : { id: user?.company_id }
+  const [company, setCompany] = useState<Company | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [updating, setUpdating] = useState(false)
 
-  // Only skip for authenticated routes, not public ones
-  const skipQuery = !slug && (!user?.company_id || userLoading)
+  const fetchCompany = useCallback(async () => {
+    if (!user?.company_id && !slug) return
 
-  const {
-    data: companyData,
-    loading: queryLoading,
-    error: queryError,
-    refetch,
-  } = useQuery(queryToUse, {
-    variables,
-    skip: skipQuery,
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true,
-  })
+    setLoading(true)
+    try {
+      const result = slug
+        ? await companyServerService.getCompanyBySlug(slug)
+        : await companyServerService.getCompanyById(user!.company_id!)
 
-  useEffect(() => {
-    if (!skipQuery && user?.company_id) {
-      refetch()
+      setCompany(result)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch company'))
+    } finally {
+      setLoading(false)
     }
-  }, [user?.company_id, skipQuery, refetch])
+  }, [user?.company_id, slug, companyServerService])
 
-  const [createCompanyMutation, { loading: creating }] = useMutation(CREATE_COMPANY, {
-    update(cache, { data }) {
-      const newCompany = data?.insertIntocompaniesCollection?.records?.[0]
-      if (newCompany && user?.id) {
-        cache.evict({ fieldName: 'companiesCollection' })
-        cache.gc()
+  const createCompany = useCallback(
+    async (name: string, address: string, sports: string) => {
+      try {
+        const validation = CompanyClientService.validateCompanyInput(name, address)
+        if (!validation.isValid) {
+          throw new Error(validation.error)
+        }
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (!session?.access_token) {
+          throw new Error('No valid session found')
+        }
+
+        if (!useUserStore.getState().accessToken) {
+          useUserStore.getState().setSession({
+            user: useUserStore.getState().user as BaseUser,
+            accessToken: session.access_token,
+          })
+        }
+
+        setCreating(true)
+        const now = new Date().toISOString()
+        const formattedName = CompanyClientService.formatCompanyName(name)
+        const slug = CompanyClientService.generateCompanySlug(name)
+
+        const newCompany = await companyServerService.createCompany({
+          name: formattedName,
+          address,
+          sports,
+          slug,
+          created_at: now,
+          updated_at: now,
+        })
+
+        if (!user?.id) {
+          throw new Error('User not found')
+        }
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ company_id: newCompany.id, role: 'owner' })
+          .eq('id', user.id)
+
+        if (updateError) throw updateError
+
+        useUserStore.getState().updateUser({ company_id: newCompany.id })
+        await handleCompanyCreated()
+
+        setCompany(newCompany)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to create company'))
+        throw err
+      } finally {
+        setCreating(false)
       }
     },
-  })
+    [user?.id, companyServerService, handleCompanyCreated]
+  )
 
-  const [updateCompanyMutation, { loading: updating }] = useMutation(UPDATE_COMPANY)
+  const updateCompany = useCallback(
+    async (data: UpdateCompanyInput) => {
+      if (!company?.id) throw new Error('No company found')
 
-  async function createCompany(name: string, address: string, sports: string) {
-    try {
-      // First ensure we have a valid session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) {
-        throw new Error('No valid session found')
-      }
-
-      // Update the user store with the token if needed
-      if (!useUserStore.getState().accessToken) {
-        useUserStore.getState().setSession({
-          user: useUserStore.getState().user as BaseUser,
-          accessToken: session.access_token,
+      try {
+        setUpdating(true)
+        const updatedCompany = await companyServerService.updateCompany(company.id, {
+          ...data,
+          updated_at: new Date().toISOString(),
         })
+
+        setCompany(updatedCompany)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to update company'))
+        throw err
+      } finally {
+        setUpdating(false)
       }
+    },
+    [company?.id, companyServerService]
+  )
 
-      const now = new Date().toISOString()
-      const slug = generateSlug(name)
-      const result = await createCompanyMutation({
-        variables: {
-          objects: [
-            {
-              name,
-              address,
-              sports,
-              slug,
-              created_at: now,
-              updated_at: now,
-            },
-          ],
-        },
-      })
-
-      const company = result.data?.insertIntocompaniesCollection?.records?.[0]
-      if (!company || !user?.id) {
-        throw new Error('Failed to create company')
-      }
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ company_id: company.id, role: 'owner' })
-        .eq('id', user.id)
-
-      if (updateError) throw updateError
-
-      useUserStore.getState().updateUser({ company_id: company.id })
-
-      await handleCompanyCreated()
-
-      await refetch()
-
-      return company
-    } catch (err) {
-      console.error('Error in createCompany:', err)
-      throw err instanceof Error ? err : new Error('Failed to create company')
-    }
-  }
-
-  async function updateCompany(data: UpdateCompanyInput) {
-    if (!user?.company_id) throw new Error('No company found')
-
-    try {
-      const result = await updateCompanyMutation({
-        variables: {
-          id: user.company_id,
-          set: {
-            ...data,
-            updated_at: new Date().toISOString(),
-          },
-        },
-      })
-
-      if (!result.data?.updatecompaniesCollection?.records?.[0]) {
-        throw new Error('Failed to update company')
-      }
-    } catch (err) {
-      console.error('Error in updateCompany:', err)
-      throw err instanceof Error ? err : new Error('Failed to update company')
-    }
-  }
-
-  // Simplified loading state logic
-  const isLoading = slug
-    ? queryLoading // For public pages, only care about query loading
-    : userLoading || queryLoading || !user?.company_id // For authenticated pages, include user state
+  useEffect(() => {
+    if (userLoading) return
+    fetchCompany()
+  }, [fetchCompany, userLoading])
 
   return {
-    company: companyData?.companiesCollection?.edges[0]?.node ?? null,
-    loading: isLoading,
-    error: queryError ?? null,
+    company,
+    loading: loading || userLoading,
+    error,
     creating,
     updating,
     createCompany,

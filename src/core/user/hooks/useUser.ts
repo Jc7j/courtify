@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 
-import { GET_COMPANY_MEMBERS } from '@/core/user/components/graphql/queries'
+import { GET_COMPANY_MEMBERS } from '@/core/user/graphql/queries'
 
 import type { User, UserEdge } from '@/shared/types/graphql'
 

@@ -3,6 +3,8 @@
 import { ChevronsUpDown, LogOut, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+import { useUserStore } from '@/core/user/hooks/useUserStore'
+
 import {
   Avatar,
   AvatarFallback,
@@ -23,7 +25,6 @@ import {
 import { ROUTES } from '@/shared/constants/routes'
 import { cn } from '@/shared/lib/utils/cn'
 import { useAuth } from '@/shared/providers/AuthProvider'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 export function UserMenu() {
   const { user } = useUserStore()
@@ -31,9 +32,7 @@ export function UserMenu() {
   const { isMobile } = useSidebar()
   const router = useRouter()
 
-  if (!user) return null
-
-  const initials = user.name
+  const initials = user?.name
     ?.split(' ')
     .map((n) => n[0])
     .join('')
@@ -71,8 +70,8 @@ export function UserMenu() {
               {!isMobile && (
                 <>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                    <span className="truncate font-medium">{user?.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground" />
                 </>
@@ -100,8 +99,8 @@ export function UserMenu() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="font-medium text-foreground">{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                  <span className="font-medium text-foreground">{user?.name}</span>
+                  <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

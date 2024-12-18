@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+
 import type { BaseUser, AuthSession } from '@/shared/types/auth'
 
 interface UserState {
@@ -45,7 +47,8 @@ export const useUserStore = create<UserState>()(
           user: state.user ? { ...state.user, ...updates } : null,
         })),
 
-      reset: () =>
+      reset: () => {
+        useCompanyStore.getState().reset()
         set({
           user: null,
           accessToken: null,
@@ -53,7 +56,8 @@ export const useUserStore = create<UserState>()(
           expiresAt: null,
           isAuthenticated: false,
           isLoading: false,
-        }),
+        })
+      },
     }),
     {
       name: 'courtify-user-store',

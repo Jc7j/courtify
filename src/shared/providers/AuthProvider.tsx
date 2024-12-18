@@ -5,10 +5,11 @@ import { createContext, useContext, useEffect, useCallback, ReactNode } from 're
 
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/features/auth/utils/auth-errors'
 
+import { useUserStore } from '@/core/user/hooks/useUserStore'
+
 import { ROUTES } from '@/shared/constants/routes'
 import { clearApolloCache } from '@/shared/lib/apollo/client'
 import { supabase } from '@/shared/lib/supabase/client'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import type { BaseUser } from '@/shared/types/auth'
 import type { Session } from '@supabase/supabase-js'

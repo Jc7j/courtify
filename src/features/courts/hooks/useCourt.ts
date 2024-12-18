@@ -21,7 +21,6 @@ export function useCourt(courtNumber?: number) {
   const client = useApolloClient()
   const { user, isAuthenticated } = useUserStore()
 
-  // Create service instance only once
   const courtServerService = useMemo(() => new CourtServerService(client), [client])
 
   const [state, setState] = useState<UseCourtState>({
@@ -34,7 +33,6 @@ export function useCourt(courtNumber?: number) {
   const [updating, setUpdating] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Memoize the company ID check
   const companyId = useMemo(() => {
     if (!isAuthenticated || !user?.company_id) return null
     return user.company_id
@@ -128,13 +126,11 @@ export function useCourt(courtNumber?: number) {
     [isAuthenticated, user?.company_id, courtServerService, fetchCourts]
   )
 
-  // Only fetch courts once when mounted or when companyId changes
   useEffect(() => {
     if (!companyId) return
     fetchCourts()
-  }, [companyId]) // Remove fetchCourts from dependencies
+  }, [companyId])
 
-  // Only fetch single court when courtNumber changes
   useEffect(() => {
     let mounted = true
 

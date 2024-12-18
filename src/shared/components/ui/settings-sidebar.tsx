@@ -4,6 +4,9 @@ import { ChevronLeft, Building2, UserCircle } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { useUserStore } from '@/core/user/hooks/useUserStore'
+import { hasAdminAccess } from '@/core/user/utils/admin-access'
+
 import {
   Sidebar,
   SidebarContent,
@@ -15,9 +18,7 @@ import {
   SidebarMenuItem,
 } from '@/shared/components/ui/sidebar'
 import { ROUTES } from '@/shared/constants/routes'
-import { hasAdminAccess } from '@/shared/lib/utils/admin-access'
 import { cn } from '@/shared/lib/utils/cn'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 const workspaceSettings = [
   {
@@ -66,7 +67,7 @@ export function SettingsSidebar() {
           <SidebarGroupContent className="p-2">
             <SidebarMenu>
               {/* Only show workspace settings for admin/owner */}
-              {hasAdminAccess(user) && (
+              {hasAdminAccess(user, { requireOwner: true }) && (
                 <div className="px-3 py-2">
                   <h2 className="mb-2 text-md font-semibold tracking-tight flex items-center gap-2">
                     <Building2 className="h-3 w-3" />
