@@ -2,8 +2,9 @@ import { ApolloClient, createHttpLink, from, InMemoryCache } from '@apollo/clien
 import { setContext } from '@apollo/client/link/context'
 import { onError } from '@apollo/client/link/error'
 
-import { supabase } from '@/shared/lib/supabase/client'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
+
+import { supabase } from '@/shared/lib/supabase/client'
 
 import type { BaseUser, MemberRole } from '@/shared/types/auth'
 

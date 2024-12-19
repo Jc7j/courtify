@@ -9,9 +9,10 @@ import { CreateCompanyStep } from '@/features/onboarding/components/CreateCompan
 import { InviteTeam } from '@/features/onboarding/components/InviteTeam'
 import { OnboardingStep, useOnboarding } from '@/features/onboarding/hooks/useOnboarding'
 
+import { useUserStore } from '@/core/user/hooks/useUserStore'
+
 import { Logo, Progress } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
 import { BaseUser } from '@/shared/types/auth'
 
 const STEPS: Record<OnboardingStep, { number: number; progress: number }> = {

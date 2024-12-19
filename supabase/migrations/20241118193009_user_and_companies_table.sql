@@ -30,15 +30,9 @@ CREATE TABLE users (
     company_id UUID REFERENCES companies(id),
     
     role member_role NOT NULL DEFAULT 'member',
-    invited_by UUID REFERENCES auth.users(id),
     joined_at TIMESTAMPTZ DEFAULT NOW(),
     is_active BOOLEAN NOT NULL DEFAULT true,
     
-    -- -- Authentication fields
-    -- last_login_at TIMESTAMPTZ,
-    -- email_verified_at TIMESTAMPTZ,
-    
-    -- Timestamps
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

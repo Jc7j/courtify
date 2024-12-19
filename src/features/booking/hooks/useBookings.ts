@@ -4,8 +4,8 @@ import { useMutation } from '@apollo/client'
 
 import { UPDATE_COURT_AVAILABILITY } from '@/features/availability/graphql/mutations'
 import { CREATE_BOOKING } from '@/features/booking/graphql/mutations'
-
 import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
+
 import { AvailabilityStatus, BookingStatus, PaymentStatus } from '@/shared/types/graphql'
 
 import type { CompanyProduct } from '@/shared/types/graphql'

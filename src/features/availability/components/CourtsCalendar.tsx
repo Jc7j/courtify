@@ -340,7 +340,13 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
       const equipment =
         metadata.products?.equipment?.map((eq: { name: string }) => eq.name).join(', ') || ''
 
-      return `${availability.booking.customer_name} • ${courtRental} ${netHeight} • ${equipment}`
+      const parts = [availability.booking.customer_name, `${courtRental} ${netHeight}`]
+
+      if (equipment) {
+        parts.push(equipment)
+      }
+
+      return parts.join(' • ')
     } catch (error) {
       console.error('Error parsing booking metadata:', error)
       return availability.booking.customer_name || ''

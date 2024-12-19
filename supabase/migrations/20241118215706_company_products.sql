@@ -1,9 +1,6 @@
 CREATE TYPE product_type AS ENUM (
   'court_rental',
   'equipment'
---   'membership',
---   'class',
---   'event'
 );
 
 CREATE TYPE stripe_payment_type AS ENUM (
