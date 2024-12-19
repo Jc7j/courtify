@@ -39,7 +39,6 @@ export async function POST(req: Request) {
               type: 'standard',
               country: 'US',
               business_type: 'company',
-              company: { name: company_name },
               capabilities: {
                 card_payments: { requested: true },
                 transfers: { requested: true },
