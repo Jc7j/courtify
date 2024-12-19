@@ -100,7 +100,7 @@ export function useCompany(): UseCompanyReturn {
         setCreating(true)
         const now = new Date().toISOString()
         const formattedName = CompanyClientService.formatCompanyName(name)
-        const slug = CompanyClientService.generateCompanySlug(name)
+        const slug = CompanyClientService.generateCompanySlug(formattedName)
 
         const newCompany = await companyServerService.createCompany({
           name: formattedName,

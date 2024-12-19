@@ -449,6 +449,7 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
         selectable={isEditMode}
         selectMirror
         slotDuration="00:15:00"
+        selectMinDistance={15}
         timeZone="local"
         resourceOrder="id"
         events={availabilities.map((availability) => ({

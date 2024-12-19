@@ -1,7 +1,7 @@
 'use client'
 
 import dayjs from 'dayjs'
-import { Copy, Check, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { memo, useCallback, useState, useEffect, useMemo, Suspense } from 'react'
 
 import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
@@ -12,52 +12,10 @@ import { DashboardSkeleton } from '@/core/company/components/Skeletons'
 import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
-import { Button, Card, CardContent } from '@/shared/components/ui'
+import { Card, CardContent } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 
 import type { Courts } from '@/shared/types/graphql'
-
-const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'
-
-interface DashboardHeaderProps {
-  userName: string | null
-  companySlug: string
-  onCopySlug: () => void
-  copied: boolean
-}
-
-const DashboardHeader = memo(function DashboardHeader({
-  userName,
-  companySlug,
-  onCopySlug,
-  copied,
-}: DashboardHeaderProps) {
-  return (
-    <div className="flex items-center justify-between mb-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Welcome back, {userName}!</h1>
-      </div>
-      <div className="flex flex-col items-end gap-2">
-        <div className="flex flex-col gap-1 items-end">
-          <p className="text-sm text-muted-foreground">Guest booking link</p>
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={onCopySlug}
-            className="h-9 transition-all duration-200 hover:border-primary"
-          >
-            <p className="text-xs mr-2">{`${BOOKING_BASE_URL}/book/${companySlug}`}</p>
-            {copied ? (
-              <Check className="h-4 w-4 text-green-500" />
-            ) : (
-              <Copy className="h-4 w-4 text-primary hover:text-primary-foreground hover:bg-primary" />
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-})
 
 interface CalendarSectionProps {
   companyId: string
@@ -92,7 +50,6 @@ function DashboardContent() {
   const company = useCompanyStore((state) => state.company)
   const user = useUserStore((state) => state.user)
   const setAvailabilities = useCalendarStore((state) => state.setAvailabilities)
-  const [copied, setCopied] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(() => ({
     start: dayjs().startOf('day').toISOString(),
@@ -123,14 +80,6 @@ function DashboardContent() {
     setSelectedDate({ start, end })
   }, [])
 
-  const handleCopySlug = useCallback(async () => {
-    if (!company?.slug) return
-    const bookingUrl = `${BOOKING_BASE_URL}/book/${company.slug}`
-    await navigator.clipboard.writeText(bookingUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [company?.slug])
-
   if (initialLoading || company === undefined || user === undefined) {
     return <DashboardSkeleton />
   }
@@ -145,13 +94,6 @@ function DashboardContent() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <DashboardHeader
-        userName={user.name}
-        companySlug={company.slug}
-        onCopySlug={handleCopySlug}
-        copied={copied}
-      />
-
       <Suspense
         fallback={
           <Card>
