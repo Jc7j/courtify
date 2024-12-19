@@ -547,6 +547,7 @@ export enum Availability_Status {
   Available = 'available',
   Booked = 'booked',
   Held = 'held',
+  Past = 'past'
 }
 
 /** Boolean expression comparing fields on type "availability_status" */
@@ -574,9 +575,9 @@ export type Booking_StatusFilter = {
 export type Bookings = Node & {
   __typename?: 'bookings';
   amount_paid?: Maybe<Scalars['Int']['output']>;
-  amount_total: Scalars['Int']['output'];
+  amount_total?: Maybe<Scalars['Int']['output']>;
   company_id: Scalars['UUID']['output'];
-  court_availabilities: Court_Availabilities;
+  court_availabilities?: Maybe<Court_Availabilities>;
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
   currency: Scalars['String']['output'];
@@ -713,7 +714,7 @@ export type BookingsUpdateResponse = {
 
 export type Companies = Node & {
   __typename?: 'companies';
-  address: Scalars['String']['output'];
+  address?: Maybe<Scalars['String']['output']>;
   company_productsCollection?: Maybe<Company_ProductsConnection>;
   court_availabilitiesCollection?: Maybe<Court_AvailabilitiesConnection>;
   courtsCollection?: Maybe<CourtsConnection>;
@@ -884,7 +885,7 @@ export type CompaniesUpdateResponse = {
 
 export type Company_Products = Node & {
   __typename?: 'company_products';
-  companies: Companies;
+  companies?: Maybe<Companies>;
   company_id: Scalars['UUID']['output'];
   created_at: Scalars['Datetime']['output'];
   currency: Scalars['String']['output'];
@@ -1014,11 +1015,11 @@ export type Company_ProductsUpdateResponse = {
 
 export type Court_Availabilities = Node & {
   __typename?: 'court_availabilities';
-  bookingsCollection: BookingsConnection;
-  companies: Companies;
+  bookingsCollection?: Maybe<BookingsConnection>;
+  companies?: Maybe<Companies>;
   company_id: Scalars['UUID']['output'];
   court_number: Scalars['Int']['output'];
-  courts: Courts;
+  courts?: Maybe<Courts>;
   created_at: Scalars['Datetime']['output'];
   end_time: Scalars['Datetime']['output'];
   /** Globally Unique Record Identifier */
@@ -1124,9 +1125,9 @@ export type Court_AvailabilitiesUpdateResponse = {
 
 export type Courts = Node & {
   __typename?: 'courts';
-  companies: Companies;
+  companies?: Maybe<Companies>;
   company_id: Scalars['UUID']['output'];
-  court_availabilitiesCollection: Court_AvailabilitiesConnection;
+  court_availabilitiesCollection?: Maybe<Court_AvailabilitiesConnection>;
   court_number: Scalars['Int']['output'];
   created_at: Scalars['Datetime']['output'];
   name: Scalars['String']['output'];

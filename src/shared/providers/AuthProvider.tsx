@@ -242,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       await clearApolloCache()
       await reset()
+      await resetCompany()
       await supabase.auth.signOut()
       router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {

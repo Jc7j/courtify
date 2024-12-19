@@ -8,10 +8,15 @@ import { MembersSkeleton } from '@/features/settings/components/Skeletons'
 import { useCompanyMembers } from '@/core/user/hooks/useUser'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
+function MembersContent() {
+  const { user } = useUserStore()
+  const { members } = useCompanyMembers(user?.company_id ?? '')
+
+  return <MembersSection members={members} />
+}
+
 export default function MembersPage() {
   const { user } = useUserStore()
-
-  const { members } = useCompanyMembers(user?.company_id ?? '')
 
   if (!user?.company_id) {
     return (
@@ -30,7 +35,7 @@ export default function MembersPage() {
 
       <div className="grid gap-8 mt-8">
         <Suspense fallback={<MembersSkeleton />}>
-          <MembersSection members={members} />
+          <MembersContent />
         </Suspense>
       </div>
     </div>

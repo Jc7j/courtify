@@ -31,7 +31,7 @@ export type Database = {
       bookings: {
         Row: {
           amount_paid: number | null
-          amount_total: number
+          amount_total: number | null
           company_id: string
           court_number: number
           created_at: string
@@ -49,7 +49,7 @@ export type Database = {
         }
         Insert: {
           amount_paid?: number | null
-          amount_total: number
+          amount_total?: number | null
           company_id: string
           court_number: number
           created_at?: string
@@ -67,7 +67,7 @@ export type Database = {
         }
         Update: {
           amount_paid?: number | null
-          amount_total?: number
+          amount_total?: number | null
           company_id?: string
           court_number?: number
           created_at?: string
@@ -95,7 +95,7 @@ export type Database = {
       }
       companies: {
         Row: {
-          address: string
+          address: string | null
           created_at: string
           id: string
           name: string
@@ -110,12 +110,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          address: string
+          address?: string | null
           created_at?: string
           id?: string
           name: string
           slug: string
-          sports: string
+          sports?: string
           stripe_account_details?: Json | null
           stripe_account_enabled?: boolean | null
           stripe_account_id?: string | null
@@ -125,7 +125,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          address?: string
+          address?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -667,7 +667,7 @@ export type Database = {
       }
     }
     Enums: {
-      availability_status: 'available' | 'held' | 'booked'
+      availability_status: 'available' | 'held' | 'booked' | 'past'
       booking_status: 'confirmed' | 'cancelled' | 'pending'
       member_role: 'owner' | 'admin' | 'member'
       payment_status: 'paid' | 'refunded' | 'failed' | 'processing' | 'pending'
