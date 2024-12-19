@@ -5,7 +5,7 @@ const USER_FIELDS = gql`
     id
     email
     name
-    company_id
+    facility_id
     role
     is_active
     invited_by
@@ -28,11 +28,11 @@ export const GET_USER = gql`
   }
 `
 
-export const GET_COMPANY_MEMBERS = gql`
+export const GET_FACILITY_MEMBERS = gql`
   ${USER_FIELDS}
-  query GetCompanyMembers($companyId: UUID!) {
+  query GetFacilityMembers($facilityId: UUID!) {
     usersCollection(
-      filter: { company_id: { eq: $companyId } }
+      filter: { facility_id: { eq: $facilityId } }
       orderBy: [{ role: AscNullsLast }, { joined_at: DescNullsLast }]
     ) {
       edges {

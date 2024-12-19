@@ -1,7 +1,7 @@
 import { ApolloClient } from '@apollo/client'
 
 import { CREATE_PRODUCT, UPDATE_PRODUCT } from '../graphql/mutations'
-import { GET_COMPANY_PRODUCTS } from '../graphql/queries'
+import { GET_FACILITY_PRODUCTS } from '../graphql/queries'
 
 import type {
   CreateProductInput,
@@ -9,30 +9,30 @@ import type {
   ArchiveProductResponse,
   StripeProduct,
 } from '../types'
-import type { CompanyProduct } from '@/shared/types/graphql'
+import type { FacilityProduct } from '@/shared/types/graphql'
 
 export class ProductServerService {
   constructor(private client: ApolloClient<unknown>) {}
 
-  async getProducts(companyId: string) {
+  async getProducts(facilityId: string) {
     const { data } = await this.client.query({
-      query: GET_COMPANY_PRODUCTS,
-      variables: { companyId },
+      query: GET_FACILITY_PRODUCTS,
+      variables: { facilityId },
       fetchPolicy: 'network-only',
     })
 
-    return data?.company_productsCollection?.edges?.map((edge: any) => edge.node) ?? []
+    return data?.facility_productsCollection?.edges?.map((edge: any) => edge.node) ?? []
   }
 
   async createDatabaseProduct(
-    companyId: string,
+    facilityId: string,
     input: CreateProductInput
   ): Promise<ProductResponse> {
     const { data } = await this.client.mutate({
       mutation: CREATE_PRODUCT,
       variables: {
         input: {
-          company_id: companyId,
+          facility_id: facilityId,
           name: input.name,
           description: input.description || null,
           type: input.type,
@@ -50,7 +50,7 @@ export class ProductServerService {
       },
     })
 
-    const product = data?.insertIntocompany_productsCollection?.records?.[0]
+    const product = data?.insertIntofacility_productsCollection?.records?.[0]
     return {
       product: product || null,
       error: product ? null : 'Failed to create product in database',
@@ -72,7 +72,7 @@ export class ProductServerService {
       },
     })
 
-    const product = data?.updatecompany_productsCollection?.records?.[0]
+    const product = data?.updatefacility_productsCollection?.records?.[0]
     return {
       success: !!product,
       error: product ? undefined : 'Failed to update product status',
@@ -81,7 +81,7 @@ export class ProductServerService {
 
   async updateDatabaseProduct(
     productId: string,
-    input: Partial<CompanyProduct>
+    input: Partial<FacilityProduct>
   ): Promise<ProductResponse> {
     const { data } = await this.client.mutate({
       mutation: UPDATE_PRODUCT,
@@ -94,20 +94,20 @@ export class ProductServerService {
       },
     })
 
-    const product = data?.updatecompany_productsCollection?.records?.[0]
+    const product = data?.updatefacility_productsCollection?.records?.[0]
     return {
       product: product || null,
       error: product ? null : 'Failed to update product in database',
     }
   }
 
-  async createStripeProduct(companyId: string, input: CreateProductInput): Promise<StripeProduct> {
+  async createStripeProduct(facilityId: string, input: CreateProductInput): Promise<StripeProduct> {
     const response = await fetch('/api/stripe/prices/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...input,
-        company_id: companyId,
+        facility_id: facilityId,
       }),
     })
 
@@ -120,7 +120,7 @@ export class ProductServerService {
   }
 
   async archiveStripeProduct(
-    companyId: string,
+    facilityId: string,
     stripe_product_id: string,
     stripe_price_id: string,
     active: boolean
@@ -131,7 +131,7 @@ export class ProductServerService {
       body: JSON.stringify({
         stripe_product_id,
         stripe_price_id,
-        company_id: companyId,
+        facility_id: facilityId,
         active,
       }),
     })
@@ -143,7 +143,7 @@ export class ProductServerService {
   }
 
   async updateStripeProduct(
-    companyId: string,
+    facilityId: string,
     stripe_product_id: string,
     stripe_price_id: string,
     input: {
@@ -156,7 +156,7 @@ export class ProductServerService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        companyId,
+        facilityId,
         stripe_product_id,
         stripe_price_id,
         ...input,

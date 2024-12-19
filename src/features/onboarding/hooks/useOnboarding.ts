@@ -13,7 +13,7 @@ export type OnboardingStep = 'signup' | 'create-intro' | 'create' | 'invite-team
 interface OnboardingState {
   isOnboarding: boolean
   step: OnboardingStep
-  handleCompanyCreated: () => Promise<void>
+  handleFacilityCreated: () => Promise<void>
   handleStepChange: (step: OnboardingStep) => void
 }
 
@@ -36,33 +36,33 @@ export function useOnboarding(): OnboardingState {
     [router]
   )
 
-  const handleCompanyCreated = useCallback(async () => {
+  const handleFacilityCreated = useCallback(async () => {
     try {
       const currentUser = useUserStore.getState().user
-      if (!currentUser?.company_id) {
-        throw new Error('Company ID not found after database update')
+      if (!currentUser?.facility_id) {
+        throw new Error('Facility ID not found after database update')
       }
 
-      // Update the user in our store with the new company_id
-      updateUser({ company_id: currentUser.company_id })
+      // Update the user in our store with the new facility_id
+      updateUser({ facility_id: currentUser.facility_id })
 
       // Verify the update was successful
       const updatedUser = useUserStore.getState().user
-      if (!updatedUser?.company_id) {
+      if (!updatedUser?.facility_id) {
         throw new Error('Store update verification failed')
       }
 
       handleStepChange('invite-team')
     } catch (err) {
-      console.error('Error completing company creation:', err)
-      throw err instanceof Error ? err : new Error('Failed to complete company setup')
+      console.error('Error completing facility creation:', err)
+      throw err instanceof Error ? err : new Error('Failed to complete facility setup')
     }
   }, [updateUser, handleStepChange])
 
   return {
-    isOnboarding: isAuthenticated && !user?.company_id,
+    isOnboarding: isAuthenticated && !user?.facility_id,
     step: currentStep,
-    handleCompanyCreated,
+    handleFacilityCreated: handleFacilityCreated,
     handleStepChange,
   }
 }

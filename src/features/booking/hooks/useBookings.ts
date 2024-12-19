@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 
 import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import { AvailabilityStatus } from '@/shared/types/graphql'
 
@@ -16,13 +16,13 @@ import { CreatePaymentIntentInput } from '../types'
 
 export function useBookings() {
   const client = useApolloClient()
-  const company = useCompanyStore((state) => state.company)
+  const facility = useFacilityStore((state) => state.facility)
   const bookingService = useMemo(() => new BookingServerService(client), [client])
   const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
   async function createPaymentIntent(input: CreatePaymentIntentInput) {
-    if (!company?.stripe_account_id) {
-      throw new Error('Company not setup for payments')
+    if (!facility?.stripe_account_id) {
+      throw new Error('Facility not setup for payments')
     }
 
     try {
@@ -31,18 +31,18 @@ export function useBookings() {
 
       // 2. Hold the court
       await availabilityService.updateAvailability({
-        companyId: input.companyId,
+        facilityId: input.facilityId,
         courtNumber: input.courtNumber,
         startTime: input.startTime,
         update: { status: AvailabilityStatus.Held },
       })
 
       // 3. Create payment intent
-      return await bookingService.createPaymentIntent(input, company.stripe_account_id)
+      return await bookingService.createPaymentIntent(input, facility.stripe_account_id)
     } catch (error) {
       // Release the hold if payment intent creation fails
       await availabilityService.updateAvailability({
-        companyId: input.companyId,
+        facilityId: input.facilityId,
         courtNumber: input.courtNumber,
         startTime: input.startTime,
         update: { status: AvailabilityStatus.Available },
@@ -51,7 +51,7 @@ export function useBookings() {
     }
   }
 
-  async function confirmPaymentIntentAndBook(companyId: string) {
+  async function confirmPaymentIntentAndBook(facilityId: string) {
     const state = useBookingStore.getState()
     if (!state.selectedAvailability || !state.guestInfo || !state.paymentIntent) {
       throw new Error('Missing booking information')
@@ -60,7 +60,7 @@ export function useBookings() {
     try {
       // 1. Create booking record
       const booking = await bookingService.createBooking({
-        companyId,
+        facilityId,
         courtNumber: state.selectedAvailability.court_number,
         startTime: state.selectedAvailability.start_time,
         customerEmail: state.guestInfo.email,
@@ -74,7 +74,7 @@ export function useBookings() {
 
       // 2. Update court availability
       await availabilityService.updateAvailability({
-        companyId,
+        facilityId,
         courtNumber: state.selectedAvailability.court_number,
         startTime: state.selectedAvailability.start_time,
         update: { status: AvailabilityStatus.Booked },

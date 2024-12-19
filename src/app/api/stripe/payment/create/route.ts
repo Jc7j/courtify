@@ -11,12 +11,12 @@ export async function POST(req: Request) {
     const stripeAccountId = req.headers.get('X-Stripe-Account')
 
     // Basic validation
-    if (!body.companyId || !body.courtNumber || !body.startTime || !body.endTime) {
+    if (!body.facilityId || !body.courtNumber || !body.startTime || !body.endTime) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     if (!stripeAccountId) {
-      return NextResponse.json({ error: 'Company not setup for payments' }, { status: 400 })
+      return NextResponse.json({ error: 'Facility not setup for payments' }, { status: 400 })
     }
 
     // Time validation
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         currency: 'usd',
         payment_method_types: ['card'],
         metadata: {
-          companyId: body.companyId,
+          facilityId: body.facilityId,
           courtNumber: body.courtNumber,
           startTime: body.startTime,
           endTime: body.endTime,

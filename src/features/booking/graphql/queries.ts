@@ -3,7 +3,7 @@ import { gql } from '@apollo/client'
 export const BOOKING_FIELDS = gql`
   fragment BookingFields on bookings {
     id
-    company_id
+    facility_id
     court_number
     start_time
     customer_email
@@ -22,9 +22,9 @@ export const BOOKING_FIELDS = gql`
 
 export const GET_COMPLETED_BOOKINGS = gql`
   ${BOOKING_FIELDS}
-  query GetCompletedBookings($company_id: UUID!) {
+  query GetCompletedBookings($facility_id: UUID!) {
     bookingsCollection(
-      filter: { company_id: { eq: $company_id }, booking_status: { eq: "confirmed" } }
+      filter: { facility_id: { eq: $facility_id }, booking_status: { eq: "confirmed" } }
       orderBy: [{ start_time: DescNullsLast }]
     ) {
       edges {
@@ -37,9 +37,13 @@ export const GET_COMPLETED_BOOKINGS = gql`
 `
 
 export const GET_BOOKING_AVAILABILITIES = gql`
-  query GetBookingAvailabilities($company_id: UUID!, $start_time: Datetime!, $end_time: Datetime!) {
+  query GetBookingAvailabilities(
+    $facility_id: UUID!
+    $start_time: Datetime!
+    $end_time: Datetime!
+  ) {
     courtsCollection(
-      filter: { company_id: { eq: $company_id } }
+      filter: { facility_id: { eq: $facility_id } }
       orderBy: [{ court_number: AscNullsFirst }]
     ) {
       edges {
@@ -52,7 +56,7 @@ export const GET_BOOKING_AVAILABILITIES = gql`
 
     court_availabilitiesCollection(
       filter: {
-        company_id: { eq: $company_id }
+        facility_id: { eq: $facility_id }
         and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
       }
       orderBy: [{ court_number: AscNullsFirst }, { start_time: AscNullsFirst }]
@@ -60,7 +64,7 @@ export const GET_BOOKING_AVAILABILITIES = gql`
       edges {
         node {
           nodeId
-          company_id
+          facility_id
           court_number
           start_time
           end_time

@@ -16,8 +16,8 @@ import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
 import { BookingServerService } from '@/features/booking/services/bookingServerService'
 import { GuestDetailsType } from '@/features/booking/types'
 
-import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
-import { usePublicCompany } from '@/core/company/hooks/usePublicCompany'
+import { useFacilityProducts } from '@/core/facility/hooks/useFacilityProducts'
+import { usePublicFacility } from '@/core/facility/hooks/usePublicFacility'
 
 import { AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
 
@@ -29,8 +29,8 @@ function getStripePromise(accountId: string) {
 
 export default function BookingPage() {
   const params = useParams<{ slug: string }>()
-  const { company } = usePublicCompany(params.slug)
-  const { products } = useCompanyProducts({ companyId: company?.id })
+  const { facility } = usePublicFacility(params.slug)
+  const { products } = useFacilityProducts({ facilityId: facility?.id })
   const client = useApolloClient()
   const router = useRouter()
   const formRef = useRef<{ submit: () => void }>(null)
@@ -60,11 +60,11 @@ export default function BookingPage() {
 
   useEffect(() => {
     async function fetchAvailabilities() {
-      if (!company?.id) return
+      if (!facility?.id) return
       setLoading(true)
       try {
         const { availabilities: data } = await bookingService.getAvailabilities(
-          company.id,
+          facility.id,
           dayjs(weekStartDate).startOf('day').toISOString(),
           dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
         )
@@ -77,13 +77,13 @@ export default function BookingPage() {
     }
 
     fetchAvailabilities()
-  }, [company?.id, weekStartDate, bookingService])
+  }, [facility?.id, weekStartDate, bookingService])
 
   useEffect(() => {
-    if (company?.stripe_account_id) {
-      setStripePromise(getStripePromise(company.stripe_account_id))
+    if (facility?.stripe_account_id) {
+      setStripePromise(getStripePromise(facility.stripe_account_id))
     }
-  }, [company?.stripe_account_id])
+  }, [facility?.stripe_account_id])
 
   const handlePaymentSuccess = useCallback(() => {
     useBookingStore.getState().clearBooking()
@@ -92,14 +92,14 @@ export default function BookingPage() {
 
   const handleGuestInfoSubmit = useCallback(
     async (data: GuestDetailsType) => {
-      if (!company?.id || !selectedAvailability) return
+      if (!facility?.id || !selectedAvailability) return
 
       try {
         setLoading(true)
         useBookingStore.getState().setGuestInfo(data)
 
         const { paymentIntentId, clientSecret, amount } = await createPaymentIntent({
-          companyId: company.id,
+          facilityId: facility.id,
           courtNumber: selectedAvailability.court_number,
           startTime: selectedAvailability.start_time,
           endTime: selectedAvailability.end_time,
@@ -118,7 +118,7 @@ export default function BookingPage() {
         setLoading(false)
       }
     },
-    [company?.id, selectedAvailability, createPaymentIntent, setPaymentIntent, setCurrentStep]
+    [facility?.id, selectedAvailability, createPaymentIntent, setPaymentIntent, setCurrentStep]
   )
 
   function handleNext() {
@@ -134,7 +134,7 @@ export default function BookingPage() {
       if (selectedAvailability) {
         try {
           await updateAvailability({
-            companyId: company?.id || '',
+            facilityId: facility?.id || '',
             courtNumber: selectedAvailability.court_number,
             startTime: selectedAvailability.start_time,
             update: { status: AvailabilityStatus.Available },
@@ -179,7 +179,7 @@ export default function BookingPage() {
           setRemainingTime('0:00')
 
           updateAvailability({
-            companyId: company?.id || '',
+            facilityId: facility?.id || '',
             courtNumber: selectedAvailability.court_number,
             startTime: selectedAvailability.start_time,
             update: { status: AvailabilityStatus.Available },
@@ -205,13 +205,13 @@ export default function BookingPage() {
 
   return (
     <div className="flex min-h-screen">
-      <BookingSidebar companyName={company?.name || ''} />
+      <BookingSidebar facilityName={facility?.name || ''} />
       <div className="w-full lg:w-1/2 flex flex-col min-h-screen">
         <BottomBarContent>
           <div className="flex flex-col min-h-screen">
             <BookingWizard
               currentStep={currentStep}
-              companyName={company?.name || ''}
+              facilityName={facility?.name || ''}
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
               weekStartDate={weekStartDate}

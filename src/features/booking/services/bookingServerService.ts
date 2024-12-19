@@ -8,7 +8,7 @@ import { GET_COMPLETED_BOOKINGS, GET_BOOKING_AVAILABILITIES } from '../graphql/q
 import type { CreatePaymentIntentInput, PaymentIntentResponse } from '../types'
 
 interface CreateBookingInput {
-  companyId: string
+  facilityId: string
   courtNumber: number
   startTime: string
   customerEmail: string
@@ -47,7 +47,7 @@ export class BookingServerService {
       mutation: CREATE_BOOKING,
       variables: {
         input: {
-          company_id: input.companyId,
+          facility_id: input.facilityId,
           court_number: input.courtNumber,
           start_time: input.startTime,
           customer_email: input.customerEmail,
@@ -71,21 +71,21 @@ export class BookingServerService {
     return data?.insertIntobookingsCollection?.records?.[0]
   }
 
-  async getCompletedBookings(companyId: string) {
+  async getCompletedBookings(facilityId: string) {
     const { data } = await this.client.query({
       query: GET_COMPLETED_BOOKINGS,
-      variables: { company_id: companyId },
+      variables: { facility_id: facilityId },
       fetchPolicy: 'network-only',
     })
 
     return data?.bookingsCollection?.edges?.map((edge: any) => edge.node) || []
   }
 
-  async getAvailabilities(companyId: string, startTime: string, endTime: string) {
+  async getAvailabilities(facilityId: string, startTime: string, endTime: string) {
     const { data } = await this.client.query({
       query: GET_BOOKING_AVAILABILITIES,
       variables: {
-        company_id: companyId,
+        facility_id: facilityId,
         start_time: startTime,
         end_time: endTime,
       },

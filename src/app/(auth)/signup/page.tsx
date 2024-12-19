@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
 import { SignUpForm } from '@/features/auth/components/SignUpForm'
-import { CreateCompany } from '@/features/onboarding/components/CreateCompany'
-import { CreateCompanyStep } from '@/features/onboarding/components/CreateCompanyStep'
+import { CreateFacility } from '@/features/onboarding/components/CreateFacility'
+import { CreateFacilityStep } from '@/features/onboarding/components/CreateFacilityStep'
 import { InviteTeam } from '@/features/onboarding/components/InviteTeam'
 import { OnboardingStep, useOnboarding } from '@/features/onboarding/hooks/useOnboarding'
 
@@ -69,9 +69,9 @@ function OnboardingContent({
   function renderStep() {
     switch (step) {
       case 'create-intro':
-        return <CreateCompanyStep userName={user?.name || ''} onNext={handleCreateIntro} />
+        return <CreateFacilityStep userName={user?.name || ''} onNext={handleCreateIntro} />
       case 'create':
-        return <CreateCompany onBack={() => handleStepChange('create-intro')} />
+        return <CreateFacility onBack={() => handleStepChange('create-intro')} />
       case 'invite-team':
         return <InviteTeam onComplete={() => router.replace(ROUTES.DASHBOARD.HOME)} />
       default:

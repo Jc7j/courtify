@@ -5,7 +5,7 @@ import {
   UPDATE_COURT_AVAILABILITY,
   DELETE_COURT_AVAILABILITY,
 } from '../graphql/mutations'
-import { GET_COMPANY_COURTS_AVAILABILITIES } from '../graphql/queries'
+import { GET_FACILITY_COURTS_AVAILABILITIES } from '../graphql/queries'
 import { CreateAvailabilityInput } from '../types'
 
 import type { CourtAvailability, AvailabilityStatus } from '@/shared/types/graphql'
@@ -13,11 +13,11 @@ import type { CourtAvailability, AvailabilityStatus } from '@/shared/types/graph
 export class AvailabilityServerService {
   constructor(private client: ApolloClient<any>) {}
 
-  async getCompanyAvailabilities(companyId: string, startTime: string, endTime: string) {
+  async getFacilityAvailabilities(facilityId: string, startTime: string, endTime: string) {
     const { data } = await this.client.query({
-      query: GET_COMPANY_COURTS_AVAILABILITIES,
+      query: GET_FACILITY_COURTS_AVAILABILITIES,
       variables: {
-        company_id: companyId,
+        facility_id: facilityId,
         start_time: startTime,
         end_time: endTime,
       },
@@ -42,7 +42,7 @@ export class AvailabilityServerService {
   }
 
   async updateAvailability(input: {
-    companyId: string
+    facilityId: string
     courtNumber: number
     startTime: string
     update: {
@@ -55,7 +55,7 @@ export class AvailabilityServerService {
     const { data } = await this.client.mutate({
       mutation: UPDATE_COURT_AVAILABILITY,
       variables: {
-        company_id: input.companyId,
+        facility_id: input.facilityId,
         court_number: input.courtNumber,
         start_time: input.startTime,
         set: {
@@ -69,14 +69,14 @@ export class AvailabilityServerService {
   }
 
   async deleteAvailability(input: {
-    companyId: string
+    facilityId: string
     courtNumber: number
     startTime: string
   }): Promise<void> {
     await this.client.mutate({
       mutation: DELETE_COURT_AVAILABILITY,
       variables: {
-        company_id: input.companyId,
+        facility_id: input.facilityId,
         court_number: input.courtNumber,
         start_time: input.startTime,
       },

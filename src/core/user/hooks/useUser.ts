@@ -1,13 +1,13 @@
 import { useQuery } from '@apollo/client'
 
-import { GET_COMPANY_MEMBERS } from '@/core/user/graphql/queries'
+import { GET_FACILITY_MEMBERS } from '@/core/user/graphql/queries'
 
 import type { User, UserEdge } from '@/shared/types/graphql'
 
-export function useCompanyMembers(companyId?: string, enabled = true) {
-  const { data, loading, error, refetch } = useQuery(GET_COMPANY_MEMBERS, {
-    variables: { companyId },
-    skip: !companyId || !enabled,
+export function useFacilityMembers(facilityId?: string, enabled = true) {
+  const { data, loading, error, refetch } = useQuery(GET_FACILITY_MEMBERS, {
+    variables: { facilityId },
+    skip: !facilityId || !enabled,
   })
 
   const members: User[] = data?.usersCollection?.edges.map((edge: UserEdge) => edge.node) || []

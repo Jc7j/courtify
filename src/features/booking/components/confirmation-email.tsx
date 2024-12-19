@@ -19,16 +19,16 @@ import type { BookingDetails } from './flow/PaymentStep'
 
 interface EmailProps {
   booking: BookingDetails & { amount: number }
-  company: {
+  facility: {
     name: string
     address: string
   }
 }
 
-export const ConfirmationEmail = ({ booking, company }: EmailProps) => (
+export const ConfirmationEmail = ({ booking, facility }: EmailProps) => (
   <Html>
     <Head />
-    <Preview>Reservation Confirmation for {company.name}</Preview>
+    <Preview>Reservation Confirmation for {facility.name}</Preview>
     <Body style={main}>
       <Container style={container}>
         {/* Header */}
@@ -52,8 +52,8 @@ export const ConfirmationEmail = ({ booking, company }: EmailProps) => (
                 <Text style={label}>Net Height:</Text>
               </Column>
               <Column>
-                <Text style={value}>{company.name}</Text>
-                <Text style={value}>{company.address}</Text>
+                <Text style={value}>{facility.name}</Text>
+                <Text style={value}>{facility.address}</Text>
                 <Text style={value}>{booking.date}</Text>
                 <Text style={value}>{booking.time}</Text>
                 <Text style={value}>{booking.duration} hours</Text>
@@ -122,7 +122,7 @@ export const ConfirmationEmail = ({ booking, company }: EmailProps) => (
         <Section style={footer}>
           <Text style={refundPolicy}>
             Cancellation Policy: A full refund is available up to 3 days prior to your scheduled
-            court time. For cancellations or modifications, please contact {company.name} directly.
+            court time. For cancellations or modifications, please contact {facility.name} directly.
           </Text>
           <Hr style={divider} />
           <Text style={footerText}>Powered by Courtify</Text>

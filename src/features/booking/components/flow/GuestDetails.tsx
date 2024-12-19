@@ -19,7 +19,7 @@ import {
   Label,
 } from '@/shared/components/ui'
 import { cn } from '@/shared/lib/utils/cn'
-import { CompanyProduct } from '@/shared/types/graphql'
+import { FacilityProduct } from '@/shared/types/graphql'
 
 import { GuestDetailsType, ProductInfo } from '../../types'
 
@@ -46,7 +46,7 @@ type FormRef = {
 interface GuestDetailsProps {
   onSubmit: (data: GuestDetailsType) => void
   loading?: boolean
-  products: CompanyProduct[]
+  products: FacilityProduct[]
   defaultValues?: Partial<GuestDetailsType>
   selectedTime?: {
     start_time: string
@@ -108,7 +108,7 @@ export function GuestDetails({
 
   const showError = (field: keyof GuestDetailsType) => touched[field] && errors[field]
 
-  const handleEquipmentChange = (product: CompanyProduct, checked: boolean) => {
+  const handleEquipmentChange = (product: FacilityProduct, checked: boolean) => {
     if (checked) {
       setValue('selectedEquipment', [...selectedEquipment, product])
     } else {

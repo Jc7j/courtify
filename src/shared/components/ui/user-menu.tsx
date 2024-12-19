@@ -108,7 +108,7 @@ export function UserMenu() {
             <DropdownMenuGroup>
               <DropdownMenuItem
                 className="gap-3"
-                onClick={() => router.push(ROUTES.DASHBOARD.SETTINGS.COMPANY)}
+                onClick={() => router.push(ROUTES.DASHBOARD.SETTINGS.FACILITY)}
               >
                 <Settings className="h-4 w-4" />
                 <span>Settings</span>

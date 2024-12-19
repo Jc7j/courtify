@@ -3,19 +3,19 @@
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import { PaymentProcessorSection } from '@/features/settings/components/CompanySettings/PaymentProcessorSection'
+import { PaymentProcessorSection } from '@/features/settings/components/FacilitySettings/PaymentProcessorSection'
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import { ErrorToast } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 
-import type { StripeStatus } from '@/shared/types/stripe'
+import type { StripeStatus } from '@/features/stripe/types'
 
 export default function PaymentProcessorPage() {
   const searchParams = useSearchParams()
-  const company = useCompanyStore((state) => state.company)
+  const facility = useFacilityStore((state) => state.facility)
   const { checkStripeStatus, checking } = useStripe()
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
 
@@ -27,7 +27,7 @@ export default function PaymentProcessorPage() {
         const status = await checkStripeStatus()
         if (!mounted) return
 
-        if (status.error && status.error !== 'No company found') {
+        if (status.error && status.error !== 'No facility found') {
           ErrorToast(status.error)
           return
         }
@@ -38,7 +38,7 @@ export default function PaymentProcessorPage() {
       }
     }
 
-    if (company?.id) {
+    if (facility?.id) {
       if (searchParams.get('refresh') === 'true' || searchParams.get('stripe') === 'success') {
         fetchStatus()
       } else {
@@ -49,7 +49,7 @@ export default function PaymentProcessorPage() {
     return () => {
       mounted = false
     }
-  }, [checkStripeStatus, searchParams, company?.id])
+  }, [checkStripeStatus, searchParams, facility?.id])
 
   const pageContent = <PaymentProcessorSection stripeStatus={stripeStatus} checking={checking} />
 
@@ -63,7 +63,7 @@ export default function PaymentProcessorPage() {
       </div>
 
       <div className="mt-8">
-        {!company?.stripe_account_id ? (
+        {!facility?.stripe_account_id ? (
           pageContent
         ) : (
           <StripeConnectProvider>{pageContent}</StripeConnectProvider>

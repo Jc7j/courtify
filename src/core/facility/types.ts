@@ -1,13 +1,13 @@
 import type {
-  CompanyProduct,
-  Company,
+  FacilityProduct,
+  Facility,
   ProductType,
   StripePaymentType,
 } from '@/shared/types/graphql'
 
-// Company Types
-export type PublicCompany = Pick<
-  Company,
+// Facility Types
+export type PublicFacility = Pick<
+  Facility,
   'id' | 'name' | 'slug' | 'stripe_account_id' | 'stripe_account_enabled'
 >
 
@@ -30,7 +30,7 @@ export interface UpdateProductInput extends Partial<CreateProductInput> {
 }
 
 export interface ProductResponse {
-  product: CompanyProduct | null
+  product: FacilityProduct | null
   error: string | null
 }
 
@@ -41,7 +41,7 @@ export interface ArchiveProductResponse {
 
 export interface ListProductsResponse {
   prices: StripeProduct[] | null
-  products: CompanyProduct[]
+  products: FacilityProduct[]
   syncNeeded: boolean
   error: string | null
 }
@@ -58,23 +58,23 @@ export interface StripeProduct {
 }
 
 // Service Types
-export interface CompanyServiceConfig {
-  companyId: string
+export interface FacilityServiceConfig {
+  facilityId: string
 }
 
 // Hook Types
-export interface UseCompanyProductsProps {
-  companyId?: string
+export interface UseFacilityProductsProps {
+  facilityId?: string
 }
 
-export interface UseCompanyProps {
-  companyId?: string
+export interface UseFacilityProps {
+  facilityId?: string
 }
 
 // Store Types
-export interface CompanyState {
-  company: PublicCompany | null
-  setCompany: (company: PublicCompany) => void
+export interface FacilityState {
+  facility: PublicFacility | null
+  setFacility: (facility: PublicFacility) => void
   reset: () => void
 }
 
@@ -86,12 +86,12 @@ export interface CreateProductRequest {
   price_amount: number
   currency?: string
   metadata?: Record<string, unknown>
-  company_id: string
+  facility_id: string
 }
 
 export interface ArchiveProductRequest {
   stripe_product_id: string
   stripe_price_id: string
-  company_id: string
+  facility_id: string
   active: boolean
 }

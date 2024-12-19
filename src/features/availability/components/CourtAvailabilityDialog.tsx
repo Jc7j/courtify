@@ -119,7 +119,7 @@ export function CourtAvailabilityDialog({
       }
 
       await availabilityService.updateAvailability({
-        companyId: availability.company_id,
+        facilityId: availability.facility_id,
         courtNumber: availability.court_number,
         startTime: availability.start_time,
         update: {
@@ -142,7 +142,7 @@ export function CourtAvailabilityDialog({
     try {
       setIsUpdating(true)
       await availabilityService.deleteAvailability({
-        companyId: availability.company_id,
+        facilityId: availability.facility_id,
         courtNumber: availability.court_number,
         startTime: availability.start_time,
       })

@@ -8,7 +8,7 @@ import type { EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/c
 import type { EventResizeDoneArg } from '@fullcalendar/interaction'
 
 interface UseCalendarEventsProps {
-  companyId: string
+  facilityId: string
   availabilities: EnhancedAvailability[]
   setAvailabilities: (availabilities: EnhancedAvailability[]) => void
   createAvailability: (input: any) => Promise<any>
@@ -17,7 +17,7 @@ interface UseCalendarEventsProps {
 }
 
 export function useCalendarEvents({
-  companyId,
+  facilityId,
   availabilities,
   setAvailabilities,
   createAvailability,
@@ -43,7 +43,7 @@ export function useCalendarEvents({
       calendarApi.unselect()
 
       const newAvailability = {
-        company_id: companyId,
+        facility_id: facilityId,
         court_number: resourceId,
         start_time: selectInfo.startStr,
         end_time: selectInfo.endStr,
@@ -68,7 +68,7 @@ export function useCalendarEvents({
         ErrorToast(error instanceof Error ? error.message : 'Failed to create availability')
       }
     },
-    [availabilities, createAvailability, companyId, setAvailabilities]
+    [availabilities, createAvailability, facilityId, setAvailabilities]
   )
 
   const handleEventClick = useCallback(
@@ -122,7 +122,7 @@ export function useCalendarEvents({
 
       try {
         await updateAvailability({
-          companyId,
+          facilityId,
           courtNumber: oldCourtNumber,
           startTime: oldEvent.start?.toISOString() || '',
           update: {
@@ -138,7 +138,7 @@ export function useCalendarEvents({
         ErrorToast(error instanceof Error ? error.message : 'Failed to update availability')
       }
     },
-    [availabilities, updateAvailability, companyId, setAvailabilities]
+    [availabilities, updateAvailability, facilityId, setAvailabilities]
   )
 
   const handleEventResize = useCallback(
@@ -172,7 +172,7 @@ export function useCalendarEvents({
 
       try {
         await updateAvailability({
-          companyId,
+          facilityId,
           courtNumber: availability.court_number,
           startTime: oldEvent.start?.toISOString() || '',
           update: {
@@ -187,7 +187,7 @@ export function useCalendarEvents({
         ErrorToast(error instanceof Error ? error.message : 'Failed to update availability')
       }
     },
-    [availabilities, updateAvailability, companyId, setAvailabilities]
+    [availabilities, updateAvailability, facilityId, setAvailabilities]
   )
 
   return {

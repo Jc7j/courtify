@@ -5,8 +5,8 @@ import { useState, Suspense } from 'react'
 
 import { ProductDialog } from '@/features/stripe/components/products/ProductDialog'
 
-import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityProducts } from '@/core/facility/hooks/useFacilityProducts'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import {
   Badge,
@@ -24,7 +24,7 @@ import {
 } from '@/shared/components/ui'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
-import type { CompanyProduct } from '@/shared/types/graphql'
+import type { FacilityProduct } from '@/shared/types/graphql'
 
 function ProductsPageSkeleton() {
   return (
@@ -36,9 +36,9 @@ function ProductsPageSkeleton() {
 }
 
 interface ProductsListProps {
-  products: CompanyProduct[]
+  products: FacilityProduct[]
   onArchive: (id: string) => Promise<void>
-  onEdit: (product: CompanyProduct) => void
+  onEdit: (product: FacilityProduct) => void
 }
 
 function ProductsList({ products, onArchive, onEdit }: ProductsListProps) {
@@ -96,15 +96,15 @@ function ProductsList({ products, onArchive, onEdit }: ProductsListProps) {
 
 export default function ProductsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<CompanyProduct | null>(null)
-  const companyId = useCompanyStore((state) => state.company?.id)
-  const { products, loading, archiveProduct } = useCompanyProducts({
-    companyId: companyId || '',
+  const [selectedProduct, setSelectedProduct] = useState<FacilityProduct | null>(null)
+  const facilityId = useFacilityStore((state) => state.facility?.id)
+  const { products, loading, archiveProduct } = useFacilityProducts({
+    facilityId: facilityId || '',
   })
 
-  if (!companyId) return null
+  if (!facilityId) return null
 
-  const handleEdit = (product: CompanyProduct) => {
+  const handleEdit = (product: FacilityProduct) => {
     setSelectedProduct(product)
     setDialogOpen(true)
   }
@@ -147,7 +147,7 @@ export default function ProductsPage() {
       <ProductDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
-        companyId={companyId}
+        facilityId={facilityId}
         product={selectedProduct}
       />
     </div>

@@ -11,7 +11,7 @@ export const ROUTES = {
     PRODUCTS: '/dashboard/products',
     SETTINGS: {
       HOME: '/dashboard/settings',
-      COMPANY: '/dashboard/settings/company',
+      FACILITY: '/dashboard/settings/facility',
       MEMBERS: '/dashboard/settings/members',
       ACCOUNT: '/dashboard/settings/account',
       PAYMENT_PROCESSOR: '/dashboard/settings/payment-processor',

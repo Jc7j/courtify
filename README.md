@@ -1,6 +1,6 @@
 # Courtify
 
-Courtify is a modern court rental booking system designed for sports facilities, particularly volleyball courts. It provides a company-specific booking experience with dynamic branding, court management, customizable pricing, and an admin dashboard.
+Courtify is a modern court rental booking system designed for sports facilities, particularly volleyball courts. It provides a facility-specific booking experience with dynamic branding, court management, customizable pricing, and an admin dashboard.
 
 ## Getting Started
 
@@ -94,7 +94,7 @@ src/
 │   ├── (dashboard)/       # Protected dashboard routes
 │   └── api/               # API routes
 ├── core/                  # Core business logic
-│   ├── company/          # Company management
+│   ├── facility/          # Facility management
 │   └── user/             # User management
 ├── features/             # Feature-based modules
 │   ├── availability/     # Court availability

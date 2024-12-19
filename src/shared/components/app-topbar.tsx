@@ -3,7 +3,7 @@
 import { MessageSquarePlus, Copy, Check } from 'lucide-react'
 import { useState, useCallback } from 'react'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { SuccessToast, ErrorToast } from '@/shared/components/ui'
@@ -15,7 +15,7 @@ import { cn } from '@/shared/lib/utils/cn'
 const BOOKING_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://courtify.app'
 
 export function AppTopbar({ className }: { className?: string }) {
-  const company = useCompanyStore((state) => state.company)
+  const facility = useFacilityStore((state) => state.facility)
   const user = useUserStore((state) => state.user)
   const [feedback, setFeedback] = useState('')
   const [open, setOpen] = useState(false)
@@ -23,12 +23,12 @@ export function AppTopbar({ className }: { className?: string }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopySlug = useCallback(async () => {
-    if (!company?.slug) return
-    const bookingUrl = `${BOOKING_BASE_URL}/book/${company.slug}`
+    if (!facility?.slug) return
+    const bookingUrl = `${BOOKING_BASE_URL}/book/${facility.slug}`
     await navigator.clipboard.writeText(bookingUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }, [company?.slug])
+  }, [facility?.slug])
 
   const handleSubmit = async () => {
     if (!feedback.trim()) return
@@ -70,7 +70,7 @@ export function AppTopbar({ className }: { className?: string }) {
 
       {/* Right side - Actions */}
       <div className="flex items-center gap-3">
-        {company?.slug && (
+        {facility?.slug && (
           <Button variant="outline" size="sm" onClick={handleCopySlug} className="gap-2">
             <span className="text-xs">Booking link</span>
             {copied ? (

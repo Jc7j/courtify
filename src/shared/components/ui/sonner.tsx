@@ -107,10 +107,10 @@ export { Toaster, SuccessToast, ErrorToast, WarningToast, InfoToast }
 import { success, error, warning, info } from '@/components/ui/sonner'
 
 // Success toast
-success('Company created successfully!')
+success('Facility created successfully!')
 
 // Error toast
-error('Failed to create company')
+error('Failed to create Facility')
 
 // Warning toast
 warning('Your session is about to expire')

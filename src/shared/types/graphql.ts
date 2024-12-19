@@ -14,7 +14,7 @@ export interface User {
   id: string
   email: string
   name: string
-  company_id?: string | null
+  facility_id?: string | null
   role: MemberRole
   is_active: boolean
   invited_by?: string | null
@@ -23,7 +23,7 @@ export interface User {
   updated_at: string
 }
 
-export interface Company {
+export interface Facility {
   id: string
   name: string
   address: string
@@ -37,7 +37,7 @@ export interface Company {
 }
 
 export interface Courts {
-  company_id: string
+  facility_id: string
   court_number: number
   name: string
   created_at: string
@@ -47,7 +47,7 @@ export interface Courts {
 
 export interface CourtAvailability {
   nodeId: string
-  company_id: string
+  facility_id: string
   court_number: number
   start_time: string
   end_time: string
@@ -83,7 +83,7 @@ export enum PaymentStatus {
 
 export interface Booking {
   id: string
-  company_id: string
+  facility_id: string
   court_number: number
   start_time: string
   customer_email: string
@@ -114,9 +114,9 @@ export enum StripePaymentType {
   OneTime = 'one_time',
 }
 
-export interface CompanyProduct {
+export interface FacilityProduct {
   id: string
-  company_id: string
+  facility_id: string
   name: string
   description?: string | null
   type: ProductType
@@ -160,14 +160,14 @@ export interface CourtAvailabilityConnection {
   __typename: 'CourtAvailabilityConnection'
 }
 
-export interface CompaniesEdge {
-  node: Company
-  __typename: 'CompaniesEdge'
+export interface FacilitiesEdge {
+  node: Facility
+  __typename: 'FacilitiesEdge'
 }
 
-export interface CompaniesConnection {
-  edges: CompaniesEdge[]
-  __typename: 'CompaniesConnection'
+export interface FacilitiesConnection {
+  edges: FacilitiesEdge[]
+  __typename: 'FacilitiesConnection'
 }
 
 export interface BookingEdge {
@@ -180,14 +180,14 @@ export interface BookingConnection {
   __typename: 'BookingConnection'
 }
 
-export interface CompanyProductEdge {
-  node: CompanyProduct
-  __typename: 'CompanyProductEdge'
+export interface FacilityProductEdge {
+  node: FacilityProduct
+  __typename: 'FacilityProductEdge'
 }
 
-export interface CompanyProductConnection {
-  edges: CompanyProductEdge[]
-  __typename: 'CompanyProductConnection'
+export interface FacilityProductConnection {
+  edges: FacilityProductEdge[]
+  __typename: 'FacilityProductConnection'
 }
 
 export interface EnhancedBooking extends Omit<Booking, 'metadata'> {

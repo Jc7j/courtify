@@ -9,9 +9,9 @@ CREATE TYPE stripe_payment_type AS ENUM (
 );
 
 
-CREATE TABLE company_products (
+CREATE TABLE facility_products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
+    facility_id UUID NOT NULL REFERENCES facilities(id) ON DELETE RESTRICT,
     name TEXT NOT NULL,
     description TEXT,
     type product_type NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE company_products (
         "original_amount": null
       },
       "stripe_metadata": {
-        "company_id": null,
+        "facility_id": null,
         "product_name": null,
         "product_type": null
       }
@@ -39,38 +39,38 @@ CREATE TABLE company_products (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE company_products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE facility_products ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Company members can view products" ON company_products
+CREATE POLICY "Facility members can view products" ON facility_products
     FOR SELECT
     USING (
-        company_id IN (
-            SELECT company_id 
+        facility_id IN (
+            SELECT facility_id 
             FROM users 
             WHERE id = auth.uid()
         )
         OR is_active = true
     );
 
-CREATE POLICY "Owners and admins can manage products" ON company_products
+CREATE POLICY "Owners and admins can manage products" ON facility_products
     FOR ALL
     USING (
-        company_id IN (
-            SELECT company_id 
+        facility_id IN (
+            SELECT facility_id 
             FROM users 
             WHERE id = auth.uid() 
             AND role IN ('owner', 'admin')
         )
     )
     WITH CHECK (
-        company_id IN (
-            SELECT company_id 
+        facility_id IN (
+            SELECT facility_id 
             FROM users 
             WHERE id = auth.uid() 
             AND role IN ('owner', 'admin')
         )
     );
 
-CREATE POLICY "Public can view active products" ON company_products
+CREATE POLICY "Public can view active products" ON facility_products
     FOR SELECT
     USING (is_active = true);

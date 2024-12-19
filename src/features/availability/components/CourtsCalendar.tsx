@@ -19,14 +19,14 @@ interface CourtsCalendarProps {
   courts: Courts[]
   loading: boolean
   onDateChange: (startDate: string, endDate: string) => void
-  companyId: string
+  facilityId: string
 }
 
 function CourtsCalendarComponent({
   courts,
   loading: externalLoading,
   onDateChange,
-  companyId,
+  facilityId: facilityId,
 }: CourtsCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
   const [selectedAvailability, setSelectedAvailability] = useState<EnhancedAvailability | null>(
@@ -40,7 +40,7 @@ function CourtsCalendarComponent({
   const { createAvailability, updateAvailability } = useCourtAvailability()
 
   const { handleSelect, handleEventClick, handleEventDrop, handleEventResize } = useCalendarEvents({
-    companyId,
+    facilityId,
     availabilities,
     setAvailabilities,
     createAvailability,

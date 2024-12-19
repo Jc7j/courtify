@@ -4,7 +4,7 @@ import { Calendar, Home, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import {
   Sidebar,
@@ -44,7 +44,7 @@ const items = [
 ]
 
 export function AppSidebar() {
-  const { company } = useCompanyStore()
+  const { facility } = useFacilityStore()
   const pathname = usePathname()
 
   const isActivePath = (path: string, exact: boolean) => {
@@ -70,7 +70,7 @@ export function AppSidebar() {
               <div className="flex items-center gap-3 p-4">
                 <div className="flex items-baseline gap-2">
                   <span className="font-semibold text-sidebar-foreground">
-                    {company?.name || 'Courtify'}
+                    {facility?.name || 'Courtify'}
                   </span>
                 </div>
               </div>

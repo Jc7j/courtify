@@ -9,8 +9,8 @@ import { CourtsCalendar } from '@/features/availability/components/CourtsCalenda
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
 
-import { DashboardSkeleton } from '@/core/company/components/Skeletons'
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { DashboardSkeleton } from '@/core/facility/components/Skeletons'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { Card, CardContent } from '@/shared/components/ui'
@@ -19,7 +19,7 @@ import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 import type { Courts } from '@/shared/types/graphql'
 
 interface CalendarSectionProps {
-  companyId: string
+  facilityId: string
   hasStripeAccount: boolean
   courts: Courts[]
   loading: boolean
@@ -27,7 +27,7 @@ interface CalendarSectionProps {
 }
 
 const CalendarSection = memo(function CalendarSection({
-  companyId,
+  facilityId,
   hasStripeAccount,
   courts,
   loading,
@@ -38,7 +38,7 @@ const CalendarSection = memo(function CalendarSection({
       courts={courts}
       loading={loading}
       onDateChange={onDateChange}
-      companyId={companyId}
+      facilityId={facilityId}
     />
   )
 
@@ -49,7 +49,7 @@ const CalendarSection = memo(function CalendarSection({
 
 function DashboardContent() {
   const client = useApolloClient()
-  const company = useCompanyStore((state) => state.company)
+  const facility = useFacilityStore((state) => state.facility)
   const user = useUserStore((state) => state.user)
   const setAvailabilities = useCalendarStore((state) => state.setAvailabilities)
 
@@ -61,17 +61,17 @@ function DashboardContent() {
     end: dayjs().endOf('day').toISOString(),
   }))
 
-  const companyId = useMemo(() => company?.id || '', [company?.id])
+  const facilityId = useMemo(() => facility?.id || '', [facility?.id])
   const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
   const fetchAvailabilities = useCallback(
     async (start: string, end: string) => {
-      if (!companyId) return
+      if (!facilityId) return
 
       setLoading(true)
       try {
         const { courts: courtData, availabilities } =
-          await availabilityService.getCompanyAvailabilities(companyId, start, end)
+          await availabilityService.getFacilityAvailabilities(facilityId, start, end)
         setCourts(courtData)
         setAvailabilities(availabilities)
       } catch (error) {
@@ -80,14 +80,14 @@ function DashboardContent() {
         setLoading(false)
       }
     },
-    [companyId, availabilityService, setAvailabilities]
+    [facilityId, availabilityService, setAvailabilities]
   )
 
   useEffect(() => {
-    if (initialLoading && company !== undefined && user !== undefined) {
+    if (initialLoading && facility !== undefined && user !== undefined) {
       setInitialLoading(false)
     }
-  }, [company, user, initialLoading])
+  }, [facility, user, initialLoading])
 
   useEffect(() => {
     fetchAvailabilities(selectedDate.start, selectedDate.end)
@@ -97,14 +97,14 @@ function DashboardContent() {
     setSelectedDate({ start, end })
   }, [])
 
-  if (initialLoading || company === undefined || user === undefined) {
+  if (initialLoading || facility === undefined || user === undefined) {
     return <DashboardSkeleton />
   }
 
-  if (!company || !user) {
+  if (!facility || !user) {
     return (
       <div className="p-8 rounded-lg bg-destructive/10 text-destructive animate-fade-in">
-        <p className="font-medium">No company data found</p>
+        <p className="font-medium">No facility data found</p>
       </div>
     )
   }
@@ -121,8 +121,8 @@ function DashboardContent() {
         }
       >
         <CalendarSection
-          companyId={company.id}
-          hasStripeAccount={!!company.stripe_account_id}
+          facilityId={facility.id}
+          hasStripeAccount={!!facility.stripe_account_id}
           courts={courts}
           loading={loading}
           onDateChange={handleDateChange}

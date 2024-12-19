@@ -1,5 +1,5 @@
 import type {
-  CompanyProduct,
+  FacilityProduct,
   CourtAvailability,
   EnhancedAvailability,
 } from '@/shared/types/graphql'
@@ -15,11 +15,11 @@ export interface GuestDetailsType {
 }
 
 // Product Types
-export type ProductInfo = Pick<CompanyProduct, 'id' | 'name' | 'price_amount' | 'type'>
+export type ProductInfo = Pick<FacilityProduct, 'id' | 'name' | 'price_amount' | 'type'>
 
 // Payment Intent
 export interface CreatePaymentIntentInput {
-  companyId: string
+  facilityId: string
   courtNumber: number
   startTime: string
   endTime: string
@@ -62,7 +62,7 @@ export interface BookingDetails {
   date: string
   time: string
   duration: number
-  companyId: string
+  facilityId: string
   guestInfo: GuestDetailsType
 }
 

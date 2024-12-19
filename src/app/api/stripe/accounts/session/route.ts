@@ -11,30 +11,30 @@ interface SessionResponse {
 
 export async function POST(req: Request) {
   try {
-    const { companyId } = await req.json()
+    const { facilityId } = await req.json()
 
-    if (!companyId) {
+    if (!facilityId) {
       return NextResponse.json<SessionResponse>(
         {
           client_secret: '',
-          error: 'Company ID is required',
+          error: 'Facility ID is required',
         },
         { status: 400 }
       )
     }
 
     const supabase = createAdminClient()
-    const { data: company } = await supabase
-      .from('companies')
+    const { data: facility } = await supabase
+      .from('facilities')
       .select('stripe_account_id')
-      .eq('id', companyId)
+      .eq('id', facilityId)
       .single()
 
-    if (!company?.stripe_account_id) {
+    if (!facility?.stripe_account_id) {
       return NextResponse.json<SessionResponse>(
         {
           client_secret: '',
-          error: 'Company not setup for payments',
+          error: 'Facility not setup for payments',
         },
         { status: 400 }
       )
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     try {
       const accountSession = await stripe.accountSessions.create({
-        account: company.stripe_account_id,
+        account: facility.stripe_account_id,
         components: {
           account_management: {
             enabled: true,

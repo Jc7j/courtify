@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
 
+import { StripeConnectRequest, StripeConnectResponse } from '@/features/stripe/types'
+
 import { ROUTES } from '@/shared/constants/routes'
 import { stripe, handleStripeError } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
-import { StripeConnectRequest, StripeConnectResponse } from '@/shared/types/stripe'
 
 export async function POST(req: Request) {
   try {
-    const { company_id, company_name, reconnect, link_type } =
+    const { facility_id, facility_name, reconnect, link_type } =
       (await req.json()) as StripeConnectRequest
 
-    if (!company_id || !company_name) {
+    if (!facility_id || !facility_name) {
       return NextResponse.json<StripeConnectResponse>(
         { url: null, error: 'Missing required fields' },
         { status: 400 }
@@ -18,23 +19,23 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient()
-    const { data: company } = await supabase
-      .from('companies')
+    const { data: facility } = await supabase
+      .from('facilities')
       .select('stripe_account_id')
-      .eq('id', company_id)
+      .eq('id', facility_id)
       .single()
 
-    if (company?.stripe_account_id && !reconnect) {
+    if (facility?.stripe_account_id && !reconnect) {
       return NextResponse.json<StripeConnectResponse>(
-        { url: null, error: 'Company already has a Stripe account connected' },
+        { url: null, error: 'Facility already has a Stripe account connected' },
         { status: 400 }
       )
     }
 
     try {
       const stripeAccount =
-        company?.stripe_account_id && !reconnect
-          ? await stripe.accounts.retrieve(company.stripe_account_id)
+        facility?.stripe_account_id && !reconnect
+          ? await stripe.accounts.retrieve(facility.stripe_account_id)
           : await stripe.accounts.create({
               type: 'standard',
               country: 'US',
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
                 card_payments: { requested: true },
                 transfers: { requested: true },
               },
-              metadata: { company_id },
+              metadata: { facility_id: facility_id },
             })
 
       const canUseUpdateLink =
@@ -60,13 +61,13 @@ export async function POST(req: Request) {
       })
 
       await supabase
-        .from('companies')
+        .from('facilities')
         .update({
           stripe_account_id: stripeAccount.id,
           stripe_account_enabled: false,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', company_id)
+        .eq('id', facility_id)
         .throwOnError()
 
       return NextResponse.json<StripeConnectResponse>({

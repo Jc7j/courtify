@@ -18,7 +18,7 @@ interface CreateAvailabilityInput {
 }
 
 interface UpdateAvailabilityInput {
-  companyId: string
+  facilityId: string
   courtNumber: number
   startTime: string
   update: {
@@ -41,7 +41,7 @@ export function useCourtAvailability() {
 
   const createAvailability = useCallback(
     async (input: CreateAvailabilityInput): Promise<CourtAvailability> => {
-      if (!isAuthenticated || !user?.company_id) {
+      if (!isAuthenticated || !user?.facility_id) {
         throw new Error('Authentication required')
       }
 
@@ -51,7 +51,7 @@ export function useCourtAvailability() {
       }
 
       const formattedInput = AvailabilityClientService.formatAvailabilityInput(
-        user.company_id,
+        user.facility_id,
         input.courtNumber,
         input.startTime,
         input.endTime,
@@ -60,7 +60,7 @@ export function useCourtAvailability() {
 
       return availabilityService.createAvailability(formattedInput)
     },
-    [isAuthenticated, user?.company_id, availabilityService]
+    [isAuthenticated, user?.facility_id, availabilityService]
   )
 
   const updateAvailability = useCallback(
@@ -72,16 +72,16 @@ export function useCourtAvailability() {
 
   const deleteAvailability = useCallback(
     async (input: DeleteAvailabilityInput): Promise<void> => {
-      if (!isAuthenticated || !user?.company_id) {
+      if (!isAuthenticated || !user?.facility_id) {
         throw new Error('Authentication required')
       }
 
       return availabilityService.deleteAvailability({
-        companyId: user.company_id,
+        facilityId: user.facility_id,
         ...input,
       })
     },
-    [isAuthenticated, user?.company_id, availabilityService]
+    [isAuthenticated, user?.facility_id, availabilityService]
   )
 
   return {

@@ -2,13 +2,9 @@
 
 import { useState, useCallback, useRef } from 'react'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
-import {
-  StripeAccountDetails,
-  StripeStatusResponse,
-  StripeConnectResponse,
-} from '@/shared/types/stripe'
+import { StripeAccountDetails, StripeConnectResponse, StripeStatusResponse } from '../types'
 
 interface StripeStatus {
   isConnected: boolean
@@ -30,7 +26,7 @@ interface ConnectStripeOptions {
 }
 
 export function useStripe(): UseStripeReturn {
-  const company = useCompanyStore((state) => state.company)
+  const facility = useFacilityStore((state) => state.facility)
   const [connecting, setConnecting] = useState(false)
   const [checking, setChecking] = useState(false)
 
@@ -73,12 +69,12 @@ export function useStripe(): UseStripeReturn {
   )
 
   const checkStripeStatus = useCallback(async (): Promise<StripeStatus> => {
-    if (!company?.id) {
+    if (!facility?.id) {
       return {
         isConnected: false,
         isEnabled: false,
         accountDetails: null,
-        error: 'No company found',
+        error: 'No facility found',
       }
     }
 
@@ -86,7 +82,7 @@ export function useStripe(): UseStripeReturn {
       setChecking(true)
       const requestId = `status-${Date.now()}`
 
-      if (!company.stripe_account_id) {
+      if (!facility.stripe_account_id) {
         return {
           isConnected: false,
           isEnabled: false,
@@ -101,10 +97,10 @@ export function useStripe(): UseStripeReturn {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Stripe-Account': company.stripe_account_id,
+            'X-Stripe-Account': facility.stripe_account_id,
           },
           body: JSON.stringify({
-            company_id: company.id,
+            facility_id: facility.id,
           }),
         },
         requestId
@@ -135,15 +131,15 @@ export function useStripe(): UseStripeReturn {
     } finally {
       setChecking(false)
     }
-  }, [company?.id, makeRequest, company?.stripe_account_id])
+  }, [facility?.id, makeRequest, facility?.stripe_account_id])
 
   const connectStripe = useCallback(
     async ({
       reconnect = false,
       linkType = 'onboarding',
     }: ConnectStripeOptions = {}): Promise<StripeConnectResponse> => {
-      if (!company?.id || !company.name) {
-        return { url: null, error: 'Company information not found' }
+      if (!facility?.id || !facility.name) {
+        return { url: null, error: 'Facility information not found' }
       }
 
       try {
@@ -154,8 +150,8 @@ export function useStripe(): UseStripeReturn {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              company_id: company.id,
-              company_name: company.name,
+              facility_id: facility.id,
+              facility_name: facility.name,
               reconnect,
               link_type: linkType,
             }),
@@ -177,7 +173,7 @@ export function useStripe(): UseStripeReturn {
         setConnecting(false)
       }
     },
-    [company?.id, company?.name, makeRequest, checkStripeStatus]
+    [facility?.id, facility?.name, makeRequest, checkStripeStatus]
   )
 
   return {

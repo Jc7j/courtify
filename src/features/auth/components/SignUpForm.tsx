@@ -88,7 +88,7 @@ export function SignUpForm({ onSuccess }: SignUpFormProps) {
             {...register('email')}
             type="email"
             id="email"
-            placeholder="john@company.com"
+            placeholder="john@facility.com"
             className={errors.email ? 'border-destructive' : ''}
             disabled={isLoading}
             autoComplete="email"

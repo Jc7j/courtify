@@ -6,7 +6,7 @@ import { useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
+import { useFacility } from '@/core/facility/hooks/useFacility'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import {
@@ -21,22 +21,22 @@ import {
 
 import type { Libraries } from '@react-google-maps/api'
 
-const createCompanySchema = z.object({
+const createFacilitySchema = z.object({
   name: z
     .string()
-    .min(2, 'Company name must be at least 2 characters')
-    .max(50, 'Company name must be less than 50 characters'),
+    .min(2, 'Facility name must be at least 2 characters')
+    .max(50, 'Facility name must be less than 50 characters'),
   sports: z.enum(['volleyball']),
   address: z.string(),
 })
 
-type CreateCompanyFormData = z.infer<typeof createCompanySchema>
+type CreateFacilityFormData = z.infer<typeof createFacilitySchema>
 
 // Define libraries array outside component to prevent rerenders
 const libraries: Libraries = ['places']
 
-export function CreateCompany({ onBack }: { onBack?: () => void }) {
-  const { createCompany, creating } = useCompany()
+export function CreateFacility({ onBack }: { onBack?: () => void }) {
+  const { createFacility, creating } = useFacility()
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -49,8 +49,8 @@ export function CreateCompany({ onBack }: { onBack?: () => void }) {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<CreateCompanyFormData>({
-    resolver: zodResolver(createCompanySchema),
+  } = useForm<CreateFacilityFormData>({
+    resolver: zodResolver(createFacilitySchema),
     defaultValues: {
       name: '',
       address: '',
@@ -68,38 +68,38 @@ export function CreateCompany({ onBack }: { onBack?: () => void }) {
     }
   }
 
-  const onSubmit = async (data: CreateCompanyFormData) => {
+  const onSubmit = async (data: CreateFacilityFormData) => {
     try {
-      await createCompany(data.name.trim(), data.address, data.sports)
+      await createFacility(data.name.trim(), data.address, data.sports)
 
       const updatedUser = useUserStore.getState().user
-      if (!updatedUser?.company_id) {
-        throw new Error('Company created but user state not updated')
+      if (!updatedUser?.facility_id) {
+        throw new Error('Facility created but user state not updated')
       }
 
-      SuccessToast('Company created successfully!')
+      SuccessToast('Facility created successfully!')
     } catch (err) {
-      console.error('Error creating company:', err)
-      ErrorToast(err instanceof Error ? err.message : 'Failed to create company')
+      console.error('Error creating facility:', err)
+      ErrorToast(err instanceof Error ? err.message : 'Failed to create facility')
     }
   }
 
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Create your company</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Create your facility</h1>
         <p className="text-base text-muted-foreground leading-relaxed">
-          Set up your company workspace to start managing your courts.
+          Set up your facility to start managing your courts.
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Company Name */}
+        {/* Facility Name */}
         <div className="space-y-2">
-          <Label htmlFor="name">Company name</Label>
+          <Label htmlFor="name">Facility name</Label>
           <Input
             id="name"
-            placeholder="Enter your company name"
+            placeholder="Enter your facility name"
             className={errors.name ? 'border-destructive' : ''}
             disabled={creating}
             {...register('name')}

@@ -34,7 +34,7 @@ export function useUserOperations() {
           updated_at: new Date().toISOString(),
         })
         .eq('email', currentEmail)
-        .select('id, email, name, company_id, role, is_active')
+        .select('id, email, name, facility_id, role, is_active')
         .single()
 
       if (updateError || !userData) {

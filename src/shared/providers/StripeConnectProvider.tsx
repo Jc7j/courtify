@@ -4,23 +4,23 @@ import { loadConnectAndInitialize } from '@stripe/connect-js/pure'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
 import React, { ReactNode, useMemo, useCallback } from 'react'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 interface StripeConnectProviderProps {
   children: ReactNode
 }
 
 export default function StripeConnectProvider({ children }: StripeConnectProviderProps) {
-  const company = useCompanyStore((state) => state.company)
+  const facility = useFacilityStore((state) => state.facility)
 
   const fetchClientSecret = useCallback(async () => {
-    if (!company?.id || !company.stripe_account_id) return ''
+    if (!facility?.id || !facility.stripe_account_id) return ''
 
     try {
       const response = await fetch('/api/stripe/accounts/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: company.id }),
+        body: JSON.stringify({ facilityId: facility.id }),
       })
       const data = await response.json()
       return data.client_secret || ''
@@ -28,10 +28,10 @@ export default function StripeConnectProvider({ children }: StripeConnectProvide
       console.error('Failed to fetch client secret:', err)
       return ''
     }
-  }, [company?.id, company?.stripe_account_id])
+  }, [facility?.id, facility?.stripe_account_id])
 
   const stripeConnectInstance = useMemo(() => {
-    if (!company?.id || !company.stripe_account_id) return null
+    if (!facility?.id || !facility.stripe_account_id) return null
 
     return loadConnectAndInitialize({
       publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
@@ -54,9 +54,9 @@ export default function StripeConnectProvider({ children }: StripeConnectProvide
         },
       },
     })
-  }, [company?.id, company?.stripe_account_id, fetchClientSecret])
+  }, [facility?.id, facility?.stripe_account_id, fetchClientSecret])
 
-  if (!company?.id || !company.stripe_account_id || !stripeConnectInstance) {
+  if (!facility?.id || !facility.stripe_account_id || !stripeConnectInstance) {
     return <>{children}</>
   }
 

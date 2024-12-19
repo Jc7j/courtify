@@ -5,16 +5,16 @@ export const COURT_FIELDS = gql`
     court_number
     name
     updated_at
-    company_id
+    facility_id
     is_active
   }
 `
 
-export const GET_COMPANY_COURTS = gql`
+export const GET_FACILITY_COURTS = gql`
   ${COURT_FIELDS}
-  query GetCompanyCourts($company_id: UUID!) {
+  query GetFacilityCourts($facility_id: UUID!) {
     courtsCollection(
-      filter: { company_id: { eq: $company_id } }
+      filter: { facility_id: { eq: $facility_id } }
       orderBy: { court_number: AscNullsFirst }
     ) {
       edges {
@@ -28,9 +28,9 @@ export const GET_COMPANY_COURTS = gql`
 
 export const GET_COURT = gql`
   ${COURT_FIELDS}
-  query GetCourt($company_id: UUID!, $court_number: Int!) {
+  query GetCourt($facility_id: UUID!, $court_number: Int!) {
     courtsCollection(
-      filter: { company_id: { eq: $company_id }, court_number: { eq: $court_number } }
+      filter: { facility_id: { eq: $facility_id }, court_number: { eq: $court_number } }
     ) {
       edges {
         node {

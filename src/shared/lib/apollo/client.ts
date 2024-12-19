@@ -31,7 +31,7 @@ const authLink = setContext(async (_, { headers }) => {
   if (session?.access_token && session.user) {
     const { data: userData } = await supabase
       .from('users')
-      .select('name, company_id, role')
+      .select('name, facility_id, role')
       .eq('id', session.user.id)
       .single()
 
@@ -39,7 +39,7 @@ const authLink = setContext(async (_, { headers }) => {
       const baseUser: BaseUser = {
         ...session.user,
         name: userData.name,
-        company_id: userData.company_id,
+        facility_id: userData.facility_id,
         role: userData.role as MemberRole,
       }
 

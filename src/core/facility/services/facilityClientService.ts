@@ -1,24 +1,24 @@
-export class CompanyClientService {
-  static validateCompanyName(name: string): { isValid: boolean; error?: string } {
+export class FacilityClientService {
+  static validateFacilityName(name: string): { isValid: boolean; error?: string } {
     const trimmedName = name.trim()
 
     if (!trimmedName) {
-      return { isValid: false, error: 'Company name is required' }
+      return { isValid: false, error: 'Facility name is required' }
     }
 
     if (trimmedName.length < 2) {
-      return { isValid: false, error: 'Company name must be at least 2 characters' }
+      return { isValid: false, error: 'Facility name must be at least 2 characters' }
     }
 
     return { isValid: true }
   }
 
-  static formatCompanyName(name: string): string {
+  static formatFacilityName(name: string): string {
     return name.trim().replace(/\s+/g, ' ')
   }
 
-  static generateCompanySlug(name: string): string {
-    const formattedName = this.formatCompanyName(name)
+  static generateFacilitySlug(name: string): string {
+    const formattedName = this.formatFacilityName(name)
     const timestamp = Date.now().toString(36).slice(-5)
 
     return (
@@ -33,8 +33,11 @@ export class CompanyClientService {
     )
   }
 
-  static validateCompanyInput(name: string, address: string): { isValid: boolean; error?: string } {
-    const nameValidation = this.validateCompanyName(name)
+  static validateFacilityInput(
+    name: string,
+    address: string
+  ): { isValid: boolean; error?: string } {
+    const nameValidation = this.validateFacilityName(name)
     if (!nameValidation.isValid) {
       return nameValidation
     }

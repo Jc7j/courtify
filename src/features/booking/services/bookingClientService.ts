@@ -2,7 +2,7 @@ import type { CreatePaymentIntentInput } from '../types'
 
 export class BookingClientService {
   static validateBookingInput(input: CreatePaymentIntentInput) {
-    if (!input.companyId) throw new Error('Company ID is required')
+    if (!input.facilityId) throw new Error('Facility ID is required')
     if (!input.courtNumber) throw new Error('Court number is required')
     if (!input.startTime) throw new Error('Start time is required')
     if (!input.endTime) throw new Error('End time is required')

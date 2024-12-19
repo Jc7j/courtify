@@ -11,26 +11,26 @@ interface CreateProductRequest {
   price_amount: number
   currency?: string
   metadata?: Record<string, unknown>
-  company_id: string
+  facility_id: string
 }
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as CreateProductRequest
 
-    if (!body.name || !body.type || !body.price_amount || !body.company_id) {
+    if (!body.name || !body.type || !body.price_amount || !body.facility_id) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const supabase = createAdminClient()
 
-    const { data: company } = await supabase
-      .from('companies')
+    const { data: facility } = await supabase
+      .from('facilities')
       .select('stripe_account_id, stripe_account_enabled')
-      .eq('id', body.company_id)
+      .eq('id', body.facility_id)
       .single()
 
-    if (!company?.stripe_account_id || !company.stripe_account_enabled) {
+    if (!facility?.stripe_account_id || !facility.stripe_account_enabled) {
       return NextResponse.json({ error: 'Stripe account not configured' }, { status: 400 })
     }
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         product_data: {
           name: body.name,
           metadata: {
-            company_id: body.company_id,
+            facility_id: body.facility_id,
             type: body.type,
             ...(typeof body.metadata === 'string'
               ? JSON.parse(body.metadata)
@@ -50,12 +50,12 @@ export async function POST(req: Request) {
         },
         metadata: {
           product_name: body.name,
-          company_id: body.company_id,
+          facility_id: body.facility_id,
           product_type: body.type,
         },
       },
       {
-        stripeAccount: company.stripe_account_id,
+        stripeAccount: facility.stripe_account_id,
       }
     )
     return NextResponse.json({

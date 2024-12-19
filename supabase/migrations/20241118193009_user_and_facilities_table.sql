@@ -1,5 +1,5 @@
 CREATE TYPE member_role AS ENUM ('owner', 'admin', 'member');
-CREATE TABLE companies (
+CREATE TABLE facilities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     address TEXT,
@@ -21,14 +21,14 @@ CREATE TABLE companies (
 );
 
 
-ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE facilities ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    company_id UUID REFERENCES companies(id),
-    
+    facility_id UUID REFERENCES facilities(id),
+
     role member_role NOT NULL DEFAULT 'member',
     joined_at TIMESTAMPTZ DEFAULT NOW(),
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -55,7 +55,7 @@ CREATE POLICY "Owners and admins can manage members" ON users
             SELECT 1 
             FROM users 
             WHERE id = auth.uid() 
-            AND company_id = users.company_id 
+            AND facility_id = users.facility_id 
             AND role IN ('owner', 'admin')
         )
     )
@@ -64,7 +64,7 @@ CREATE POLICY "Owners and admins can manage members" ON users
             SELECT 1 
             FROM users 
             WHERE id = auth.uid() 
-            AND company_id = users.company_id 
+            AND facility_id = users.facility_id 
             AND role IN ('owner', 'admin')
         )
     );
@@ -73,32 +73,32 @@ CREATE POLICY "users_insert_public" ON users
     FOR INSERT
     WITH CHECK (true);
 
-CREATE POLICY "companies_insert" ON companies
+CREATE POLICY "facilities_insert" ON facilities
     FOR INSERT TO authenticated
     WITH CHECK (true);
 
-CREATE POLICY "companies_select" ON companies
+CREATE POLICY "facilities_select" ON facilities
     FOR SELECT TO authenticated
     USING (true);
 
-CREATE POLICY companies_update ON companies
+CREATE POLICY facilities_update ON facilities
     FOR UPDATE TO authenticated
     USING (id IN (
-        SELECT company_id 
+        SELECT facility_id 
         FROM users 
         WHERE users.id = auth.uid()
         AND role IN ('owner', 'admin')
     ));
 
-CREATE POLICY companies_delete ON companies
+CREATE POLICY facilities_delete ON facilities
     FOR DELETE TO authenticated
     USING (id IN (
-        SELECT company_id 
+        SELECT facility_id 
         FROM users 
         WHERE users.id = auth.uid()
         AND role = 'owner'
     ));
 
-CREATE POLICY "Public can view companies"
-  ON companies FOR SELECT
+CREATE POLICY "Public can view facilities"
+  ON facilities FOR SELECT
   USING (true);

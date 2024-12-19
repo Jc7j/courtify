@@ -5,32 +5,32 @@ import { createAdminClient } from '@/shared/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
-    const { company_id } = await req.json()
+    const { facility_id } = await req.json()
     const supabaseAdmin = createAdminClient()
 
-    if (!company_id) {
-      return NextResponse.json({ error: 'Missing company id' }, { status: 400 })
+    if (!facility_id) {
+      return NextResponse.json({ error: 'Missing facility id' }, { status: 400 })
     }
 
-    const { data: company } = await supabaseAdmin
-      .from('companies')
+    const { data: facility } = await supabaseAdmin
+      .from('facilities')
       .select('stripe_account_id')
-      .eq('id', company_id)
+      .eq('id', facility_id)
       .single()
 
-    if (!company?.stripe_account_id) {
+    if (!facility?.stripe_account_id) {
       return NextResponse.json({ error: 'No Stripe account found' }, { status: 400 })
     }
 
     const prices = await stripe.prices.list(
       { limit: 100, active: true },
-      { stripeAccount: company.stripe_account_id }
+      { stripeAccount: facility.stripe_account_id }
     )
 
     return NextResponse.json({
       prices: prices.data,
       count: prices.data.length,
-      account_id: company.stripe_account_id,
+      account_id: facility.stripe_account_id,
     })
   } catch (error) {
     console.error('Error fetching Stripe prices:', error)

@@ -7,8 +7,8 @@ import { memo, useCallback, useState } from 'react'
 
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacility } from '@/core/facility/hooks/useFacility'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import {
   Button,
@@ -21,7 +21,7 @@ import {
   Progress,
 } from '@/shared/components/ui'
 
-import type { StripeStatus, StripeAccountDetails } from '@/shared/types/stripe'
+import type { StripeStatus, StripeAccountDetails } from '@/features/stripe/types'
 
 interface PaymentStatusProps {
   type: 'charges' | 'payouts'
@@ -126,8 +126,8 @@ interface PaymentProcessorSectionProps {
 
 export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProcessorSectionProps) {
   const { connectStripe, connecting } = useStripe()
-  const { updateCompany } = useCompany()
-  const company = useCompanyStore((state) => state.company)
+  const { updateFacility } = useFacility()
+  const facility = useFacilityStore((state) => state.facility)
   const [disconnecting, setDisconnecting] = useState(false)
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
 
@@ -155,7 +155,7 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
   const handleDisconnect = useCallback(async () => {
     try {
       setDisconnecting(true)
-      await updateCompany({
+      await updateFacility({
         name: stripeStatus?.accountDetails?.business_profile?.name || '',
         slug: '',
         stripe_account_id: null,
@@ -170,7 +170,7 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
       setDisconnecting(false)
       setShowDisconnectDialog(false)
     }
-  }, [stripeStatus?.accountDetails?.business_profile?.name, updateCompany])
+  }, [stripeStatus?.accountDetails?.business_profile?.name, updateFacility])
 
   if (checking || !stripeStatus) {
     return (
@@ -198,11 +198,11 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
   return (
     <Card>
       <CardContent className="space-y-6 pt-4">
-        {!company?.stripe_account_id && (
+        {!facility?.stripe_account_id && (
           <ConnectPrompt onConnect={handleConnect} connecting={connecting} />
         )}
 
-        {company?.stripe_account_id && company?.stripe_account_enabled && (
+        {facility?.stripe_account_id && facility?.stripe_account_enabled && (
           <SetupProgress requirements={requirements} completionPercentage={completionPercentage} />
         )}
 
@@ -231,7 +231,7 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
               />
             </div>
 
-            {company?.stripe_account_id && <ConnectAccountManagement />}
+            {facility?.stripe_account_id && <ConnectAccountManagement />}
           </>
         )}
       </CardContent>

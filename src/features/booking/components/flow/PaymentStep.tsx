@@ -14,7 +14,7 @@ export interface BookingDetails {
   date: string
   time: string
   duration: number
-  companyId: string
+  facilityId: string
   guestInfo: GuestDetailsType
 }
 
@@ -60,7 +60,7 @@ export function PaymentStep({ onSuccess, onBack, amount, bookingDetails }: Payme
         throw new Error(confirmError.message)
       }
 
-      await confirmPaymentIntentAndBook(bookingDetails.companyId)
+      await confirmPaymentIntentAndBook(bookingDetails.facilityId)
       onSuccess()
     } catch (error) {
       console.error('Payment failed:', error)

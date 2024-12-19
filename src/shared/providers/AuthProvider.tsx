@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useCallback, ReactNode } from 're
 
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/features/auth/utils/auth-errors'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { ROUTES } from '@/shared/constants/routes'
@@ -30,15 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const { setSession, reset, isLoading, setIsLoading } = useUserStore()
   const isSignupPage = pathname === ROUTES.AUTH.SIGNUP
-  const setCompany = useCompanyStore((state) => state.setCompany)
-  const resetCompany = useCompanyStore((state) => state.reset)
+  const setFacility = useFacilityStore((state) => state.setFacility)
+  const resetFacility = useFacilityStore((state) => state.reset)
 
   // Centralized function to handle user data fetching and session setting
   const handleSession = useCallback(
     async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
       if (!session) {
         await reset()
-        resetCompany()
+        resetFacility()
         return
       }
 
@@ -50,10 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id, 
             email, 
             name, 
-            company_id, 
+            facility_id, 
             role, 
             is_active,
-            companies (
+            facilities (
               id,
               name,
               slug,
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user: {
             ...session.user,
             name: userData.name,
-            company_id: userData.company_id,
+            facility_id: userData.facility_id,
             role: userData.role,
             is_active: userData.is_active,
           },
@@ -82,16 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           expiresAt: session.expires_at,
         })
 
-        if (userData.company_id && userData.companies) {
-          setCompany({
-            id: userData.companies.id,
-            name: userData.companies.name,
-            slug: userData.companies.slug,
-            stripe_account_id: userData.companies.stripe_account_id,
-            stripe_account_enabled: userData.companies.stripe_account_enabled || false,
+        if (userData.facility_id && userData.facilities) {
+          setFacility({
+            id: userData.facilities.id,
+            name: userData.facilities.name,
+            slug: userData.facilities.slug,
+            stripe_account_id: userData.facilities.stripe_account_id,
+            stripe_account_enabled: userData.facilities.stripe_account_enabled || false,
           })
         } else {
-          resetCompany()
+          resetFacility()
         }
 
         if (pathname === ROUTES.AUTH.SIGNIN) {
@@ -103,14 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userId: session.user.id,
         })
         await reset()
-        resetCompany()
+        resetFacility()
 
         if (!options.skipRedirect && !isSignupPage) {
           router.replace(ROUTES.AUTH.SIGNIN)
         }
       }
     },
-    [reset, resetCompany, setCompany, router, setSession, pathname, isSignupPage]
+    [reset, resetFacility, setFacility, router, setSession, pathname, isSignupPage]
   )
 
   useEffect(() => {
@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: {
           ...data.user,
           name: userData.name,
-          company_id: null,
+          facility_id: null,
           role: userData.role,
           is_active: userData.is_active,
         },
@@ -242,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       await clearApolloCache()
       await reset()
-      await resetCompany()
+      await resetFacility()
       await supabase.auth.signOut()
       router.replace(ROUTES.AUTH.SIGNIN)
     } catch (error) {

@@ -8,26 +8,26 @@ import { SuccessToast, ErrorToast } from '@/shared/components/ui'
 import { ProductServerService } from '../services/productServerService'
 
 import type {
-  UseCompanyProductsProps,
+  UseFacilityProductsProps,
   CreateProductInput,
   ProductResponse,
   ArchiveProductResponse,
 } from '../types'
-import type { CompanyProduct } from '@/shared/types/graphql'
+import type { FacilityProduct } from '@/shared/types/graphql'
 
-export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
+export function useFacilityProducts({ facilityId: facilityId }: UseFacilityProductsProps) {
   const client = useApolloClient()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [products, setProducts] = useState<CompanyProduct[]>([])
+  const [products, setProducts] = useState<FacilityProduct[]>([])
 
   const productService = useMemo(() => new ProductServerService(client), [client])
 
   const fetchProducts = useCallback(async () => {
-    if (!companyId) return []
+    if (!facilityId) return []
     setLoading(true)
     try {
-      const fetchedProducts = await productService.getProducts(companyId)
+      const fetchedProducts = await productService.getProducts(facilityId)
       setProducts(fetchedProducts)
       return fetchedProducts
     } catch (err) {
@@ -38,7 +38,7 @@ export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
     } finally {
       setLoading(false)
     }
-  }, [companyId, productService])
+  }, [facilityId, productService])
 
   useEffect(() => {
     fetchProducts()
@@ -49,13 +49,13 @@ export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
       setError(null)
       setLoading(true)
 
-      if (!companyId) {
-        throw new Error('No company ID provided')
+      if (!facilityId) {
+        throw new Error('No facility ID provided')
       }
 
-      const stripeProduct = await productService.createStripeProduct(companyId, input)
+      const stripeProduct = await productService.createStripeProduct(facilityId, input)
 
-      const result = await productService.createDatabaseProduct(companyId, {
+      const result = await productService.createDatabaseProduct(facilityId, {
         ...input,
         price_amount: stripeProduct.unit_amount,
         currency: stripeProduct.currency,
@@ -86,8 +86,8 @@ export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
       setError(null)
       setLoading(true)
 
-      if (!companyId) {
-        throw new Error('No company ID provided')
+      if (!facilityId) {
+        throw new Error('No facility ID provided')
       }
 
       const product = products.find((p) => p.id === productId)
@@ -103,7 +103,7 @@ export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
       const newActiveStatus = !product.is_active
 
       await productService.archiveStripeProduct(
-        companyId,
+        facilityId,
         product.stripe_product_id,
         product.stripe_price_id,
         newActiveStatus
@@ -131,18 +131,18 @@ export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
 
   async function updateProduct(
     productId: string,
-    input: Partial<CompanyProduct>
+    input: Partial<FacilityProduct>
   ): Promise<ProductResponse> {
     try {
       setError(null)
       setLoading(true)
 
-      if (!companyId) {
-        throw new Error('No company ID provided')
+      if (!facilityId) {
+        throw new Error('No facility ID provided')
       }
 
       const stripeProduct = await productService.updateStripeProduct(
-        companyId,
+        facilityId,
         input.stripe_product_id!,
         input.stripe_price_id!,
         {

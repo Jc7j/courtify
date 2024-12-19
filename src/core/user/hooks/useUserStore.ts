@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import type { BaseUser, AuthSession } from '@/shared/types/auth'
 
@@ -48,7 +48,7 @@ export const useUserStore = create<UserState>()(
         })),
 
       reset: () => {
-        useCompanyStore.getState().reset()
+        useFacilityStore.getState().reset()
         set({
           user: null,
           accessToken: null,

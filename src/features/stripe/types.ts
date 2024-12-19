@@ -23,7 +23,7 @@ export interface StripeAccountDetails {
 
 // API Request/Response types
 export interface StripeStatusRequest {
-  company_id: string
+  facility_id: string
   stripe_account_id: string
 }
 
@@ -34,8 +34,8 @@ export interface StripeStatusResponse {
 }
 
 export interface StripeConnectRequest {
-  company_id: string
-  company_name: string
+  facility_id: string
+  facility_name: string
   reconnect?: boolean
   link_type?: 'onboarding' | 'update'
 }

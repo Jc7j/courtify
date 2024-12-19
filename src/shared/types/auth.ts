@@ -6,7 +6,7 @@ export type UserProfile = {
   id: string
   email: string
   name: string
-  company_id: string | null
+  facility_id: string | null
   role: MemberRole
   is_active: boolean
   invited_by?: string
@@ -15,7 +15,7 @@ export type UserProfile = {
 
 export interface BaseUser extends Omit<SupabaseUser, 'role' | 'app_metadata' | 'user_metadata'> {
   name: string
-  company_id: string | null
+  facility_id: string | null
   role: MemberRole
   is_active?: boolean
   invited_by?: string

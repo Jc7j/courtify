@@ -7,18 +7,18 @@ import { PaymentStep } from './PaymentStep'
 import { TimeSelection } from './TimeSelection'
 
 import type { GuestDetailsType, BookingStep } from '../../types'
-import type { EnhancedAvailability, CompanyProduct } from '@/shared/types/graphql'
+import type { EnhancedAvailability, FacilityProduct } from '@/shared/types/graphql'
 
 interface BookingWizardProps {
   currentStep: BookingStep
-  companyName: string
+  facilityName: string
   selectedDate: Date
   setSelectedDate: (date: Date) => void
   weekStartDate: Date
   setWeekStartDate: (date: Date) => void
   availabilities: EnhancedAvailability[]
   loading: boolean
-  products: CompanyProduct[]
+  products: FacilityProduct[]
   guestInfo?: GuestDetailsType
   selectedAvailability?: EnhancedAvailability
   formRef: RefObject<{ submit: () => void }>
@@ -35,7 +35,7 @@ interface BookingWizardProps {
 
 function BookingWizardComponent({
   currentStep,
-  companyName,
+  facilityName,
   selectedDate,
   setSelectedDate,
   weekStartDate,
@@ -53,7 +53,7 @@ function BookingWizardComponent({
   return (
     <div className="flex-1 px-8 py-12 overflow-y-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{companyName}</h1>
+        <h1 className="text-3xl font-bold">{facilityName}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {currentStep === 'select-time'
             ? 'Select a date to view available court times'
@@ -114,7 +114,7 @@ function BookingWizardComponent({
                   'hour',
                   true
                 ),
-                companyId: selectedAvailability.company_id,
+                facilityId: selectedAvailability.facility_id,
                 guestInfo,
               }}
             />

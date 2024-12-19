@@ -108,11 +108,11 @@ export async function POST(request: Request) {
 
   try {
     const paymentIntent = event.data.object as Stripe.PaymentIntent
-    const companyId = paymentIntent.metadata.companyId
+    const facilityId = paymentIntent.metadata.facilityId
 
-    if (!companyId) {
-      console.error('❌ No company ID in payment intent metadata')
-      return new NextResponse(JSON.stringify({ error: 'Missing company ID' }), {
+    if (!facilityId) {
+      console.error('❌ No facility ID in payment intent metadata')
+      return new NextResponse(JSON.stringify({ error: 'Missing facility ID' }), {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
@@ -173,18 +173,18 @@ export async function POST(request: Request) {
         })
 
         try {
-          const { data: company, error: companyError } = await supabaseAdmin
-            .from('companies')
+          const { data: facility, error: facilityError } = await supabaseAdmin
+            .from('facilities')
             .select('name, address')
-            .eq('id', companyId)
+            .eq('id', facilityId)
             .single()
 
-          if (companyError) {
-            console.error('Failed to fetch company info:', companyError)
-            throw new Error('Failed to fetch company info')
+          if (facilityError) {
+            console.error('Failed to fetch facility info:', facilityError)
+            throw new Error('Failed to fetch facility info')
           }
           await resend.emails.send({
-            from: `${company.name} <bookings@courtify.app>`,
+            from: `${facility.name} <bookings@courtify.app>`,
             to: [paymentIntent.metadata.customerEmail],
             subject: `Reservation Confirmation`,
             react: ConfirmationEmail({
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
                   paymentIntent.metadata.endTime
                 ).format('h:mm A')}`,
                 duration: parseFloat(paymentIntent.metadata.bookingDuration),
-                companyId: companyId,
+                facilityId: facilityId,
                 guestInfo: {
                   name: paymentIntent.metadata.customerName,
                   email: paymentIntent.metadata.customerEmail,
@@ -210,9 +210,9 @@ export async function POST(request: Request) {
                 },
                 amount: paymentIntent.amount,
               },
-              company: {
-                name: company.name,
-                address: company.address || '',
+              facility: {
+                name: facility.name,
+                address: facility.address || '',
               },
             }),
           })
@@ -268,7 +268,7 @@ export async function POST(request: Request) {
             status: 'available',
             updated_at: new Date().toISOString(),
           })
-          .eq('company_id', updatedBooking.company_id)
+          .eq('facility_id', updatedBooking.facility_id)
           .eq('court_number', updatedBooking.court_number)
           .eq('start_time', updatedBooking.start_time)
 

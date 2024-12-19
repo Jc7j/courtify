@@ -23,7 +23,7 @@ import { cn } from '@/shared/lib/utils/cn'
 const workspaceSettings = [
   {
     title: 'General',
-    path: ROUTES.DASHBOARD.SETTINGS.COMPANY,
+    path: ROUTES.DASHBOARD.SETTINGS.FACILITY,
   },
   {
     title: 'Members',

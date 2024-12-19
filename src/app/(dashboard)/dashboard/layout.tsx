@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { ReactNode, Suspense, useEffect } from 'react'
 
-import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
+import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import { AppSidebar } from '@/shared/components/app-sidebar'
 import { AppTopbar } from '@/shared/components/app-topbar'
@@ -14,7 +14,7 @@ function getPageTitle(pathname: string): string {
   const routes = {
     '/dashboard': 'Dashboard',
     '/dashboard/courts': 'Courts',
-    '/dashboard/settings/company': 'Company Settings',
+    '/dashboard/settings/facility': 'Facility Settings',
     '/dashboard/settings/members': 'Members',
     '/dashboard/settings/account': 'Account Settings',
     '/dashboard/settings/payment-processor': 'Payment Processor',
@@ -25,13 +25,13 @@ function getPageTitle(pathname: string): string {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const companyName = useCompanyStore((state) => state.company?.name)
+  const facilityName = useFacilityStore((state) => state.facility?.name)
   const pageTitle = getPageTitle(pathname)
   const isSettingsPage = pathname.includes('/dashboard/settings')
 
   useEffect(() => {
-    document.title = companyName ? `${companyName} | ${pageTitle}` : `${pageTitle} | Courtify`
-  }, [companyName, pageTitle])
+    document.title = facilityName ? `${facilityName} | ${pageTitle}` : `${pageTitle} | Courtify`
+  }, [facilityName, pageTitle])
 
   return (
     <SidebarProvider>

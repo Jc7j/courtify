@@ -46,7 +46,7 @@ export function SettingsSkeleton(): React.ReactElement {
   )
 }
 
-export function CompanyProfileSkeleton(): React.ReactElement {
+export function FacilityProfileSkeleton(): React.ReactElement {
   return (
     <div className="space-y-4">
       <Skeleton className="h-[120px] w-full" />

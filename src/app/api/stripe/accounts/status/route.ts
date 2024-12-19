@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 
+import { StripeStatusRequest, StripeStatusResponse } from '@/features/stripe/types'
+
 import { stripe, handleStripeError } from '@/shared/lib/stripe/stripe'
-import { StripeStatusRequest, StripeStatusResponse } from '@/shared/types/stripe'
 
 export async function POST(req: Request) {
   try {
-    const { company_id } = (await req.json()) as StripeStatusRequest
+    const { facility_id } = (await req.json()) as StripeStatusRequest
     const stripeAccountId = req.headers.get('X-Stripe-Account')
 
-    if (!company_id) {
-      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 })
+    if (!facility_id) {
+      return NextResponse.json({ error: 'Facility ID is required' }, { status: 400 })
     }
 
     if (!stripeAccountId) {

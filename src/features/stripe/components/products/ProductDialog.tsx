@@ -2,8 +2,8 @@
 
 import { FormEvent, useState, useEffect } from 'react'
 
-import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
-import { CreateProductInput } from '@/core/company/types'
+import { useFacilityProducts } from '@/core/facility/hooks/useFacilityProducts'
+import { CreateProductInput } from '@/core/facility/types'
 
 import {
   Button,
@@ -22,13 +22,13 @@ import {
   SelectValue,
   Textarea,
 } from '@/shared/components/ui'
-import { CompanyProduct, ProductType, StripePaymentType } from '@/shared/types/graphql'
+import { FacilityProduct, ProductType, StripePaymentType } from '@/shared/types/graphql'
 
 interface ProductDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  companyId: string
-  product?: CompanyProduct | null
+  facilityId: string
+  product?: FacilityProduct | null
 }
 
 const defaultFormData: CreateProductInput = {
@@ -40,8 +40,8 @@ const defaultFormData: CreateProductInput = {
   currency: 'usd',
 }
 
-export function ProductDialog({ open, onOpenChange, companyId, product }: ProductDialogProps) {
-  const { createProduct, updateProduct, loading } = useCompanyProducts({ companyId })
+export function ProductDialog({ open, onOpenChange, facilityId, product }: ProductDialogProps) {
+  const { createProduct, updateProduct, loading } = useFacilityProducts({ facilityId })
   const [formData, setFormData] = useState<CreateProductInput>(defaultFormData)
   const isEditing = !!product
 
@@ -96,7 +96,7 @@ export function ProductDialog({ open, onOpenChange, companyId, product }: Produc
           <DialogDescription>
             {isEditing
               ? 'Update your product details.'
-              : 'Add a new product or service to your company.'}
+              : 'Add a new product or service to your facility.'}
           </DialogDescription>
         </DialogHeader>
 

@@ -16,7 +16,7 @@ CREATE SEQUENCE IF NOT EXISTS bookings_id_seq;
 
 CREATE TABLE bookings (
     id BIGINT PRIMARY KEY DEFAULT nextval('bookings_id_seq'),
-    company_id UUID NOT NULL,
+    facility_id UUID NOT NULL,
     court_number INTEGER NOT NULL,
     start_time TIMESTAMPTZ NOT NULL,
     
@@ -78,8 +78,8 @@ CREATE TABLE bookings (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
-    FOREIGN KEY (company_id, court_number, start_time) 
-        REFERENCES court_availabilities(company_id, court_number, start_time) 
+    FOREIGN KEY (facility_id, court_number, start_time) 
+        REFERENCES court_availabilities(facility_id, court_number, start_time) 
         ON DELETE RESTRICT
 );
 

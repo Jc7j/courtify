@@ -3,7 +3,7 @@ import { ApolloClient } from '@apollo/client'
 import { Courts } from '@/shared/types/graphql'
 
 import { CREATE_COURT, UPDATE_COURT } from '../graphql/mutations'
-import { GET_COMPANY_COURTS, GET_COURT } from '../graphql/queries'
+import { GET_FACILITY_COURTS, GET_COURT } from '../graphql/queries'
 
 export class CourtServerService {
   constructor(private client: ApolloClient<unknown>) {}
@@ -13,11 +13,11 @@ export class CourtServerService {
     throw error instanceof Error ? error : new Error(message)
   }
 
-  async getCourts(companyId: string): Promise<Courts[]> {
+  async getCourts(facilityId: string): Promise<Courts[]> {
     try {
       const { data } = await this.client.query({
-        query: GET_COMPANY_COURTS,
-        variables: { company_id: companyId },
+        query: GET_FACILITY_COURTS,
+        variables: { facility_id: facilityId },
         fetchPolicy: 'network-only',
       })
 
@@ -27,11 +27,11 @@ export class CourtServerService {
     }
   }
 
-  async getCourt(companyId: string, courtNumber: number): Promise<Courts | null> {
+  async getCourt(facilityId: string, courtNumber: number): Promise<Courts | null> {
     const { data } = await this.client.query({
       query: GET_COURT,
       variables: {
-        company_id: companyId,
+        facility_id: facilityId,
         court_number: courtNumber,
       },
       fetchPolicy: 'network-only',
@@ -40,12 +40,12 @@ export class CourtServerService {
     return data?.courtsCollection?.edges?.[0]?.node || null
   }
 
-  async createCourt(companyId: string, name: string): Promise<Courts> {
+  async createCourt(facilityId: string, name: string): Promise<Courts> {
     const now = new Date().toISOString()
-    const nextCourtNumber = await this.getNextCourtNumber(companyId)
+    const nextCourtNumber = await this.getNextCourtNumber(facilityId)
 
     const courtInput = {
-      company_id: companyId,
+      facility_id: facilityId,
       court_number: nextCourtNumber,
       name,
       created_at: now,
@@ -65,7 +65,7 @@ export class CourtServerService {
   }
 
   async updateCourt(
-    companyId: string,
+    facilityId: string,
     courtNumber: number,
     updates: {
       name?: string
@@ -75,7 +75,7 @@ export class CourtServerService {
     const { data } = await this.client.mutate({
       mutation: UPDATE_COURT,
       variables: {
-        company_id: companyId,
+        facility_id: facilityId,
         court_number: courtNumber,
         set: {
           ...updates,
@@ -90,8 +90,8 @@ export class CourtServerService {
     return updatedCourt
   }
 
-  private async getNextCourtNumber(companyId: string): Promise<number> {
-    const courts = await this.getCourts(companyId)
+  private async getNextCourtNumber(facilityId: string): Promise<number> {
+    const courts = await this.getCourts(facilityId)
     return Math.max(0, ...courts.map((c) => c.court_number)) + 1
   }
 }

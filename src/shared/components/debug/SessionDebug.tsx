@@ -123,7 +123,7 @@ export function SessionDebug() {
         <div>User ID: {user?.id || 'None'}</div>
         <div>Email: {user?.email || 'None'}</div>
         <div>Name: {user?.name || 'None'}</div>
-        <div>Company ID: {user?.company_id || 'None'}</div>
+        <div>Facility ID: {user?.facility_id || 'None'}</div>
         <div>
           Last updated: {user?.updated_at ? new Date(user.updated_at).toLocaleString() : 'Never'}
         </div>

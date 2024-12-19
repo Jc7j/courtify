@@ -9,58 +9,58 @@ import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { supabase } from '@/shared/lib/supabase/client'
 
-import { useCompanyStore } from './useCompanyStore'
-import { CompanyClientService } from '../services/companyClientService'
-import { CompanyServerService } from '../services/companyServerService'
+import { useFacilityStore } from './useFacilityStore'
+import { FacilityClientService } from '../services/facilityClientService'
+import { FacilityServerService } from '../services/facilityServerService'
 
 import type { BaseUser } from '@/shared/types/auth'
-import type { Company } from '@/shared/types/graphql'
+import type { Facility } from '@/shared/types/graphql'
 
-interface UseCompanyReturn {
-  company: Company | null
+interface UseFacilityReturn {
+  facility: Facility | null
   loading: boolean
   error: Error | null
   creating: boolean
   updating: boolean
-  createCompany: (name: string, address: string, sports: string) => Promise<void>
-  updateCompany: (data: UpdateCompanyInput) => Promise<void>
+  createFacility: (name: string, address: string, sports: string) => Promise<void>
+  updateFacility: (data: UpdateFacilityInput) => Promise<void>
 }
 
-interface UpdateCompanyInput {
+interface UpdateFacilityInput {
   name: string
   slug: string
   stripe_account_id?: string | null
   stripe_account_enabled?: boolean
 }
 
-export function useCompany(): UseCompanyReturn {
+export function useFacility(): UseFacilityReturn {
   const client = useApolloClient()
-  const companyServerService = useMemo(() => new CompanyServerService(client), [client])
+  const facilityServerService = useMemo(() => new FacilityServerService(client), [client])
   const { user, isLoading: userLoading } = useUserStore()
-  const { handleCompanyCreated } = useOnboarding()
-  const companyStore = useCompanyStore()
+  const { handleFacilityCreated: handleFacilityCreated } = useOnboarding()
+  const facilityStore = useFacilityStore()
 
-  const [fullCompanyData, setFullCompanyData] = useState<Company | null>(null)
+  const [fullFacilityData, setFullFacilityData] = useState<Facility | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [creating, setCreating] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  const fetchCompany = useCallback(async () => {
-    if (!user?.company_id) return
+  const fetchFacility = useCallback(async () => {
+    if (!user?.facility_id) return
 
-    if (companyStore.company?.id === user.company_id) {
-      setFullCompanyData(companyStore.company as Company)
+    if (facilityStore.facility?.id === user.facility_id) {
+      setFullFacilityData(facilityStore.facility as Facility)
       return
     }
 
     setLoading(true)
     try {
-      const result = await companyServerService.getCompanyById(user.company_id)
-      setFullCompanyData(result)
+      const result = await facilityServerService.getFacilityById(user.facility_id)
+      setFullFacilityData(result)
 
       if (result) {
-        companyStore.setCompany({
+        facilityStore.setFacility({
           id: result.id,
           name: result.name,
           slug: result.slug,
@@ -69,16 +69,16 @@ export function useCompany(): UseCompanyReturn {
         })
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch company'))
+      setError(err instanceof Error ? err : new Error('Failed to fetch facility'))
     } finally {
       setLoading(false)
     }
-  }, [user?.company_id, companyServerService, companyStore])
+  }, [user?.facility_id, facilityServerService, facilityStore])
 
-  const createCompany = useCallback(
+  const createFacility = useCallback(
     async (name: string, address: string, sports: string) => {
       try {
-        const validation = CompanyClientService.validateCompanyInput(name, address)
+        const validation = FacilityClientService.validateFacilityInput(name, address)
         if (!validation.isValid) {
           throw new Error(validation.error)
         }
@@ -99,10 +99,10 @@ export function useCompany(): UseCompanyReturn {
 
         setCreating(true)
         const now = new Date().toISOString()
-        const formattedName = CompanyClientService.formatCompanyName(name)
-        const slug = CompanyClientService.generateCompanySlug(formattedName)
+        const formattedName = FacilityClientService.formatFacilityName(name)
+        const slug = FacilityClientService.generateFacilitySlug(formattedName)
 
-        const newCompany = await companyServerService.createCompany({
+        const newFacility = await facilityServerService.createFacility({
           name: formattedName,
           address,
           sports,
@@ -117,62 +117,62 @@ export function useCompany(): UseCompanyReturn {
 
         const { error: updateError } = await supabase
           .from('users')
-          .update({ company_id: newCompany.id, role: 'owner' })
+          .update({ facility_id: newFacility.id, role: 'owner' })
           .eq('id', user.id)
 
         if (updateError) throw updateError
 
-        useUserStore.getState().updateUser({ company_id: newCompany.id })
-        await handleCompanyCreated()
+        useUserStore.getState().updateUser({ facility_id: newFacility.id })
+        await handleFacilityCreated()
 
-        setFullCompanyData(newCompany)
+        setFullFacilityData(newFacility)
         setError(null)
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to create company'))
+        setError(err instanceof Error ? err : new Error('Failed to create facility'))
         throw err
       } finally {
         setCreating(false)
       }
     },
-    [user?.id, companyServerService, handleCompanyCreated]
+    [user?.id, facilityServerService, handleFacilityCreated]
   )
 
-  const updateCompany = useCallback(
-    async (data: UpdateCompanyInput) => {
-      if (!fullCompanyData?.id) throw new Error('No company found')
+  const updateFacility = useCallback(
+    async (data: UpdateFacilityInput) => {
+      if (!fullFacilityData?.id) throw new Error('No facility found')
 
       try {
         setUpdating(true)
-        const updatedCompany = await companyServerService.updateCompany(fullCompanyData.id, {
+        const updatedFacility = await facilityServerService.updateFacility(fullFacilityData.id, {
           ...data,
           updated_at: new Date().toISOString(),
         })
 
-        setFullCompanyData(updatedCompany)
+        setFullFacilityData(updatedFacility)
         setError(null)
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to update company'))
+        setError(err instanceof Error ? err : new Error('Failed to update facility'))
         throw err
       } finally {
         setUpdating(false)
       }
     },
-    [fullCompanyData?.id, companyServerService]
+    [fullFacilityData?.id, facilityServerService]
   )
 
   useEffect(() => {
     if (!userLoading) {
-      fetchCompany()
+      fetchFacility()
     }
-  }, [fetchCompany, userLoading])
+  }, [fetchFacility, userLoading])
 
   return {
-    company: fullCompanyData,
+    facility: fullFacilityData,
     loading: loading || userLoading,
     error,
     creating,
     updating,
-    createCompany,
-    updateCompany,
+    createFacility,
+    updateFacility,
   }
 }

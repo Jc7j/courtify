@@ -25,7 +25,7 @@ export class AvailabilityClientService {
   }
 
   static formatAvailabilityInput(
-    companyId: string,
+    facilityId: string,
     courtNumber: number,
     startTime: string,
     endTime: string,
@@ -34,7 +34,7 @@ export class AvailabilityClientService {
     const timestamp = new Date().toISOString()
 
     return {
-      company_id: companyId,
+      facility_id: facilityId,
       court_number: courtNumber,
       start_time: dayjs(startTime).format(),
       end_time: dayjs(endTime).format(),

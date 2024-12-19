@@ -32,15 +32,15 @@ export type Database = {
         Row: {
           amount_paid: number | null
           amount_total: number | null
-          company_id: string
           court_number: number
           created_at: string
           currency: string
           customer_email: string
           customer_name: string
           customer_phone: string | null
+          facility_id: string
           id: number
-          metadata: Json | null
+          metadata: Json
           payment_status: Database['public']['Enums']['payment_status']
           start_time: string
           status: Database['public']['Enums']['booking_status']
@@ -50,15 +50,15 @@ export type Database = {
         Insert: {
           amount_paid?: number | null
           amount_total?: number | null
-          company_id: string
           court_number: number
           created_at?: string
           currency?: string
           customer_email: string
           customer_name: string
           customer_phone?: string | null
+          facility_id: string
           id?: number
-          metadata?: Json | null
+          metadata?: Json
           payment_status?: Database['public']['Enums']['payment_status']
           start_time: string
           status?: Database['public']['Enums']['booking_status']
@@ -68,15 +68,15 @@ export type Database = {
         Update: {
           amount_paid?: number | null
           amount_total?: number | null
-          company_id?: string
           court_number?: number
           created_at?: string
           currency?: string
           customer_email?: string
           customer_name?: string
           customer_phone?: string | null
+          facility_id?: string
           id?: number
-          metadata?: Json | null
+          metadata?: Json
           payment_status?: Database['public']['Enums']['payment_status']
           start_time?: string
           status?: Database['public']['Enums']['booking_status']
@@ -85,15 +85,95 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'bookings_company_id_court_number_start_time_fkey'
-            columns: ['company_id', 'court_number', 'start_time']
+            foreignKeyName: 'bookings_facility_id_court_number_start_time_fkey'
+            columns: ['facility_id', 'court_number', 'start_time']
             isOneToOne: false
             referencedRelation: 'court_availabilities'
-            referencedColumns: ['company_id', 'court_number', 'start_time']
+            referencedColumns: ['facility_id', 'court_number', 'start_time']
           },
         ]
       }
-      companies: {
+      court_availabilities: {
+        Row: {
+          court_number: number
+          created_at: string
+          end_time: string
+          facility_id: string
+          start_time: string
+          status: Database['public']['Enums']['availability_status']
+          updated_at: string
+        }
+        Insert: {
+          court_number: number
+          created_at?: string
+          end_time: string
+          facility_id: string
+          start_time: string
+          status?: Database['public']['Enums']['availability_status']
+          updated_at?: string
+        }
+        Update: {
+          court_number?: number
+          created_at?: string
+          end_time?: string
+          facility_id?: string
+          start_time?: string
+          status?: Database['public']['Enums']['availability_status']
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'court_availabilities_facility_id_court_number_fkey'
+            columns: ['facility_id', 'court_number']
+            isOneToOne: false
+            referencedRelation: 'courts'
+            referencedColumns: ['facility_id', 'court_number']
+          },
+          {
+            foreignKeyName: 'court_availabilities_facility_id_fkey'
+            columns: ['facility_id']
+            isOneToOne: false
+            referencedRelation: 'facilities'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      courts: {
+        Row: {
+          court_number: number
+          created_at: string
+          facility_id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          court_number: number
+          created_at?: string
+          facility_id: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          court_number?: number
+          created_at?: string
+          facility_id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'courts_facility_id_fkey'
+            columns: ['facility_id']
+            isOneToOne: false
+            referencedRelation: 'facilities'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      facilities: {
         Row: {
           address: string | null
           created_at: string
@@ -101,12 +181,9 @@ export type Database = {
           name: string
           slug: string
           sports: string
-          stripe_account_details: Json | null
           stripe_account_enabled: boolean | null
           stripe_account_id: string | null
           stripe_currency: string | null
-          stripe_payment_methods: string[] | null
-          stripe_webhook_secret: string | null
           updated_at: string
         }
         Insert: {
@@ -116,12 +193,9 @@ export type Database = {
           name: string
           slug: string
           sports?: string
-          stripe_account_details?: Json | null
           stripe_account_enabled?: boolean | null
           stripe_account_id?: string | null
           stripe_currency?: string | null
-          stripe_payment_methods?: string[] | null
-          stripe_webhook_secret?: string | null
           updated_at?: string
         }
         Update: {
@@ -131,22 +205,19 @@ export type Database = {
           name?: string
           slug?: string
           sports?: string
-          stripe_account_details?: Json | null
           stripe_account_enabled?: boolean | null
           stripe_account_id?: string | null
           stripe_currency?: string | null
-          stripe_payment_methods?: string[] | null
-          stripe_webhook_secret?: string | null
           updated_at?: string
         }
         Relationships: []
       }
-      company_products: {
+      facility_products: {
         Row: {
-          company_id: string
           created_at: string
           currency: string
           description: string | null
+          facility_id: string
           id: string
           is_active: boolean
           metadata: Json | null
@@ -159,10 +230,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          company_id: string
           created_at?: string
           currency?: string
           description?: string | null
+          facility_id: string
           id?: string
           is_active?: boolean
           metadata?: Json | null
@@ -175,10 +246,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          company_id?: string
           created_at?: string
           currency?: string
           description?: string | null
+          facility_id?: string
           id?: string
           is_active?: boolean
           metadata?: Json | null
@@ -192,98 +263,20 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'company_products_company_id_fkey'
-            columns: ['company_id']
+            foreignKeyName: 'facility_products_facility_id_fkey'
+            columns: ['facility_id']
             isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      court_availabilities: {
-        Row: {
-          company_id: string
-          court_number: number
-          created_at: string
-          end_time: string
-          start_time: string
-          status: Database['public']['Enums']['availability_status']
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          court_number: number
-          created_at?: string
-          end_time: string
-          start_time: string
-          status?: Database['public']['Enums']['availability_status']
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          court_number?: number
-          created_at?: string
-          end_time?: string
-          start_time?: string
-          status?: Database['public']['Enums']['availability_status']
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'court_availabilities_company_id_court_number_fkey'
-            columns: ['company_id', 'court_number']
-            isOneToOne: false
-            referencedRelation: 'courts'
-            referencedColumns: ['company_id', 'court_number']
-          },
-          {
-            foreignKeyName: 'court_availabilities_company_id_fkey'
-            columns: ['company_id']
-            isOneToOne: false
-            referencedRelation: 'companies'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      courts: {
-        Row: {
-          company_id: string
-          court_number: number
-          created_at: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          court_number: number
-          created_at?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          court_number?: number
-          created_at?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'courts_company_id_fkey'
-            columns: ['company_id']
-            isOneToOne: false
-            referencedRelation: 'companies'
+            referencedRelation: 'facilities'
             referencedColumns: ['id']
           },
         ]
       }
       users: {
         Row: {
-          company_id: string | null
           created_at: string
           email: string
+          facility_id: string | null
           id: string
-          invited_by: string | null
           is_active: boolean
           joined_at: string | null
           name: string
@@ -291,11 +284,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          company_id?: string | null
           created_at?: string
           email: string
+          facility_id?: string | null
           id?: string
-          invited_by?: string | null
           is_active?: boolean
           joined_at?: string | null
           name: string
@@ -303,11 +295,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          company_id?: string | null
           created_at?: string
           email?: string
+          facility_id?: string | null
           id?: string
-          invited_by?: string | null
           is_active?: boolean
           joined_at?: string | null
           name?: string
@@ -316,10 +307,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'users_company_id_fkey'
-            columns: ['company_id']
+            foreignKeyName: 'users_facility_id_fkey'
+            columns: ['facility_id']
             isOneToOne: false
-            referencedRelation: 'companies'
+            referencedRelation: 'facilities'
             referencedColumns: ['id']
           },
         ]
@@ -667,7 +658,7 @@ export type Database = {
       }
     }
     Enums: {
-      availability_status: 'available' | 'held' | 'booked' | 'past'
+      availability_status: 'available' | 'held' | 'booked'
       booking_status: 'confirmed' | 'cancelled' | 'pending'
       member_role: 'owner' | 'admin' | 'member'
       payment_status: 'paid' | 'refunded' | 'failed' | 'processing' | 'pending'

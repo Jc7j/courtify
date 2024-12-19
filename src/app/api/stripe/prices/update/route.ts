@@ -5,7 +5,7 @@ import { createAdminClient } from '@/shared/lib/supabase/server'
 import { ProductType, StripePaymentType } from '@/shared/types/graphql'
 
 interface UpdatePriceInput {
-  companyId: string
+  facilityId: string
   productId: string
   stripe_price_id: string
   stripe_product_id: string
@@ -21,14 +21,14 @@ export async function POST(req: Request) {
     const body = (await req.json()) as UpdatePriceInput
 
     const supabase = createAdminClient()
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
+    const { data: facility, error: facilityError } = await supabase
+      .from('facilities')
       .select('stripe_account_id')
-      .eq('id', body.companyId)
+      .eq('id', body.facilityId)
       .single()
 
-    if (companyError || !company?.stripe_account_id) {
-      return NextResponse.json({ error: 'Company not setup for payments' }, { status: 400 })
+    if (facilityError || !facility?.stripe_account_id) {
+      return NextResponse.json({ error: 'Facility not setup for payments' }, { status: 400 })
     }
 
     await stripe.products.update(
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         },
       },
       {
-        stripeAccount: company.stripe_account_id,
+        stripeAccount: facility.stripe_account_id,
       }
     )
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         active: false,
       },
       {
-        stripeAccount: company.stripe_account_id,
+        stripeAccount: facility.stripe_account_id,
       }
     )
 
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
         },
       },
       {
-        stripeAccount: company.stripe_account_id,
+        stripeAccount: facility.stripe_account_id,
       }
     )
 
