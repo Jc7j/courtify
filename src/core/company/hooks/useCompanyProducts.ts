@@ -4,55 +4,20 @@ import { useMutation, useQuery } from '@apollo/client'
 import { useState } from 'react'
 
 import { SuccessToast, ErrorToast, WarningToast } from '@/shared/components/ui'
-import {
-  CompanyProduct,
-  CompanyProductEdge,
-  ProductType,
-  StripePaymentType,
-} from '@/shared/types/graphql'
+import { CompanyProduct, CompanyProductEdge, StripePaymentType } from '@/shared/types/graphql'
 
 import { CREATE_PRODUCT, UPDATE_PRODUCT } from '../graphql/mutations'
 import { GET_COMPANY_PRODUCTS } from '../graphql/queries'
 
-interface CreateProductInput {
-  name: string
-  description?: string | null
-  type: ProductType
-  priceAmount: number
-  stripePaymentType: StripePaymentType
-  currency?: string
-  metadata?: Record<string, unknown>
-}
+import type {
+  UseCompanyProductsProps,
+  CreateProductInput,
+  ProductResponse,
+  ArchiveProductResponse,
+  StripeProduct,
+} from '../types'
 
-interface CreateProductResponse {
-  product: CompanyProduct | null
-  error: string | null
-}
-
-interface ArchiveProductResponse {
-  success?: boolean
-  error?: string
-}
-
-interface StripeProduct {
-  id: string
-  product: string
-  active: boolean
-  currency: string
-  unit_amount: number
-  metadata: Record<string, unknown>
-  type: string
-  recurring?: {
-    interval: string
-    interval_count: number
-  }
-}
-
-interface useCompanyProductsProps {
-  companyId?: string
-}
-
-export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
+export function useCompanyProducts({ companyId }: UseCompanyProductsProps) {
   const [error, setError] = useState<string | null>(null)
   const [syncNeeded, setSyncNeeded] = useState(false)
 
@@ -90,7 +55,7 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
   const products =
     data?.company_productsCollection?.edges?.map((edge: CompanyProductEdge) => edge.node) ?? []
 
-  async function createProduct(input: CreateProductInput): Promise<CreateProductResponse> {
+  async function createProduct(input: CreateProductInput): Promise<ProductResponse> {
     try {
       setError(null)
 
@@ -219,7 +184,7 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to update product status'
       ErrorToast(errorMessage)
-      return { error: errorMessage }
+      return { success: false, error: errorMessage }
     }
   }
 
@@ -363,7 +328,7 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
   async function updateProduct(
     productId: string,
     input: CreateProductInput
-  ): Promise<CreateProductResponse> {
+  ): Promise<ProductResponse> {
     try {
       setError(null)
 

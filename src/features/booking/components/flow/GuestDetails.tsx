@@ -21,9 +21,9 @@ import {
 import { cn } from '@/shared/lib/utils/cn'
 import { CompanyProduct } from '@/shared/types/graphql'
 
-type ProductInfo = Pick<CompanyProduct, 'id' | 'name' | 'price_amount' | 'type'>
+import { GuestDetailsType, ProductInfo } from '../../types'
 
-const guestInfoSchema = z.object({
+const guestDetailsSchema = z.object({
   name: z
     .string()
     .min(2, 'Name must be at least 2 characters')
@@ -39,17 +39,15 @@ const guestInfoSchema = z.object({
   selectedEquipment: z.array(z.custom<ProductInfo>()),
 })
 
-export type GuestInfo = z.infer<typeof guestInfoSchema>
-
 type FormRef = {
   submit: () => void
 }
 
-interface GuestInfoFormProps {
-  onSubmit: (data: GuestInfo) => void
+interface GuestDetailsProps {
+  onSubmit: (data: GuestDetailsType) => void
   loading?: boolean
   products: CompanyProduct[]
-  defaultValues?: Partial<GuestInfo>
+  defaultValues?: Partial<GuestDetailsType>
   selectedTime?: {
     start_time: string
     end_time: string
@@ -64,15 +62,15 @@ const NET_HEIGHT_OPTIONS = [
   { value: 'Coed', label: 'Co-ed' },
 ] as const
 
-export function GuestInfoForm({
+export function GuestDetails({
   onSubmit,
   loading,
   products,
   defaultValues,
   selectedTime,
   formRef,
-}: GuestInfoFormProps) {
-  const [touched, setTouched] = useState<Partial<Record<keyof GuestInfo, boolean>>>({})
+}: GuestDetailsProps) {
+  const [touched, setTouched] = useState<Partial<Record<keyof GuestDetailsType, boolean>>>({})
 
   const courtProducts = products.filter((p) => p.type === 'court_rental')
   const equipmentProducts = products.filter((p) => p.type === 'equipment')
@@ -84,8 +82,8 @@ export function GuestInfoForm({
     setValue,
     trigger,
     watch,
-  } = useForm<GuestInfo>({
-    resolver: zodResolver(guestInfoSchema),
+  } = useForm<GuestDetailsType>({
+    resolver: zodResolver(guestDetailsSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -103,12 +101,12 @@ export function GuestInfoForm({
 
   const selectedEquipment = watch('selectedEquipment')
 
-  function handleFieldBlur(field: keyof GuestInfo) {
+  function handleFieldBlur(field: keyof GuestDetailsType) {
     setTouched((prev) => ({ ...prev, [field]: true }))
     trigger(field)
   }
 
-  const showError = (field: keyof GuestInfo) => touched[field] && errors[field]
+  const showError = (field: keyof GuestDetailsType) => touched[field] && errors[field]
 
   const handleEquipmentChange = (product: CompanyProduct, checked: boolean) => {
     if (checked) {
@@ -153,14 +151,14 @@ export function GuestInfoForm({
         </Card>
       )}
 
-      {/* Guest Information Form */}
+      {/* Guest Details Form */}
       <Card>
         <div className="bg-primary/5 border-b p-4">
-          <h3 className="text-lg font-semibold text-primary">Your Information</h3>
+          <h3 className="text-lg font-semibold text-primary">Your Details</h3>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="p-6">
           <div className="space-y-6">
-            {/* Contact Information Section */}
+            {/* Contact Details Section */}
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -276,7 +274,7 @@ export function GuestInfoForm({
                   <Select
                     defaultValue="Mens"
                     onValueChange={(value) => {
-                      setValue('net_height', value as GuestInfo['net_height'])
+                      setValue('net_height', value as GuestDetailsType['net_height'])
                       handleFieldBlur('net_height')
                     }}
                     disabled={loading}

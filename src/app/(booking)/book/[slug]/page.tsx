@@ -1,27 +1,25 @@
 'use client'
 
 import { useApolloClient } from '@apollo/client'
-import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import dayjs from 'dayjs'
-import { notFound, useRouter, useParams } from 'next/navigation'
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 
 import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
-import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
-import { BookingForm } from '@/features/booking/components/BookingForm'
-import { BottomBar, BottomBarContent } from '@/features/booking/components/bottom-bar'
-import { GuestCheckoutForm } from '@/features/booking/components/GuestCheckoutForm'
-import { GuestInfoForm } from '@/features/booking/components/GuestInfoForm'
+import { BookingWizard } from '@/features/booking/components/flow/BookingWizard'
+import { BookingSidebar } from '@/features/booking/components/layout/BookingSidebar'
+import { BottomBar, BottomBarContent } from '@/features/booking/components/layout/bottom-bar'
+import { Footer } from '@/features/booking/components/layout/Footer'
 import { useBookings } from '@/features/booking/hooks/useBookings'
 import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
+import { BookingServerService } from '@/features/booking/services/bookingServerService'
+import { GuestDetailsType } from '@/features/booking/types'
 
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
 import { usePublicCompany } from '@/core/company/hooks/usePublicCompany'
 
 import { AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
-
-import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'
 
 function getStripePromise(accountId: string) {
   return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
@@ -29,13 +27,22 @@ function getStripePromise(accountId: string) {
   })
 }
 
-// TODO: Remove using AvailabilityServerService and add that in bookings feature
-
 export default function BookingPage() {
   const params = useParams<{ slug: string }>()
-  const { company, error: companyError } = usePublicCompany(params.slug)
+  const { company } = usePublicCompany(params.slug)
   const { products } = useCompanyProducts({ companyId: company?.id })
   const client = useApolloClient()
+  const router = useRouter()
+  const formRef = useRef<{ submit: () => void }>(null)
+
+  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null)
+  const [availabilities, setAvailabilities] = useState<EnhancedAvailability[]>([])
+  const [loading, setLoading] = useState(false)
+  const today = dayjs().startOf('day').toDate()
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
+
+  const bookingService = useMemo(() => new BookingServerService(client), [client])
   const {
     selectedAvailability,
     guestInfo,
@@ -50,24 +57,13 @@ export default function BookingPage() {
   } = useBookingStore()
   const { createPaymentIntent } = useBookings()
   const { updateAvailability } = useCourtAvailability()
-  const router = useRouter()
-
-  const today = dayjs().startOf('day').toDate()
-  const [selectedDate, setSelectedDate] = useState(today)
-  const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
-  const formRef = useRef<{ submit: () => void }>(null)
-  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null)
-  const [availabilities, setAvailabilities] = useState<EnhancedAvailability[]>([])
-  const [loading, setLoading] = useState(false)
-
-  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
   useEffect(() => {
     async function fetchAvailabilities() {
       if (!company?.id) return
       setLoading(true)
       try {
-        const { availabilities: data } = await availabilityService.getCompanyAvailabilities(
+        const { availabilities: data } = await bookingService.getAvailabilities(
           company.id,
           dayjs(weekStartDate).startOf('day').toISOString(),
           dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
@@ -81,58 +77,49 @@ export default function BookingPage() {
     }
 
     fetchAvailabilities()
-  }, [company?.id, weekStartDate, availabilityService])
+  }, [company?.id, weekStartDate, bookingService])
 
   useEffect(() => {
     if (company?.stripe_account_id) {
-      const promise = getStripePromise(company.stripe_account_id)
-
-      setStripePromise(promise)
+      setStripePromise(getStripePromise(company.stripe_account_id))
     }
   }, [company?.stripe_account_id])
 
-  function handlePaymentSuccess() {
+  const handlePaymentSuccess = useCallback(() => {
     useBookingStore.getState().clearBooking()
     router.push(`/book/success`)
-  }
+  }, [router])
 
-  async function handleGuestInfoSubmit(data: GuestInfo) {
-    if (!company?.id || !selectedAvailability) return
+  const handleGuestInfoSubmit = useCallback(
+    async (data: GuestDetailsType) => {
+      if (!company?.id || !selectedAvailability) return
 
-    try {
-      setLoading(true)
-      useBookingStore.getState().setGuestInfo(data)
+      try {
+        setLoading(true)
+        useBookingStore.getState().setGuestInfo(data)
 
-      const { paymentIntentId, clientSecret, amount } = await createPaymentIntent({
-        companyId: company.id,
-        courtNumber: selectedAvailability.court_number,
-        startTime: selectedAvailability.start_time,
-        endTime: selectedAvailability.end_time,
-        guestInfo: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          net_height: data.net_height,
-        },
-        selectedProducts: {
-          courtProduct: data.selectedCourtProduct,
-          equipmentProducts: data.selectedEquipment,
-        },
-      })
+        const { paymentIntentId, clientSecret, amount } = await createPaymentIntent({
+          companyId: company.id,
+          courtNumber: selectedAvailability.court_number,
+          startTime: selectedAvailability.start_time,
+          endTime: selectedAvailability.end_time,
+          guestInfo: data,
+          selectedProducts: {
+            courtProduct: data.selectedCourtProduct,
+            equipmentProducts: data.selectedEquipment,
+          },
+        })
 
-      setPaymentIntent({
-        paymentIntentId,
-        clientSecret,
-        amount,
-      })
-
-      setCurrentStep('payment')
-    } catch (error) {
-      console.error('Failed to create payment intent:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+        setPaymentIntent({ paymentIntentId, clientSecret, amount })
+        setCurrentStep('payment')
+      } catch (error) {
+        console.error('Failed to create payment intent:', error)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [company?.id, selectedAvailability, createPaymentIntent, setPaymentIntent, setCurrentStep]
+  )
 
   function handleNext() {
     if (currentStep === 'select-time' && selectedAvailability) {
@@ -216,137 +203,40 @@ export default function BookingPage() {
     }
   }, [currentStep, selectedAvailability, setRemainingTime, setCurrentStep, startHold, clearHold])
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="space-y-2 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (companyError || !company) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="max-w-md p-6 text-center space-y-2">
-          <p className="text-destructive font-medium">An error occurred</p>
-          <p className="text-sm text-muted-foreground">{companyError?.message}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!company) {
-    notFound()
-  }
-
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Info */}
-      <div className="hidden lg:flex lg:flex-1 bg-secondary items-center justify-center p-12 sticky top-0 h-screen">
-        <div className="max-w-lg space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-secondary-foreground text-center">
-              Book Your Court at {company.name}
-            </h2>
-            <p className="text-secondary-foreground/80 text-center text-base leading-relaxed">
-              Select your preferred court and time slot.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Booking Flow */}
+      <BookingSidebar companyName={company?.name || ''} />
       <div className="w-full lg:w-1/2 flex flex-col min-h-screen">
         <BottomBarContent>
           <div className="flex flex-col min-h-screen">
-            <div className="flex-1 px-8 py-12 overflow-y-auto">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold">{company.name}</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {currentStep === 'select-time'
-                    ? 'Select a date to view available court times'
-                    : currentStep === 'guest-info'
-                      ? 'Enter your information'
-                      : 'Complete your payment'}
-                </p>
-              </div>
-
-              {currentStep === 'select-time' && (
-                <BookingForm
-                  selectedDate={selectedDate}
-                  setSelectedDate={setSelectedDate}
-                  weekStartDate={weekStartDate}
-                  setWeekStartDate={setWeekStartDate}
-                  availabilities={availabilities}
-                />
-              )}
-
-              {currentStep === 'guest-info' && (
-                <GuestInfoForm
-                  onSubmit={handleGuestInfoSubmit}
-                  products={products}
-                  loading={loading}
-                  defaultValues={guestInfo}
-                  selectedTime={
-                    selectedAvailability
-                      ? {
-                          start_time: selectedAvailability.start_time,
-                          end_time: selectedAvailability.end_time,
-                        }
-                      : undefined
-                  }
-                  formRef={formRef}
-                />
-              )}
-
-              {currentStep === 'payment' &&
-                paymentIntent?.clientSecret &&
-                company?.stripe_account_id &&
-                stripePromise && (
-                  <Elements
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret: paymentIntent?.clientSecret,
-                      appearance: { theme: 'stripe' },
-                    }}
-                  >
-                    <GuestCheckoutForm
-                      onSuccess={handlePaymentSuccess}
-                      onBack={handleBack}
-                      amount={paymentIntent.amount}
-                      bookingDetails={{
-                        date: dayjs(selectedAvailability?.start_time).format('dddd, MMMM D, YYYY'),
-                        time: `${dayjs(selectedAvailability?.start_time).format('h:mm A')} - ${dayjs(
-                          selectedAvailability?.end_time
-                        ).format('h:mm A')}`,
-                        duration: dayjs(selectedAvailability?.end_time).diff(
-                          dayjs(selectedAvailability?.start_time),
-                          'hour',
-                          true
-                        ),
-                        companyId: company.id,
-                        guestInfo: guestInfo!,
-                      }}
-                    />
-                  </Elements>
-                )}
-
-              {currentStep === 'payment' && remainingTime && (
-                <div className="text-sm text-muted-foreground mb-4">
-                  Time remaining to complete payment: {remainingTime}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-8 py-4 border-t mt-auto">
-              <p className="text-center text-sm text-muted-foreground">
-                © {new Date().getFullYear()} Powered by Courtify. All rights reserved.
-              </p>
-            </div>
+            <BookingWizard
+              currentStep={currentStep}
+              companyName={company?.name || ''}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              weekStartDate={weekStartDate}
+              setWeekStartDate={setWeekStartDate}
+              availabilities={availabilities}
+              loading={loading}
+              products={products}
+              guestInfo={guestInfo}
+              selectedAvailability={selectedAvailability}
+              formRef={formRef}
+              onGuestInfoSubmit={handleGuestInfoSubmit}
+              paymentProps={
+                paymentIntent && stripePromise
+                  ? {
+                      clientSecret: paymentIntent.clientSecret,
+                      amount: paymentIntent.amount,
+                      onSuccess: handlePaymentSuccess,
+                      onBack: handleBack,
+                      stripePromise,
+                    }
+                  : undefined
+              }
+              remainingTime={remainingTime || ''}
+            />
+            <Footer />
           </div>
         </BottomBarContent>
 

@@ -50,17 +50,13 @@ const AvailabilitySlot = memo(function AvailabilitySlot({
   )
 })
 
-interface CourtAvailabilityListProps {
+interface TimeSlotListProps {
   selectedDate: Date
   availabilities: CourtAvailability[]
   loading: boolean
 }
 
-function CourtAvailabilityListComponent({
-  selectedDate,
-  availabilities,
-  loading,
-}: CourtAvailabilityListProps) {
+function TimeSlotListComponent({ selectedDate, availabilities, loading }: TimeSlotListProps) {
   const { selectedAvailability, setSelectedAvailability } = useBookingStore()
 
   const selectedKey = selectedAvailability
@@ -166,4 +162,4 @@ function CourtAvailabilityListComponent({
   )
 }
 
-export const CourtAvailabilityList = memo(CourtAvailabilityListComponent)
+export const TimeSlotList = memo(TimeSlotListComponent)

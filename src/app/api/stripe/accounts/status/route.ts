@@ -5,13 +5,14 @@ import { StripeStatusRequest, StripeStatusResponse } from '@/shared/types/stripe
 
 export async function POST(req: Request) {
   try {
-    const { company_id, stripe_account_id } = (await req.json()) as StripeStatusRequest
+    const { company_id } = (await req.json()) as StripeStatusRequest
+    const stripeAccountId = req.headers.get('X-Stripe-Account')
 
     if (!company_id) {
       return NextResponse.json({ error: 'Company ID is required' }, { status: 400 })
     }
 
-    if (!stripe_account_id) {
+    if (!stripeAccountId) {
       return NextResponse.json<StripeStatusResponse>({
         accountId: null,
         isEnabled: false,
@@ -20,13 +21,13 @@ export async function POST(req: Request) {
     }
 
     try {
-      const account = await stripe.accounts.retrieve(stripe_account_id)
+      const account = await stripe.accounts.retrieve(stripeAccountId)
 
       const isEnabled =
         account.charges_enabled && account.payouts_enabled && account.details_submitted
 
       return NextResponse.json<StripeStatusResponse>({
-        accountId: stripe_account_id,
+        accountId: stripeAccountId,
         isEnabled,
         accountDetails: account as any,
       })

@@ -1,98 +1,53 @@
 'use client'
 
-import { useMutation } from '@apollo/client'
+import { useApolloClient } from '@apollo/client'
+import { useMemo } from 'react'
 
-import { UPDATE_COURT_AVAILABILITY } from '@/features/availability/graphql/mutations'
-import { CREATE_BOOKING } from '@/features/booking/graphql/mutations'
-import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
+import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
 
-import { AvailabilityStatus, BookingStatus, PaymentStatus } from '@/shared/types/graphql'
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
-import type { CompanyProduct } from '@/shared/types/graphql'
+import { AvailabilityStatus } from '@/shared/types/graphql'
 
-type ProductInfo = Pick<CompanyProduct, 'id' | 'name' | 'price_amount' | 'type'>
+import { useBookingStore } from './useBookingStore'
+import { BookingClientService } from '../services/bookingClientService'
+import { BookingServerService } from '../services/bookingServerService'
+import { CreatePaymentIntentInput } from '../types'
 
-export interface CreatePaymentIntentInput {
-  companyId: string
-  courtNumber: number
-  startTime: string
-  endTime: string
-  guestInfo: {
-    name: string
-    email: string
-    phone: string
-    net_height: string
-  }
-  selectedProducts: {
-    courtProduct: ProductInfo
-    equipmentProducts: ProductInfo[]
-  }
-}
-
-interface UseBookingsReturn {
-  createPaymentIntent: (input: CreatePaymentIntentInput) => Promise<{
-    clientSecret: string
-    paymentIntentId: string
-    amount: number
-  }>
-  confirmPaymentIntentAndBook: (companyId: string) => Promise<void>
-}
-
-export function useBookings(): UseBookingsReturn {
-  const [updateCourtAvailability] = useMutation(UPDATE_COURT_AVAILABILITY)
-  const [createBooking] = useMutation(CREATE_BOOKING)
+export function useBookings() {
+  const client = useApolloClient()
+  const company = useCompanyStore((state) => state.company)
+  const bookingService = useMemo(() => new BookingServerService(client), [client])
+  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
   async function createPaymentIntent(input: CreatePaymentIntentInput) {
+    if (!company?.stripe_account_id) {
+      throw new Error('Company not setup for payments')
+    }
+
     try {
-      const { errors: availabilityError } = await updateCourtAvailability({
-        variables: {
-          company_id: input.companyId,
-          court_number: input.courtNumber,
-          start_time: input.startTime,
-          end_time: input.endTime,
-          set: {
-            status: AvailabilityStatus.Held,
-          },
-        },
-      })
-      if (availabilityError) {
-        console.error('❌ Court availability update failed:', availabilityError)
-        throw new Error('Court is no longer available')
-      }
-      const response = await fetch('/api/stripe/payment/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(input),
+      // 1. Validate input
+      BookingClientService.validateBookingInput(input)
+
+      // 2. Hold the court
+      await availabilityService.updateAvailability({
+        companyId: input.companyId,
+        courtNumber: input.courtNumber,
+        startTime: input.startTime,
+        update: { status: AvailabilityStatus.Held },
       })
 
-      if (!response.ok) {
-        console.error('❌ Payment intent creation failed:', response.status)
-        await updateCourtAvailability({
-          variables: {
-            company_id: input.companyId,
-            court_number: input.courtNumber,
-            start_time: input.startTime,
-            end_time: input.endTime,
-            set: {
-              status: AvailabilityStatus.Available,
-            },
-          },
-        })
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to create payment intent')
-      }
-
-      const data = await response.json()
-      return {
-        clientSecret: data.clientSecret,
-        paymentIntentId: data.paymentIntentId,
-        amount: data.amount,
-      }
-    } catch (err) {
-      console.error('❌ Error in createPaymentIntent:', err)
-      throw err instanceof Error ? err : new Error('Failed to create booking')
+      // 3. Create payment intent
+      return await bookingService.createPaymentIntent(input, company.stripe_account_id)
+    } catch (error) {
+      // Release the hold if payment intent creation fails
+      await availabilityService.updateAvailability({
+        companyId: input.companyId,
+        courtNumber: input.courtNumber,
+        startTime: input.startTime,
+        update: { status: AvailabilityStatus.Available },
+      })
+      throw error
     }
   }
 
@@ -103,50 +58,32 @@ export function useBookings(): UseBookingsReturn {
     }
 
     try {
-      // 1. Create initial booking record with pending status
-      const { data: bookingData } = await createBooking({
-        variables: {
-          input: {
-            company_id: companyId,
-            court_number: state.selectedAvailability.court_number,
-            start_time: state.selectedAvailability.start_time,
-            customer_email: state.guestInfo.email,
-            customer_name: state.guestInfo.name,
-            customer_phone: state.guestInfo.phone || null,
-            status: BookingStatus.Pending,
-            payment_status: PaymentStatus.Processing,
-            stripe_payment_intent_id: state.paymentIntent.paymentIntentId,
-            amount_total: state.paymentIntent.amount,
-            currency: 'usd',
-            // Only include minimal initial metadata
-            metadata: JSON.stringify({
-              initialized_at: new Date().toISOString(),
-              status: 'pending_payment',
-            }),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        },
+      // 1. Create booking record
+      const booking = await bookingService.createBooking({
+        companyId,
+        courtNumber: state.selectedAvailability.court_number,
+        startTime: state.selectedAvailability.start_time,
+        customerEmail: state.guestInfo.email,
+        customerName: state.guestInfo.name,
+        customerPhone: state.guestInfo.phone || null,
+        paymentIntentId: state.paymentIntent.paymentIntentId,
+        amount: state.paymentIntent.amount,
       })
 
-      if (!bookingData?.insertIntobookingsCollection?.records?.[0]) {
-        throw new Error('Failed to create booking record')
-      }
+      if (!booking) throw new Error('Failed to create booking record')
 
-      // 2. Update court availability to booked
-      await updateCourtAvailability({
-        variables: {
-          company_id: companyId,
-          court_number: state.selectedAvailability.court_number,
-          start_time: state.selectedAvailability.start_time,
-          set: { status: AvailabilityStatus.Booked },
-        },
+      // 2. Update court availability
+      await availabilityService.updateAvailability({
+        companyId,
+        courtNumber: state.selectedAvailability.court_number,
+        startTime: state.selectedAvailability.start_time,
+        update: { status: AvailabilityStatus.Booked },
       })
 
-      return bookingData.insertIntobookingsCollection.records[0]
-    } catch (err) {
-      console.error('Failed to create booking:', err)
-      throw err
+      return booking
+    } catch (error) {
+      console.error('Failed to create booking:', error)
+      throw error
     }
   }
 

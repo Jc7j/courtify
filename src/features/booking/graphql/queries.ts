@@ -35,3 +35,50 @@ export const GET_COMPLETED_BOOKINGS = gql`
     }
   }
 `
+
+export const GET_BOOKING_AVAILABILITIES = gql`
+  query GetBookingAvailabilities($company_id: UUID!, $start_time: Datetime!, $end_time: Datetime!) {
+    courtsCollection(
+      filter: { company_id: { eq: $company_id } }
+      orderBy: [{ court_number: AscNullsFirst }]
+    ) {
+      edges {
+        node {
+          court_number
+          name
+        }
+      }
+    }
+
+    court_availabilitiesCollection(
+      filter: {
+        company_id: { eq: $company_id }
+        and: [{ start_time: { lte: $end_time } }, { end_time: { gte: $start_time } }]
+      }
+      orderBy: [{ court_number: AscNullsFirst }, { start_time: AscNullsFirst }]
+    ) {
+      edges {
+        node {
+          nodeId
+          company_id
+          court_number
+          start_time
+          end_time
+          status
+          created_at
+          updated_at
+          booking: bookingsCollection(first: 1) {
+            edges {
+              node {
+                id
+                customer_name
+                status
+                payment_status
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`

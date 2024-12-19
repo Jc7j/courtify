@@ -1,43 +1,50 @@
 import dayjs from 'dayjs'
 import { NextResponse } from 'next/server'
 
-import { CreatePaymentIntentInput } from '@/features/booking/hooks/useBookings'
-
 import { stripe } from '@/shared/lib/stripe/stripe'
-import { createAdminClient } from '@/shared/lib/supabase/server'
+
+import type { CreatePaymentIntentInput } from '@/features/booking/types'
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as CreatePaymentIntentInput
+    const stripeAccountId = req.headers.get('X-Stripe-Account')
 
-    const startTime = dayjs(body.startTime)
-    const endTime = dayjs(body.endTime)
-    const durationInHours = endTime.diff(startTime, 'hour', true)
+    // Basic validation
+    if (!body.companyId || !body.courtNumber || !body.startTime || !body.endTime) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
 
-    const supabase = createAdminClient()
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .select('stripe_account_id, stripe_currency')
-      .eq('id', body.companyId)
-      .single()
-
-    if (companyError || !company?.stripe_account_id) {
+    if (!stripeAccountId) {
       return NextResponse.json({ error: 'Company not setup for payments' }, { status: 400 })
     }
 
+    // Time validation
+    const startTime = dayjs(body.startTime)
+    const endTime = dayjs(body.endTime)
+    const now = dayjs()
+
+    if (startTime.isBefore(now) || endTime.isBefore(startTime)) {
+      return NextResponse.json({ error: 'Invalid booking time' }, { status: 400 })
+    }
+
+    // Calculate amount
+    const durationInHours = endTime.diff(startTime, 'hour', true)
     const amount = body.selectedProducts.equipmentProducts.reduce(
       (sum, product) => sum + product.price_amount,
       Math.round(body.selectedProducts.courtProduct.price_amount * durationInHours)
     )
 
-    // const applicationFeeAmount = Math.round(amount * 0.025)
+    if (amount <= 0) {
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
+    }
 
+    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
-        currency: company.stripe_currency?.toLowerCase() ?? 'usd',
+        currency: 'usd',
         payment_method_types: ['card'],
-        // application_fee_amount: applicationFeeAmount,
         metadata: {
           companyId: body.companyId,
           courtNumber: body.courtNumber,
@@ -48,21 +55,22 @@ export async function POST(req: Request) {
           customerName: body.guestInfo.name,
           customerPhone: body.guestInfo.phone,
           netHeight: body.guestInfo.net_height,
-          courtProductId: body.selectedProducts.courtProduct.id,
-          courtProductName: body.selectedProducts.courtProduct.name,
-          courtProductPrice: body.selectedProducts.courtProduct.price_amount.toString(),
+          courtProduct: JSON.stringify({
+            id: body.selectedProducts.courtProduct.id,
+            name: body.selectedProducts.courtProduct.name,
+            price: body.selectedProducts.courtProduct.price_amount,
+          }),
           equipmentProducts: JSON.stringify(
-            body.selectedProducts.equipmentProducts.map((product) => ({
-              id: product.id,
-              name: product.name,
-              price_amount: product.price_amount,
-              type: product.type,
+            body.selectedProducts.equipmentProducts.map((p) => ({
+              id: p.id,
+              name: p.name,
+              price: p.price_amount,
             }))
           ),
         },
       },
       {
-        stripeAccount: company.stripe_account_id,
+        stripeAccount: stripeAccountId,
       }
     )
 

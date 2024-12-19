@@ -5,7 +5,7 @@ import { Resend } from 'resend'
 import Stripe from 'stripe'
 
 import { ConfirmationEmail } from '@/features/booking/components/confirmation-email'
-import { GuestInfo } from '@/features/booking/components/GuestInfoForm'
+import { GuestDetailsType } from '@/features/booking/types'
 
 import { stripe } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
@@ -199,7 +199,7 @@ export async function POST(request: Request) {
                   name: paymentIntent.metadata.customerName,
                   email: paymentIntent.metadata.customerEmail,
                   phone: paymentIntent.metadata.customerPhone,
-                  net_height: paymentIntent.metadata.netHeight as GuestInfo['net_height'],
+                  net_height: paymentIntent.metadata.netHeight as GuestDetailsType['net_height'],
                   selectedCourtProduct: {
                     id: paymentIntent.metadata.courtProductId,
                     name: paymentIntent.metadata.courtProductName,

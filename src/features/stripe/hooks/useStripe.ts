@@ -99,10 +99,12 @@ export function useStripe(): UseStripeReturn {
         '/api/stripe/accounts/status',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Stripe-Account': company.stripe_account_id,
+          },
           body: JSON.stringify({
             company_id: company.id,
-            stripe_account_id: company.stripe_account_id,
           }),
         },
         requestId

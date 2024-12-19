@@ -8,29 +8,24 @@ import { useBookings } from '@/features/booking/hooks/useBookings'
 
 import { Card, Button, Separator } from '@/shared/components/ui'
 
-import { GuestInfo } from './GuestInfoForm'
+import type { GuestDetailsType } from '../../types'
 
 export interface BookingDetails {
   date: string
   time: string
   duration: number
   companyId: string
-  guestInfo: GuestInfo
+  guestInfo: GuestDetailsType
 }
 
-interface GuestCheckoutFormProps {
+interface PaymentStepProps {
   onSuccess: () => void
   onBack: () => void
   amount: number
   bookingDetails: BookingDetails
 }
 
-export function GuestCheckoutForm({
-  onSuccess,
-  onBack,
-  amount,
-  bookingDetails,
-}: GuestCheckoutFormProps) {
+export function PaymentStep({ onSuccess, onBack, amount, bookingDetails }: PaymentStepProps) {
   const stripe = useStripe()
   const elements = useElements()
   const { confirmPaymentIntentAndBook } = useBookings()

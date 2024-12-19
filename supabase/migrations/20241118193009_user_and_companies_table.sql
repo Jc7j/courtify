@@ -47,6 +47,7 @@ CREATE POLICY "Users can insert their own profile" ON users
 
 CREATE POLICY "Users can update own profile" ON users
   FOR UPDATE USING (auth.uid() = id);
+
 CREATE POLICY "Owners and admins can manage members" ON users
     FOR UPDATE
     USING (

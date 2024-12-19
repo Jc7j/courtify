@@ -13,7 +13,9 @@ import {
 } from '@react-email/components'
 import * as React from 'react'
 
-import type { BookingDetails } from './GuestCheckoutForm'
+import { ProductInfo } from '../types'
+
+import type { BookingDetails } from './flow/PaymentStep'
 
 interface EmailProps {
   booking: BookingDetails & { amount: number }
@@ -90,7 +92,7 @@ export const ConfirmationEmail = ({ booking, company }: EmailProps) => (
             </Row>
 
             {/* Equipment */}
-            {booking.guestInfo.selectedEquipment.map((item) => (
+            {booking.guestInfo.selectedEquipment.map((item: ProductInfo) => (
               <Row key={item.id}>
                 <Column>
                   <Text style={label}>{item.name}</Text>

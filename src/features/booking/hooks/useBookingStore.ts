@@ -1,49 +1,14 @@
 import dayjs from 'dayjs'
 import { create } from 'zustand'
 
-import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'
-import type { CourtAvailability } from '@/shared/types/graphql'
+import type { BookingStore, BookingState } from '../types'
 
-export type BookingStep = 'select-time' | 'guest-info' | 'payment'
-
-interface GuestState {
-  selectedDate: Date
-  weekStartDate: Date
-  selectedAvailability?: CourtAvailability
-  guestInfo?: GuestInfo
-  paymentIntent?: {
-    clientSecret: string
-    paymentIntentId: string
-    amount: number
-  }
-  currentStep: BookingStep
-  isLoading: boolean
-  holdEndTime?: number
-  remainingTime: string | null
-  setSelectedDate: (date: Date) => void
-  setWeekStartDate: (date: Date) => void
-  setSelectedAvailability: (availability?: CourtAvailability) => void
-  setGuestInfo: (info: GuestInfo) => void
-  setPaymentIntent: (paymentIntent: {
-    clientSecret: string
-    paymentIntentId: string
-    amount: number
-  }) => void
-  setCurrentStep: (step: BookingStep) => void
-  setLoading: (loading: boolean) => void
-  startHold: () => void
-  clearHold: () => void
-  setRemainingTime: (time: string | null) => void
-  clearBooking: () => void
-  reset: () => void
-}
-
-const initialState = {
+const initialState: BookingState = {
   selectedDate: dayjs().startOf('day').toDate(),
   weekStartDate: dayjs().startOf('week').toDate(),
   selectedAvailability: undefined,
   guestInfo: undefined,
-  currentStep: 'select-time' as BookingStep,
+  currentStep: 'select-time',
   isLoading: false,
   holdEndTime: undefined,
   remainingTime: null,
@@ -52,7 +17,7 @@ const initialState = {
 
 export const HOLD_DURATION_MS = 10 * 60 * 1000 // 10 minutes
 
-export const useBookingStore = create<GuestState>((set) => ({
+export const useBookingStore = create<BookingStore>((set) => ({
   ...initialState,
 
   setSelectedDate: (date: Date) =>
@@ -65,20 +30,15 @@ export const useBookingStore = create<GuestState>((set) => ({
       weekStartDate: dayjs(date).startOf('week').toDate(),
     }),
 
-  setSelectedAvailability: (availability?: CourtAvailability) =>
-    set({ selectedAvailability: availability }),
+  setSelectedAvailability: (availability) => set({ selectedAvailability: availability }),
 
-  setGuestInfo: (info: GuestInfo) => set({ guestInfo: info }),
+  setGuestInfo: (info) => set({ guestInfo: info }),
 
-  setPaymentIntent: (paymentIntent: {
-    clientSecret: string
-    paymentIntentId: string
-    amount: number
-  }) => set({ paymentIntent }),
+  setPaymentIntent: (paymentIntent) => set({ paymentIntent }),
 
-  setCurrentStep: (step: BookingStep) => set({ currentStep: step }),
+  setCurrentStep: (step) => set({ currentStep: step }),
 
-  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoading: (loading) => set({ isLoading: loading }),
 
   startHold: () => {
     const endTime = Date.now() + HOLD_DURATION_MS
@@ -92,7 +52,7 @@ export const useBookingStore = create<GuestState>((set) => ({
     })
   },
 
-  setRemainingTime: (time: string | null) => set({ remainingTime: time }),
+  setRemainingTime: (time) => set({ remainingTime: time }),
 
   clearBooking: () => {
     set({
