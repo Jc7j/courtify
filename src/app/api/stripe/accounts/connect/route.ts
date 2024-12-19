@@ -38,7 +38,7 @@ export async function POST(req: Request) {
           : await stripe.accounts.create({
               type: 'standard',
               country: 'US',
-              business_type: 'company',
+              business_type: 'individual',
               capabilities: {
                 card_payments: { requested: true },
                 transfers: { requested: true },
