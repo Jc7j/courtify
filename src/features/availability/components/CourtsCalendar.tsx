@@ -4,7 +4,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import dayjs from 'dayjs'
-import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CalendarIcon, Link } from 'lucide-react'
 import { useRef, useState, useCallback, useEffect } from 'react'
 
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
@@ -18,6 +18,7 @@ import {
   ErrorToast,
   DatePicker,
 } from '@/shared/components/ui'
+import { ROUTES } from '@/shared/constants/routes'
 import { supabase } from '@/shared/lib/supabase/client'
 import { getAvailabilityColor } from '@/shared/lib/utils/availability-color'
 import { Courts, AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
@@ -314,7 +315,11 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
   if (!courts.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No courts available. Please add courts to your company.
+        No courts available. Please{' '}
+        <Link href={ROUTES.DASHBOARD.COURTS} className="text-primary hover:underline">
+          add courts
+        </Link>{' '}
+        to your company.
       </div>
     )
   }

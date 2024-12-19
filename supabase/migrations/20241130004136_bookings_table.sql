@@ -12,7 +12,7 @@ CREATE TYPE payment_status AS ENUM (
     'pending'
 );
 
-CREATE SEQUENCE bookings_id_seq;
+CREATE SEQUENCE IF NOT EXISTS bookings_id_seq;
 
 CREATE TABLE bookings (
     id BIGINT PRIMARY KEY DEFAULT nextval('bookings_id_seq'),
@@ -80,8 +80,7 @@ CREATE TABLE bookings (
     
     FOREIGN KEY (company_id, court_number, start_time) 
         REFERENCES court_availabilities(company_id, court_number, start_time) 
-        ON DELETE CASCADE,
-        
+        ON DELETE RESTRICT
 );
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;

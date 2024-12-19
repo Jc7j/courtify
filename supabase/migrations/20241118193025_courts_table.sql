@@ -1,5 +1,5 @@
 CREATE TABLE courts (
-    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
     court_number INTEGER NOT NULL,
     name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

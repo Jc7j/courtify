@@ -198,11 +198,11 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
   return (
     <Card>
       <CardContent className="space-y-6 pt-4">
-        {!stripeStatus.isConnected && (
+        {!company?.stripe_account_id && (
           <ConnectPrompt onConnect={handleConnect} connecting={connecting} />
         )}
 
-        {stripeStatus.isConnected && !stripeStatus.isEnabled && (
+        {company?.stripe_account_id && company?.stripe_account_enabled && (
           <SetupProgress requirements={requirements} completionPercentage={completionPercentage} />
         )}
 

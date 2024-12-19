@@ -11,7 +11,7 @@ CREATE TYPE stripe_payment_type AS ENUM (
 
 CREATE TABLE company_products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
     name TEXT NOT NULL,
     description TEXT,
     type product_type NOT NULL,

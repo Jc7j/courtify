@@ -73,12 +73,7 @@ function OnboardingContent({
       case 'create':
         return <CreateCompany onBack={() => handleStepChange('create-intro')} />
       case 'invite-team':
-        return (
-          <InviteTeam
-            onBack={() => handleStepChange('create')}
-            onComplete={() => router.replace(ROUTES.DASHBOARD.HOME)}
-          />
-        )
+        return <InviteTeam onComplete={() => router.replace(ROUTES.DASHBOARD.HOME)} />
       default:
         return <SignUpForm onSuccess={onSignupSuccess} />
     }
