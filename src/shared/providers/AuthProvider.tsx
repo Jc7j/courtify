@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useCallback, ReactNode } from 're
 
 import { AUTH_ERRORS, getAuthErrorMessage } from '@/features/auth/utils/auth-errors'
 
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { ROUTES } from '@/shared/constants/routes'
@@ -29,19 +30,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const { setSession, reset, isLoading, setIsLoading } = useUserStore()
   const isSignupPage = pathname === ROUTES.AUTH.SIGNUP
+  const setCompany = useCompanyStore((state) => state.setCompany)
+  const resetCompany = useCompanyStore((state) => state.reset)
 
   // Centralized function to handle user data fetching and session setting
   const handleSession = useCallback(
     async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
       if (!session) {
         await reset()
+        resetCompany()
         return
       }
 
       try {
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, email, name, company_id, role, is_active')
+          .select(
+            `
+            id, 
+            email, 
+            name, 
+            company_id, 
+            role, 
+            is_active,
+            companies (
+              id,
+              name,
+              slug,
+              stripe_account_id,
+              stripe_account_enabled
+            )
+          `
+          )
           .eq('id', session.user.id)
           .single()
 
@@ -62,6 +82,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           expiresAt: session.expires_at,
         })
 
+        if (userData.company_id && userData.companies) {
+          setCompany({
+            id: userData.companies.id,
+            name: userData.companies.name,
+            slug: userData.companies.slug,
+            stripe_account_id: userData.companies.stripe_account_id,
+            stripe_account_enabled: userData.companies.stripe_account_enabled || false,
+          })
+        } else {
+          resetCompany()
+        }
+
         if (pathname === ROUTES.AUTH.SIGNIN) {
           router.replace(ROUTES.DASHBOARD.HOME)
         }
@@ -71,13 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userId: session.user.id,
         })
         await reset()
+        resetCompany()
 
         if (!options.skipRedirect && !isSignupPage) {
           router.replace(ROUTES.AUTH.SIGNIN)
         }
       }
     },
-    [reset, router, setSession, pathname, isSignupPage]
+    [reset, resetCompany, setCompany, router, setSession, pathname, isSignupPage]
   )
 
   useEffect(() => {

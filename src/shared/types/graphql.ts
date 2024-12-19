@@ -30,7 +30,7 @@ export interface Company {
   sports: string
   slug: string
   stripe_account_id?: string | null
-  stripe_account_enabled: boolean
+  stripe_account_enabled: boolean | null
   stripe_currency: string
   created_at: string
   updated_at: string

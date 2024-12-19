@@ -314,13 +314,12 @@ export function CourtsCalendar({ courts, loading, onDateChange, companyId }: Cou
 
   if (!courts.length) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No courts available. Please{' '}
-        <Link href={ROUTES.DASHBOARD.COURTS} className="text-primary hover:underline">
-          add courts
-        </Link>{' '}
-        to your company.
-      </div>
+      <Link
+        href={ROUTES.DASHBOARD.COURTS}
+        className="block w-full py-8 text-center text-muted-foreground hover:text-primary transition-colors"
+      >
+        No courts available. Please add courts to your company.
+      </Link>
     )
   }
 
