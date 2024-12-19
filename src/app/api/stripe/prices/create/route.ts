@@ -8,7 +8,7 @@ interface CreateProductRequest {
   name: string
   description?: string | null
   type: ProductType
-  priceAmount: number
+  price_amount: number
   currency?: string
   metadata?: Record<string, unknown>
   company_id: string
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as CreateProductRequest
 
-    if (!body.name || !body.type || !body.priceAmount || !body.company_id) {
+    if (!body.name || !body.type || !body.price_amount || !body.company_id) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const price = await stripe.prices.create(
       {
         currency: body.currency?.toLowerCase() || 'usd',
-        unit_amount: body.priceAmount,
+        unit_amount: body.price_amount,
         product_data: {
           name: body.name,
           metadata: {

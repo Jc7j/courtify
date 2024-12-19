@@ -1,115 +1,105 @@
 'use client'
 
-import { useState, FormEvent, useEffect, ReactNode } from 'react'
+import { FormEvent, useState, useEffect } from 'react'
 
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
+import { CreateProductInput } from '@/core/company/types'
 
 import {
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Input,
   Label,
-  Textarea,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
+  Textarea,
 } from '@/shared/components/ui'
-import { ProductType, StripePaymentType, CompanyProduct } from '@/shared/types/graphql'
-
-const PRODUCT_TYPES: { value: ProductType; label: string }[] = [
-  { value: ProductType.CourtRental, label: 'Court Rental' },
-  { value: ProductType.Equipment, label: 'Equipment' },
-]
+import { CompanyProduct, ProductType, StripePaymentType } from '@/shared/types/graphql'
 
 interface ProductDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  companyId: string
   product?: CompanyProduct | null
-  trigger?: ReactNode
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  companyId?: string
 }
 
-export function ProductDialog({
-  product,
-  open,
-  onOpenChange,
-  trigger,
-  companyId,
-}: ProductDialogProps) {
-  const { createProduct, updateProduct, creating } = useCompanyProducts({ companyId })
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'court_rental' as ProductType,
-    priceAmount: '',
-    stripePaymentType: 'one_time' as StripePaymentType,
-  })
+const defaultFormData: CreateProductInput = {
+  name: '',
+  description: '',
+  type: ProductType.CourtRental,
+  price_amount: 0,
+  stripe_payment_type: StripePaymentType.OneTime,
+  currency: 'usd',
+}
 
+export function ProductDialog({ open, onOpenChange, companyId, product }: ProductDialogProps) {
+  const { createProduct, updateProduct, loading } = useCompanyProducts({ companyId })
+  const [formData, setFormData] = useState<CreateProductInput>(defaultFormData)
   const isEditing = !!product
 
+  // Reset form when dialog opens/closes or product changes
   useEffect(() => {
-    if (open && product) {
+    if (product) {
       setFormData({
         name: product.name,
         description: product.description || '',
         type: product.type as ProductType,
-        priceAmount: (product.price_amount / 100).toString(),
-        stripePaymentType: product.stripe_payment_type as StripePaymentType,
+        price_amount: product.price_amount / 100, // Convert from cents to dollars
+        stripe_payment_type: product.stripe_payment_type as StripePaymentType,
+        currency: product.currency || 'usd',
+        stripe_product_id: product.stripe_product_id || undefined,
+        stripe_price_id: product.stripe_price_id || undefined,
       })
-    } else if (!open) {
-      setFormData({
-        name: '',
-        description: '',
-        type: 'court_rental' as ProductType,
-        priceAmount: '',
-        stripePaymentType: 'one_time' as StripePaymentType,
-      })
+    } else {
+      setFormData(defaultFormData)
     }
-  }, [open, product])
+  }, [product, open])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
 
-    try {
-      const productData = {
-        name: formData.name,
-        description: formData.description || undefined,
-        type: formData.type,
-        priceAmount: Math.round(parseFloat(formData.priceAmount) * 100),
-        stripePaymentType: formData.stripePaymentType,
-      }
-
-      if (isEditing && product) {
-        await updateProduct(product.id, productData)
-      } else {
-        await createProduct(productData)
-      }
-
-      onOpenChange?.(false)
-    } catch (error) {
-      console.error('❌ Form submission error:', error)
+    if (!formData.name || !formData.type || !formData.price_amount) {
+      return
     }
+
+    const priceInCents = Math.round(formData.price_amount * 100) // This is correct
+
+    if (isEditing && product) {
+      await updateProduct(product.id, {
+        ...formData,
+        price_amount: priceInCents,
+      })
+    } else {
+      await createProduct({
+        ...formData,
+        price_amount: priceInCents,
+      })
+    }
+
+    setFormData(defaultFormData)
+    onOpenChange(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Product' : 'Create New Product'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Product' : 'Create Product'}</DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Make changes to your product'
-              : 'Your customers will see this product in their checkout flow.'}
+              ? 'Update your product details.'
+              : 'Add a new product or service to your company.'}
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
@@ -125,7 +115,7 @@ export function ProductDialog({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={formData.description}
+              value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
@@ -135,14 +125,15 @@ export function ProductDialog({
             <Select
               value={formData.type}
               onValueChange={(value: ProductType) => setFormData({ ...formData, type: value })}
+              disabled={isEditing} // Prevent type changes for existing products
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select a product type" />
               </SelectTrigger>
               <SelectContent>
-                {PRODUCT_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
+                {Object.values(ProductType).map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -156,15 +147,50 @@ export function ProductDialog({
               type="number"
               min="0"
               step="0.01"
-              value={formData.priceAmount}
-              onChange={(e) => setFormData({ ...formData, priceAmount: e.target.value })}
+              value={formData.price_amount || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, price_amount: parseFloat(e.target.value) || 0 })
+              }
               required
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={creating}>
-            {isEditing ? 'Update Product' : 'Create Product'}
-          </Button>
+          <div className="space-y-2">
+            <Label htmlFor="payment-type">Payment Type</Label>
+            <Select
+              value={formData.stripe_payment_type}
+              onValueChange={(value: StripePaymentType) =>
+                setFormData({ ...formData, stripe_payment_type: value })
+              }
+              disabled={isEditing} // Prevent payment type changes for existing products
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a payment type" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(StripePaymentType).map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading
+                ? isEditing
+                  ? 'Updating...'
+                  : 'Creating...'
+                : isEditing
+                  ? 'Update Product'
+                  : 'Create Product'}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

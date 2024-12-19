@@ -7,12 +7,12 @@ import { ProductType, StripePaymentType } from '@/shared/types/graphql'
 interface UpdatePriceInput {
   companyId: string
   productId: string
-  stripePriceId: string
-  stripeProductId: string
+  stripe_price_id: string
+  stripe_product_id: string
   name: string
   description?: string
   type: ProductType
-  priceAmount: number
+  price_amount: number
   stripePaymentType: StripePaymentType
 }
 
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const supabase = createAdminClient()
     const { data: company, error: companyError } = await supabase
       .from('companies')
-      .select('stripe_account_id, stripe_currency')
+      .select('stripe_account_id')
       .eq('id', body.companyId)
       .single()
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     await stripe.products.update(
-      body.stripeProductId,
+      body.stripe_product_id,
       {
         name: body.name,
         description: body.description,
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     )
 
     await stripe.prices.update(
-      body.stripePriceId,
+      body.stripe_price_id,
       {
         active: false,
       },
@@ -58,9 +58,9 @@ export async function POST(req: Request) {
 
     const newPrice = await stripe.prices.create(
       {
-        product: body.stripeProductId,
-        unit_amount: body.priceAmount,
-        currency: company.stripe_currency?.toLowerCase() ?? 'usd',
+        product: body.stripe_product_id,
+        unit_amount: body.price_amount,
+        currency: 'usd',
         metadata: {
           updated_at: new Date().toISOString(),
         },
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: 'Price updated successfully',
-      stripePriceId: newPrice.id,
+      stripe_price_id: newPrice.id,
     })
   } catch (error) {
     console.error('[stripe/prices/update] Error:', error)

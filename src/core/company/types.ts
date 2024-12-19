@@ -16,9 +16,11 @@ export interface CreateProductInput {
   name: string
   description?: string | null
   type: ProductType
-  priceAmount: number
+  price_amount: number
   currency?: string
   metadata?: Record<string, unknown>
+  stripe_product_id?: string
+  stripe_price_id?: string
   stripe_payment_type?: StripePaymentType
 }
 
@@ -81,7 +83,7 @@ export interface CreateProductRequest {
   name: string
   description?: string | null
   type: ProductType
-  priceAmount: number
+  price_amount: number
   currency?: string
   metadata?: Record<string, unknown>
   company_id: string
