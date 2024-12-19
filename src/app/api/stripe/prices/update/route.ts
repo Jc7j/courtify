@@ -31,7 +31,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Company not setup for payments' }, { status: 400 })
     }
 
-    // Update Stripe product first
     await stripe.products.update(
       body.stripeProductId,
       {
@@ -47,7 +46,6 @@ export async function POST(req: Request) {
       }
     )
 
-    // Deactivate old price
     await stripe.prices.update(
       body.stripePriceId,
       {
@@ -58,7 +56,6 @@ export async function POST(req: Request) {
       }
     )
 
-    // Create new price with updated amount
     const newPrice = await stripe.prices.create(
       {
         product: body.stripeProductId,

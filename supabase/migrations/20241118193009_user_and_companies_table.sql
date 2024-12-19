@@ -14,16 +14,12 @@ CREATE TABLE companies (
     slug TEXT UNIQUE NOT NULL,
     stripe_account_id TEXT UNIQUE,
     stripe_account_enabled BOOLEAN DEFAULT false,
-    stripe_account_details JSONB,
-    stripe_webhook_secret TEXT,
-    stripe_payment_methods TEXT[] DEFAULT ARRAY['card']::TEXT[],
     stripe_currency TEXT DEFAULT 'usd',
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON COLUMN companies.stripe_account_details IS 'Stores Stripe account metadata like business type, capabilities, etc.';
 
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 

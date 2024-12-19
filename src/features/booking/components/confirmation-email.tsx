@@ -118,6 +118,11 @@ export const ConfirmationEmail = ({ booking, company }: EmailProps) => (
         {/* Footer */}
         <Hr style={divider} />
         <Section style={footer}>
+          <Text style={refundPolicy}>
+            Cancellation Policy: A full refund is available up to 3 days prior to your scheduled
+            court time. For cancellations or modifications, please contact {company.name} directly.
+          </Text>
+          <Hr style={divider} />
           <Text style={footerText}>Powered by Courtify</Text>
           <Text style={footerText}>
             © {new Date().getFullYear()} Courtify. All rights reserved.
@@ -216,4 +221,14 @@ const footerText = {
   fontSize: '12px',
   color: '#6b7280',
   marginBottom: '4px',
+}
+
+const refundPolicy = {
+  fontSize: '14px',
+  lineHeight: '20px',
+  color: '#4b5563', // gray-600
+  textAlign: 'center' as const,
+  padding: '12px 0',
+  maxWidth: '480px',
+  margin: '0 auto',
 }

@@ -1,93 +1,89 @@
 import { NextResponse } from 'next/server'
 
 import { ROUTES } from '@/shared/constants/routes'
-import { stripe } from '@/shared/lib/stripe/stripe'
+import { stripe, handleStripeError } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
+import { StripeConnectRequest, StripeConnectResponse } from '@/shared/types/stripe'
 
 export async function POST(req: Request) {
   try {
-    const { company_id, company_name, reconnect, link_type } = await req.json()
-    const supabaseAdmin = createAdminClient()
+    const { company_id, company_name, reconnect, link_type } =
+      (await req.json()) as StripeConnectRequest
 
     if (!company_id || !company_name) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json<StripeConnectResponse>(
+        { url: null, error: 'Missing required fields' },
+        { status: 400 }
+      )
     }
 
-    const { data: existingCompany } = await supabaseAdmin
+    const supabase = createAdminClient()
+    const { data: company } = await supabase
       .from('companies')
       .select('stripe_account_id')
       .eq('id', company_id)
       .single()
 
-    if (existingCompany?.stripe_account_id && !reconnect) {
-      console.error('Company already has Stripe account:', existingCompany.stripe_account_id)
-      throw new Error('Company already has a Stripe account connected')
+    if (company?.stripe_account_id && !reconnect) {
+      return NextResponse.json<StripeConnectResponse>(
+        { url: null, error: 'Company already has a Stripe account connected' },
+        { status: 400 }
+      )
     }
 
-    let accountId = existingCompany?.stripe_account_id
-    let stripeAccount = null
+    try {
+      const stripeAccount =
+        company?.stripe_account_id && !reconnect
+          ? await stripe.accounts.retrieve(company.stripe_account_id)
+          : await stripe.accounts.create({
+              type: 'standard',
+              country: 'US',
+              business_type: 'company',
+              company: { name: company_name },
+              capabilities: {
+                card_payments: { requested: true },
+                transfers: { requested: true },
+              },
+              metadata: { company_id },
+            })
 
-    if (accountId && !reconnect) {
-      stripeAccount = await stripe.accounts.retrieve(accountId)
-    } else if (!accountId || reconnect) {
-      stripeAccount = await stripe.accounts.create({
-        type: 'standard',
-        country: 'US',
-        business_type: 'company',
-        company: { name: company_name },
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        metadata: { company_id },
+      const canUseUpdateLink =
+        stripeAccount.details_submitted && !stripeAccount.requirements?.currently_due?.length
+
+      const accountLinkType =
+        link_type === 'update' && canUseUpdateLink ? 'account_update' : 'account_onboarding'
+
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeAccount.id,
+        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}?refresh=true`,
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}?stripe=success`,
+        type: accountLinkType,
       })
-      accountId = stripeAccount.id
-    }
 
-    const canUseUpdateLink =
-      stripeAccount?.details_submitted && !stripeAccount?.requirements?.currently_due?.length
-    const accountLinkType =
-      link_type === 'update' && canUseUpdateLink ? 'account_update' : 'account_onboarding'
+      await supabase
+        .from('companies')
+        .update({
+          stripe_account_id: stripeAccount.id,
+          stripe_account_enabled: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', company_id)
+        .throwOnError()
 
-    const accountLink = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}?refresh=true`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}${ROUTES.DASHBOARD.SETTINGS.PAYMENT_PROCESSOR}?stripe=success`,
-      type: accountLinkType,
-    })
-
-    const updateData = {
-      stripe_account_id: accountId,
-      stripe_account_enabled: false,
-      updated_at: new Date().toISOString(),
-      ...(stripeAccount && { stripe_account_details: JSON.stringify(stripeAccount) }),
-    }
-
-    const { error: updateError } = await supabaseAdmin
-      .from('companies')
-      .update(updateData)
-      .eq('id', company_id)
-
-    if (updateError) {
-      console.error('Database update error:', {
-        code: updateError.code,
-        message: updateError.message,
-        details: updateError.details,
-        data: {
-          ...updateData,
-          stripe_account_details: 'REDACTED', // Don't log sensitive data
-        },
-        company_id,
+      return NextResponse.json<StripeConnectResponse>({
+        url: accountLink.url,
+        error: null,
       })
-      throw new Error(`Failed to update company: ${updateError.message}`)
+    } catch (stripeError) {
+      return NextResponse.json<StripeConnectResponse>(
+        { url: null, error: handleStripeError(stripeError) },
+        { status: 400 }
+      )
     }
-
-    return NextResponse.json({ url: accountLink.url })
   } catch (error) {
-    console.error('Stripe connect error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to connect Stripe' },
-      { status: 400 }
+    return NextResponse.json<StripeConnectResponse>(
+      { url: null, error: handleStripeError(error) },
+      { status: 500 }
     )
   }
 }

@@ -31,9 +31,6 @@ export interface Company {
   slug: string
   stripe_account_id?: string | null
   stripe_account_enabled: boolean
-  stripe_account_details?: Record<string, unknown> | null
-  stripe_webhook_secret?: string | null
-  stripe_payment_methods: string[]
   stripe_currency: string
   created_at: string
   updated_at: string

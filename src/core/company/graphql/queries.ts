@@ -6,7 +6,12 @@ export const COMPANY_BY_SLUG_FIELDS = gql`
     name
     slug
     stripe_account_id
+    stripe_account_enabled
     stripe_currency
+    address
+    sports
+    created_at
+    updated_at
   }
 `
 
@@ -32,9 +37,6 @@ export const COMPANY_FIELDS = gql`
     slug
     stripe_account_id
     stripe_account_enabled
-    stripe_account_details
-    stripe_webhook_secret
-    stripe_payment_methods
     stripe_currency
     created_at
     updated_at

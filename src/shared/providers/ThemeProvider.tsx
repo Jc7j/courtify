@@ -23,21 +23,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setSystemTheme(newTheme)
     }
 
-    // Initial check
     updateSystemTheme(mediaQuery)
 
-    // Listen for changes
     mediaQuery.addEventListener('change', updateSystemTheme)
     return () => mediaQuery.removeEventListener('change', updateSystemTheme)
   }, [])
 
-  // Initialize theme from localStorage or system preference
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as Theme | null
     setTheme(storedTheme || systemTheme)
   }, [systemTheme])
 
-  // Update document and localStorage when theme changes
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('theme', theme)

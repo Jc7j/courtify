@@ -2,38 +2,63 @@
 
 import { loadConnectAndInitialize } from '@stripe/connect-js/pure'
 import { ConnectComponentsProvider } from '@stripe/react-connect-js'
-import React, { useState, ReactNode, useMemo } from 'react'
+import React, { ReactNode, useMemo, useCallback } from 'react'
+
+import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
 interface StripeConnectProviderProps {
   children: ReactNode
-  companyId: string
 }
 
-export default function StripeConnectProvider({ children, companyId }: StripeConnectProviderProps) {
-  // Only initialize when actually needed
-  const stripeConnectInstance = useMemo(() => {
-    // Simple synchronous function that returns a promise
-    const fetchClientSecret = () =>
-      fetch('/api/stripe/accounts/session', {
+export default function StripeConnectProvider({ children }: StripeConnectProviderProps) {
+  const company = useCompanyStore((state) => state.company)
+
+  const fetchClientSecret = useCallback(async () => {
+    if (!company?.id || !company.stripe_account_id) return ''
+
+    try {
+      const response = await fetch('/api/stripe/accounts/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId }),
+        body: JSON.stringify({ companyId: company.id }),
       })
-        .then((res) => res.json())
-        .then((data) => data.client_secret)
+      const data = await response.json()
+      return data.client_secret || ''
+    } catch (err) {
+      console.error('Failed to fetch client secret:', err)
+      return ''
+    }
+  }, [company?.id, company?.stripe_account_id])
+
+  const stripeConnectInstance = useMemo(() => {
+    if (!company?.id || !company.stripe_account_id) return null
 
     return loadConnectAndInitialize({
       publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
       fetchClientSecret,
       appearance: {
-        overlays: 'dialog',
         variables: {
-          colorPrimary: '#625afa',
-          fontFamily: 'Open Sans',
+          colorPrimary: 'hsl(var(--primary))',
+          colorBackground: 'hsl(var(--background))',
+          colorText: 'hsl(var(--foreground))',
+          colorBorder: 'hsl(var(--border))',
+          fontFamily: 'var(--font-open-sans)',
+          fontSizeBase: '16px',
+
+          formBorderRadius: 'calc(var(--radius) - 2px)',
+          formHighlightColorBorder: 'hsl(var(--ring))',
+
+          buttonBorderRadius: 'calc(var(--radius) - 2px)',
+          buttonPrimaryColorBackground: 'hsl(var(--primary))',
+          buttonPrimaryColorText: 'hsl(var(--primary-foreground))',
         },
       },
     })
-  }, [companyId])
+  }, [company?.id, company?.stripe_account_id, fetchClientSecret])
+
+  if (!company?.id || !company.stripe_account_id || !stripeConnectInstance) {
+    return <>{children}</>
+  }
 
   return (
     <ConnectComponentsProvider connectInstance={stripeConnectInstance}>

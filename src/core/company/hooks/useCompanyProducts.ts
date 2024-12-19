@@ -332,7 +332,6 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
 
         const { stripe_price_id, stripe_product_id } = await response.json()
 
-        // Update database
         const updateResult = await updateProductMutation({
           variables: {
             id: product.id,
@@ -372,13 +371,11 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
         throw new Error('No company ID provided')
       }
 
-      // Find existing product
       const existingProduct = products.find((p: CompanyProduct) => p.id === productId)
       if (!existingProduct) {
         throw new Error('Product not found')
       }
 
-      // Update Stripe price first
       const stripeResponse = await fetch('/api/stripe/prices/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -398,7 +395,6 @@ export function useCompanyProducts({ companyId }: useCompanyProductsProps) {
 
       const stripeData = await stripeResponse.json()
 
-      // Update database with new price ID
       const result = await updateProductMutation({
         variables: {
           id: productId,

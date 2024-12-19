@@ -120,11 +120,9 @@ export function WeeklyCalendar({
               >
                 {date.format('D')}
               </span>
-              {!hasAvailability && (
-                <span className="text-xs text-muted-foreground mt-1">No courts</span>
-              )}
+              {!hasAvailability && <span className="text-xs text-muted-foreground mt-1">Full</span>}
               {hasAvailability && !isDisabled && (
-                <span className="text-xs text-primary mt-1">Available</span>
+                <span className="text-xs text-primary mt-1">Open</span>
               )}
             </Button>
           )

@@ -1,35 +1,48 @@
-/**
- * Core Stripe types that focus on what we actually use
- * while remaining flexible to API changes
- */
-
-// Basic requirement structure we depend on
-export interface StripeRequirements {
-  currently_due: string[]
-  eventually_due: string[]
-  pending_verification: string[]
-}
-
-// Core business profile fields we use
-export interface StripeBusinessProfile {
-  name: string | null
-  url: string | null
-}
-
-// Essential account details we need
 export interface StripeAccountDetails {
   id: string
-  email: string
-  object: string
-  type: string
-  business_profile: StripeBusinessProfile
-  capabilities: {
-    card_payments: 'active' | 'inactive'
-    transfers: 'active' | 'inactive'
-  }
+  email: string | null
   charges_enabled: boolean
   payouts_enabled: boolean
-  requirements: StripeRequirements
+  details_submitted: boolean
+  business_profile: {
+    name: string | null
+    url: string | null
+  }
+  capabilities: {
+    card_payments: 'active' | 'inactive' | 'pending'
+    transfers: 'active' | 'inactive' | 'pending'
+  }
+  requirements: {
+    currently_due: string[]
+    eventually_due: string[]
+    pending_verification: string[]
+  }
+  // Allow for future Stripe API additions
+  [key: string]: unknown
+}
+
+// API Request/Response types
+export interface StripeStatusRequest {
+  company_id: string
+  stripe_account_id: string
+}
+
+export interface StripeStatusResponse {
+  accountId: string | null
+  isEnabled: boolean
+  accountDetails: StripeAccountDetails | null
+}
+
+export interface StripeConnectRequest {
+  company_id: string
+  company_name: string
+  reconnect?: boolean
+  link_type?: 'onboarding' | 'update'
+}
+
+export interface StripeConnectResponse {
+  url: string | null
+  error: string | null
 }
 
 export interface StripeStatus {

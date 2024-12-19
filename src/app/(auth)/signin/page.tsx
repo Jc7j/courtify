@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { Input, Button, Logo, SuccessToast, ErrorToast } from '@/shared/components/ui'
+import { Input, Button, SuccessToast, ErrorToast } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuth } from '@/shared/providers/AuthProvider'
 
@@ -51,11 +51,6 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <Logo size="lg" />
-        </div>
-
         {/* Title */}
         <div className="text-center">
           <h1 className="text-3xl font-semibold text-foreground">Welcome back</h1>

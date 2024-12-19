@@ -1,7 +1,7 @@
 import { ApolloClient } from '@apollo/client'
 
 import { CREATE_COMPANY, UPDATE_COMPANY } from '../graphql/mutations'
-import { GET_COMPANY_BY_ID, GET_COMPANY_BY_SLUG } from '../graphql/queries'
+import { GET_COMPANY_BY_ID } from '../graphql/queries'
 
 import type { Company } from '@/shared/types/graphql'
 
@@ -19,7 +19,6 @@ interface UpdateCompanyInput {
   slug?: string
   stripe_account_id?: string | null
   stripe_account_enabled?: boolean
-  stripe_account_details?: any | null
   updated_at: string
 }
 
@@ -41,19 +40,6 @@ export class CompanyServerService {
       return data?.companiesCollection?.edges[0]?.node ?? null
     } catch (error) {
       this.handleError(error, 'Failed to fetch company')
-    }
-  }
-
-  async getCompanyBySlug(slug: string): Promise<Company | null> {
-    try {
-      const { data } = await this.client.query({
-        query: GET_COMPANY_BY_SLUG,
-        variables: { slug },
-        fetchPolicy: 'network-only',
-      })
-      return data?.companiesCollection?.edges[0]?.node ?? null
-    } catch (error) {
-      this.handleError(error, 'Failed to fetch company by slug')
     }
   }
 

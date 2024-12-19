@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-import { Card, Skeleton } from '@/shared/components/ui'
+import { Card, CardContent, CardFooter, Skeleton } from '@/shared/components/ui'
 
 export function MembersSkeleton(): React.ReactElement {
   return (
@@ -76,5 +76,29 @@ export function AccountSkeleton(): React.ReactElement {
         </div>
       </Card>
     </div>
+  )
+}
+
+export function PaymentProcessorSkeleton(): React.ReactElement {
+  return (
+    <Card>
+      <CardContent className="space-y-6 pt-4">
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-10 w-40" />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+      </CardContent>
+      <CardFooter>
+        <div className="flex gap-2 mt-8">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-32" />
+        </div>
+      </CardFooter>
+    </Card>
   )
 }

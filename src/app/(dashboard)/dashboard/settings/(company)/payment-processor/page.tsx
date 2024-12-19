@@ -1,17 +1,20 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import { ConnectedAccount } from '@/features/stripe/components/ConnectedAccount'
+import { PaymentProcessorSection } from '@/features/settings/components/CompanySettings/PaymentProcessorSection'
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
 import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
 import { ErrorToast } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
-import { StripeStatus } from '@/shared/types/stripe'
+
+import type { StripeStatus } from '@/shared/types/stripe'
 
 export default function PaymentProcessorPage() {
+  const searchParams = useSearchParams()
   const company = useCompanyStore((state) => state.company)
   const { checkStripeStatus, checking } = useStripe()
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
@@ -20,33 +23,37 @@ export default function PaymentProcessorPage() {
     let mounted = true
 
     async function fetchStatus() {
-      if (!company?.id) return
       try {
         const status = await checkStripeStatus()
         if (!mounted) return
 
-        if (status.error) {
+        if (status.error && status.error !== 'No company found') {
           ErrorToast(status.error)
           return
         }
 
         setStripeStatus(status)
       } catch (error) {
-        console.error('[PaymentProcessorPage] Error fetching status:', error)
-        ErrorToast('Failed to fetch Stripe status')
+        ErrorToast(`Failed to fetch Stripe status: ${error}`)
       }
     }
 
-    fetchStatus()
+    if (company?.id) {
+      if (searchParams.get('refresh') === 'true' || searchParams.get('stripe') === 'success') {
+        fetchStatus()
+      } else {
+        fetchStatus()
+      }
+    }
 
     return () => {
       mounted = false
     }
-  }, [company?.id, checkStripeStatus])
+  }, [checkStripeStatus, searchParams, company?.id])
 
-  if (!company) return null
+  const pageContent = <PaymentProcessorSection stripeStatus={stripeStatus} checking={checking} />
 
-  return (
+  const content = (
     <div className="p-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Payment Processor</h1>
@@ -55,15 +62,15 @@ export default function PaymentProcessorPage() {
         </p>
       </div>
 
-      <div className="grid gap-8 mt-8">
-        {company.stripe_account_id ? (
-          <StripeConnectProvider companyId={company.id}>
-            <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
-          </StripeConnectProvider>
+      <div className="mt-8">
+        {!company?.stripe_account_id ? (
+          pageContent
         ) : (
-          <ConnectedAccount stripeStatus={stripeStatus} checking={checking} />
+          <StripeConnectProvider>{pageContent}</StripeConnectProvider>
         )}
       </div>
     </div>
   )
+
+  return content
 }

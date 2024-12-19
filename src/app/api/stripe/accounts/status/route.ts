@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server'
 
-import { stripe } from '@/shared/lib/stripe/stripe'
-import { createAdminClient } from '@/shared/lib/supabase/server'
+import { stripe, handleStripeError } from '@/shared/lib/stripe/stripe'
+import { StripeStatusRequest, StripeStatusResponse } from '@/shared/types/stripe'
 
 export async function POST(req: Request) {
   try {
-    const { company_id } = await req.json()
-    const supabaseAdmin = createAdminClient()
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('stripe_account_id, stripe_account_enabled, stripe_account_details')
-      .eq('id', company_id)
-      .single()
+    const { company_id, stripe_account_id } = (await req.json()) as StripeStatusRequest
 
-    if (!company?.stripe_account_id) {
-      return NextResponse.json({
+    if (!company_id) {
+      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 })
+    }
+
+    if (!stripe_account_id) {
+      return NextResponse.json<StripeStatusResponse>({
         accountId: null,
         isEnabled: false,
         accountDetails: null,
@@ -22,50 +20,20 @@ export async function POST(req: Request) {
     }
 
     try {
-      const account = await stripe.accounts.retrieve(company.stripe_account_id)
+      const account = await stripe.accounts.retrieve(stripe_account_id)
 
       const isEnabled =
         account.charges_enabled && account.payouts_enabled && account.details_submitted
 
-      await supabaseAdmin
-        .from('companies')
-        .update({
-          stripe_account_enabled: isEnabled,
-          stripe_account_details: JSON.stringify(account),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', company_id)
-
-      return NextResponse.json({
-        accountId: company.stripe_account_id,
+      return NextResponse.json<StripeStatusResponse>({
+        accountId: stripe_account_id,
         isEnabled,
-        accountDetails: account,
+        accountDetails: account as any,
       })
     } catch (stripeError) {
-      console.error('Failed to retrieve Stripe account:', stripeError)
-
-      await supabaseAdmin
-        .from('companies')
-        .update({
-          stripe_account_id: null,
-          stripe_account_enabled: false,
-          stripe_account_details: null,
-          stripe_webhook_secret: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', company_id)
-
-      return NextResponse.json({
-        accountId: null,
-        isEnabled: false,
-        accountDetails: null,
-      })
+      return NextResponse.json({ error: handleStripeError(stripeError) }, { status: 400 })
     }
   } catch (error) {
-    console.error('Stripe status check error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to check Stripe status' },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: handleStripeError(error) }, { status: 500 })
   }
 }

@@ -1,17 +1,18 @@
 'use client'
 
 import dayjs from 'dayjs'
-import { Copy, Check } from 'lucide-react'
-import { memo, useCallback, useState, useEffect, useMemo } from 'react'
+import { Copy, Check, Loader2 } from 'lucide-react'
+import { memo, useCallback, useState, useEffect, useMemo, Suspense } from 'react'
 
 import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { useCompanyCourtAvailabilities } from '@/features/availability/hooks/useCourtAvailability'
 
+import { DashboardSkeleton } from '@/core/company/components/Skeletons'
 import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
-import { Button } from '@/shared/components/ui'
+import { Button, Card, CardContent } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 
 import type { Courts } from '@/shared/types/graphql'
@@ -84,14 +85,15 @@ const CalendarSection = memo(function CalendarSection({
 
   if (!hasStripeAccount) return calendar
 
-  return <StripeConnectProvider companyId={companyId}>{calendar}</StripeConnectProvider>
+  return <StripeConnectProvider>{calendar}</StripeConnectProvider>
 })
 
-export default function DashboardPage() {
+function DashboardContent() {
   const company = useCompanyStore((state) => state.company)
   const user = useUserStore((state) => state.user)
   const setAvailabilities = useCalendarStore((state) => state.setAvailabilities)
   const [copied, setCopied] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(() => ({
     start: dayjs().startOf('day').toISOString(),
     end: dayjs().endOf('day').toISOString(),
@@ -104,6 +106,12 @@ export default function DashboardPage() {
     loading: availabilitiesLoading,
     availabilities,
   } = useCompanyCourtAvailabilities(companyId, selectedDate.start, selectedDate.end)
+
+  useEffect(() => {
+    if (initialLoading && company !== undefined && user !== undefined) {
+      setInitialLoading(false)
+    }
+  }, [company, user, initialLoading])
 
   useEffect(() => {
     if (availabilities) {
@@ -123,6 +131,10 @@ export default function DashboardPage() {
     setTimeout(() => setCopied(false), 2000)
   }, [company?.slug])
 
+  if (initialLoading || company === undefined || user === undefined) {
+    return <DashboardSkeleton />
+  }
+
   if (!company || !user) {
     return (
       <div className="p-8 rounded-lg bg-destructive/10 text-destructive animate-fade-in">
@@ -140,13 +152,31 @@ export default function DashboardPage() {
         copied={copied}
       />
 
-      <CalendarSection
-        companyId={company.id}
-        hasStripeAccount={!!company.stripe_account_id}
-        courts={availabilityCourts as Courts[]}
-        loading={availabilitiesLoading}
-        onDateChange={handleDateChange}
-      />
+      <Suspense
+        fallback={
+          <Card>
+            <CardContent className="flex items-center justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </CardContent>
+          </Card>
+        }
+      >
+        <CalendarSection
+          companyId={company.id}
+          hasStripeAccount={!!company.stripe_account_id}
+          courts={availabilityCourts as Courts[]}
+          loading={availabilitiesLoading}
+          onDateChange={handleDateChange}
+        />
+      </Suspense>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   )
 }

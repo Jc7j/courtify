@@ -54,7 +54,6 @@ export function ProductDialog({
 
   const isEditing = !!product
 
-  // Reset form when dialog opens with product data
   useEffect(() => {
     if (open && product) {
       setFormData({

@@ -54,19 +54,3 @@ export function CourtDetailSkeleton() {
     </div>
   )
 }
-
-export function QuickStatsSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="p-6 border rounded-lg">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-3 w-32" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}

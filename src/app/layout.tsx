@@ -1,3 +1,4 @@
+import { Metadata } from 'next'
 import { Open_Sans } from 'next/font/google'
 import { ReactNode } from 'react'
 
@@ -15,8 +16,11 @@ const openSans = Open_Sans({
   variable: '--font-open-sans',
 })
 
-export const metadata = {
-  title: process.env.NODE_ENV === 'development' ? 'localhost:3000' : 'Courtify',
+export const metadata: Metadata = {
+  title: {
+    default: 'Courtify',
+    template: '%s',
+  },
   description: 'Court rental booking system',
 }
 

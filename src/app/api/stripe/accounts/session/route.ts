@@ -1,89 +1,95 @@
 import { NextResponse } from 'next/server'
 
-import { stripe } from '@/shared/lib/stripe/stripe'
+import { stripe, handleStripeError } from '@/shared/lib/stripe/stripe'
 import { createAdminClient } from '@/shared/lib/supabase/server'
+
+interface SessionResponse {
+  client_secret: string
+  expires_at?: number
+  error?: string
+}
 
 export async function POST(req: Request) {
   try {
     const { companyId } = await req.json()
 
     if (!companyId) {
-      return NextResponse.json(
+      return NextResponse.json<SessionResponse>(
         {
-          error: 'Company ID is required',
           client_secret: '',
+          error: 'Company ID is required',
         },
         { status: 400 }
       )
     }
 
     const supabase = createAdminClient()
-
-    const { data: company, error: companyError } = await supabase
+    const { data: company } = await supabase
       .from('companies')
-      .select('stripe_account_id, stripe_currency')
+      .select('stripe_account_id')
       .eq('id', companyId)
       .single()
 
-    if (companyError) {
-      console.error('❌ Supabase error:', companyError)
-    }
-
     if (!company?.stripe_account_id) {
-      return NextResponse.json(
+      return NextResponse.json<SessionResponse>(
         {
-          error: 'Company not setup for payments',
           client_secret: '',
+          error: 'Company not setup for payments',
         },
         { status: 400 }
       )
     }
 
-    const accountSession = await stripe.accountSessions.create({
-      account: company.stripe_account_id,
-      components: {
-        account_management: {
-          enabled: true,
-          features: {
-            external_account_collection: true,
+    try {
+      const accountSession = await stripe.accountSessions.create({
+        account: company.stripe_account_id,
+        components: {
+          account_management: {
+            enabled: true,
+            features: {
+              external_account_collection: true,
+            },
+          },
+          payment_details: {
+            enabled: true,
+            features: {
+              refund_management: true,
+              dispute_management: true,
+              capture_payments: true,
+              destination_on_behalf_of_charge_management: false,
+            },
           },
         },
-        payment_details: {
-          enabled: true,
-          features: {
-            refund_management: true,
-            dispute_management: true,
-            capture_payments: true,
-            destination_on_behalf_of_charge_management: false,
-          },
-        },
-      },
-    })
+      })
 
-    if (!accountSession.client_secret) {
-      console.error('❌ No client secret in account session')
-      return NextResponse.json(
+      if (!accountSession.client_secret) {
+        return NextResponse.json<SessionResponse>(
+          {
+            client_secret: '',
+            error: 'Failed to create account session',
+          },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json<SessionResponse>({
+        client_secret: accountSession.client_secret,
+        expires_at: accountSession.expires_at,
+      })
+    } catch (stripeError) {
+      return NextResponse.json<SessionResponse>(
         {
-          error: 'Failed to create account session',
           client_secret: '',
+          error: handleStripeError(stripeError),
         },
-        { status: 500 }
+        { status: 400 }
       )
     }
-
-    return NextResponse.json({
-      client_secret: accountSession.client_secret,
-      expires_at: accountSession.expires_at,
-    })
   } catch (error) {
-    console.error('💥 Error in session route:', {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-    })
-    return NextResponse.json(
+    return NextResponse.json<SessionResponse>(
       {
-        error: error instanceof Error ? error.message : 'Unknown error',
         client_secret: '',
+        error: handleStripeError(error),
       },
       { status: 500 }
     )

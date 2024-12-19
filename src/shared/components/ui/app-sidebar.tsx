@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, Home } from 'lucide-react'
+import { Calendar, Home, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -30,9 +30,15 @@ const items = [
     exact: true,
   },
   {
-    title: 'Courts & Products',
+    title: 'Courts',
     url: ROUTES.DASHBOARD.COURTS,
     icon: Calendar,
+    exact: false,
+  },
+  {
+    title: 'Products',
+    url: ROUTES.DASHBOARD.PRODUCTS,
+    icon: ShoppingBag,
     exact: false,
   },
 ]

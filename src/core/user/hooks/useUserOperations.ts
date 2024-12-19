@@ -19,13 +19,11 @@ export function useUserOperations() {
     const { name, email, role, is_active, currentEmail } = input
 
     try {
-      // Update auth email if changed
       if (email && email !== currentEmail) {
         const { error: updateAuthError } = await supabase.auth.updateUser({ email })
         if (updateAuthError) throw updateAuthError
       }
 
-      // Update user profile in database
       const { data: userData, error: updateError } = await supabase
         .from('users')
         .update({
@@ -43,7 +41,6 @@ export function useUserOperations() {
         throw new Error(updateError?.message || 'Failed to update profile')
       }
 
-      // Update local state with partial data
       updateUser(userData)
 
       return userData

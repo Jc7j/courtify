@@ -24,7 +24,7 @@ export function InviteTeam({ onBack, onComplete }: InviteTeamProps) {
   }
 
   function removeEmailField(index: number) {
-    if (emails.length <= 3) return // Keep minimum 3 fields
+    if (emails.length <= 3) return
     const newEmails = emails.filter((_, i) => i !== index)
     setEmails(newEmails)
   }

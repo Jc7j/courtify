@@ -17,8 +17,8 @@ import { GuestInfoForm } from '@/features/booking/components/GuestInfoForm'
 import { useBookings } from '@/features/booking/hooks/useBookings'
 import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
 
-import { useCompany } from '@/core/company/hooks/useCompany'
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
+import { usePublicCompany } from '@/core/company/hooks/usePublicCompany'
 
 import { AvailabilityStatus } from '@/shared/types/graphql'
 
@@ -32,13 +32,7 @@ function getStripePromise(accountId: string) {
 
 export default function BookingPage() {
   const params = useParams<{ slug: string }>()
-  const {
-    company,
-    loading: companyLoading,
-    error: companyError,
-  } = useCompany({
-    slug: params.slug,
-  })
+  const { company, loading: companyLoading, error: companyError } = usePublicCompany(params.slug)
   const { products } = useCompanyProducts({ companyId: company?.id })
   const {
     selectedAvailability,
@@ -247,93 +241,99 @@ export default function BookingPage() {
             <p className="text-secondary-foreground/80 text-center text-base leading-relaxed">
               Select your preferred court and time slot.
             </p>
-            <p className="text-center text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Powered by Courtify. All rights reserved.
-            </p>
           </div>
         </div>
       </div>
 
       {/* Right side - Booking Flow */}
-      <div className="w-full lg:w-1/2 min-h-screen bg-background flex flex-col">
+      <div className="w-full lg:w-1/2 flex flex-col min-h-screen">
         <BottomBarContent>
-          <div className="flex-1 px-8 py-12 overflow-y-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold">{company.name}</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {currentStep === 'select-time'
-                  ? 'Select a date to view available court times'
-                  : currentStep === 'guest-info'
-                    ? 'Enter your information'
-                    : 'Complete your payment'}
-              </p>
-            </div>
+          <div className="flex flex-col min-h-screen">
+            <div className="flex-1 px-8 py-12 overflow-y-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold">{company.name}</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {currentStep === 'select-time'
+                    ? 'Select a date to view available court times'
+                    : currentStep === 'guest-info'
+                      ? 'Enter your information'
+                      : 'Complete your payment'}
+                </p>
+              </div>
 
-            {currentStep === 'select-time' && (
-              <BookingForm
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                weekStartDate={weekStartDate}
-                setWeekStartDate={setWeekStartDate}
-                availabilities={availabilities}
-              />
-            )}
-
-            {currentStep === 'guest-info' && (
-              <GuestInfoForm
-                onSubmit={handleGuestInfoSubmit}
-                products={products}
-                loading={loading}
-                defaultValues={guestInfo}
-                selectedTime={
-                  selectedAvailability
-                    ? {
-                        start_time: selectedAvailability.start_time,
-                        end_time: selectedAvailability.end_time,
-                      }
-                    : undefined
-                }
-                formRef={formRef}
-              />
-            )}
-
-            {currentStep === 'payment' &&
-              paymentIntent?.clientSecret &&
-              company?.stripe_account_id &&
-              stripePromise && (
-                <Elements
-                  stripe={stripePromise}
-                  options={{
-                    clientSecret: paymentIntent?.clientSecret,
-                    appearance: { theme: 'stripe' },
-                  }}
-                >
-                  <GuestCheckoutForm
-                    onSuccess={handlePaymentSuccess}
-                    onBack={handleBack}
-                    amount={paymentIntent.amount}
-                    bookingDetails={{
-                      date: dayjs(selectedAvailability?.start_time).format('dddd, MMMM D, YYYY'),
-                      time: `${dayjs(selectedAvailability?.start_time).format('h:mm A')} - ${dayjs(
-                        selectedAvailability?.end_time
-                      ).format('h:mm A')}`,
-                      duration: dayjs(selectedAvailability?.end_time).diff(
-                        dayjs(selectedAvailability?.start_time),
-                        'hour',
-                        true
-                      ),
-                      companyId: company.id,
-                      guestInfo: guestInfo!,
-                    }}
-                  />
-                </Elements>
+              {currentStep === 'select-time' && (
+                <BookingForm
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  weekStartDate={weekStartDate}
+                  setWeekStartDate={setWeekStartDate}
+                  availabilities={availabilities}
+                />
               )}
 
-            {currentStep === 'payment' && remainingTime && (
-              <div className="text-sm text-muted-foreground mb-4">
-                Time remaining to complete payment: {remainingTime}
-              </div>
-            )}
+              {currentStep === 'guest-info' && (
+                <GuestInfoForm
+                  onSubmit={handleGuestInfoSubmit}
+                  products={products}
+                  loading={loading}
+                  defaultValues={guestInfo}
+                  selectedTime={
+                    selectedAvailability
+                      ? {
+                          start_time: selectedAvailability.start_time,
+                          end_time: selectedAvailability.end_time,
+                        }
+                      : undefined
+                  }
+                  formRef={formRef}
+                />
+              )}
+
+              {currentStep === 'payment' &&
+                paymentIntent?.clientSecret &&
+                company?.stripe_account_id &&
+                stripePromise && (
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret: paymentIntent?.clientSecret,
+                      appearance: { theme: 'stripe' },
+                    }}
+                  >
+                    <GuestCheckoutForm
+                      onSuccess={handlePaymentSuccess}
+                      onBack={handleBack}
+                      amount={paymentIntent.amount}
+                      bookingDetails={{
+                        date: dayjs(selectedAvailability?.start_time).format('dddd, MMMM D, YYYY'),
+                        time: `${dayjs(selectedAvailability?.start_time).format('h:mm A')} - ${dayjs(
+                          selectedAvailability?.end_time
+                        ).format('h:mm A')}`,
+                        duration: dayjs(selectedAvailability?.end_time).diff(
+                          dayjs(selectedAvailability?.start_time),
+                          'hour',
+                          true
+                        ),
+                        companyId: company.id,
+                        guestInfo: guestInfo!,
+                      }}
+                    />
+                  </Elements>
+                )}
+
+              {currentStep === 'payment' && remainingTime && (
+                <div className="text-sm text-muted-foreground mb-4">
+                  Time remaining to complete payment: {remainingTime}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-8 py-4 border-t mt-auto">
+              <p className="text-center text-sm text-muted-foreground">
+                © {new Date().getFullYear()} Powered by Courtify. All rights reserved.
+              </p>
+            </div>
           </div>
         </BottomBarContent>
 

@@ -26,7 +26,6 @@ export function formatCurrency(
       maximumFractionDigits,
     }).format(amount)
   } catch (error) {
-    // Log the error but provide a fallback format
     console.error(`Error formatting currency: ${currency}`, error)
     return `${currency.toUpperCase()} ${amount.toFixed(minimumFractionDigits)}`
   }
