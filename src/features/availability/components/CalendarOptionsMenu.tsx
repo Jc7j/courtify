@@ -27,6 +27,12 @@ const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   }
 })
 
+const DURATION_OPTIONS = [
+  { value: '00:15:00', label: '15 minutes' },
+  { value: '00:30:00', label: '30 minutes' },
+  { value: '01:00:00', label: 'One hour' },
+]
+
 export function CalendarOptionsMenu() {
   const { settings, setSettings } = useCalendarStore()
 
@@ -99,6 +105,49 @@ export function CalendarOptionsMenu() {
                         disabled={time.value <= settings.slotMinTime}
                       >
                         {time.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem className="p-2">
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span>Time Blocks</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Select
+                  value={settings.slotDuration}
+                  onValueChange={(value) =>
+                    setSettings({
+                      ...settings,
+                      slotDuration: value,
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-full h-8">
+                    <SelectValue placeholder="Choose block size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <span>{option.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            (splits each hour into{' '}
+                            {option.value === '00:15:00'
+                              ? '4'
+                              : option.value === '00:30:00'
+                                ? '2'
+                                : '1'}{' '}
+                            blocks)
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,11 +1,10 @@
 'use client'
 
+import { useApolloClient } from '@apollo/client'
 import { ConnectPaymentDetails } from '@stripe/react-connect-js'
 import dayjs from 'dayjs'
 import { Calendar, Clock, User, Mail, Phone, Trash2, Save } from 'lucide-react'
-import { useState, ReactNode } from 'react'
-
-import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
+import { useState, useCallback, ReactNode, useMemo } from 'react'
 
 import {
   Dialog,
@@ -21,6 +20,9 @@ import {
 } from '@/shared/components/ui'
 import { cn } from '@/shared/lib/utils/cn'
 import { AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
+
+import { AvailabilityClientService } from '../services/availabilityClientService'
+import { AvailabilityServerService } from '../services/availabilityServerService'
 
 interface CourtAvailabilityDialogProps {
   availability: EnhancedAvailability
@@ -83,17 +85,14 @@ export function CourtAvailabilityDialog({
   loading = false,
   readOnly = false,
 }: CourtAvailabilityDialogProps) {
+  const client = useApolloClient()
   const [isUpdating, setIsUpdating] = useState(false)
   const [timeEditing, setTimeEditing] = useState(false)
   const [startTime, setStartTime] = useState(dayjs(availability.start_time).format('HH:mm'))
   const [endTime, setEndTime] = useState(dayjs(availability.end_time).format('HH:mm'))
   const [showPaymentDetails, setShowPaymentDetails] = useState(false)
 
-  const { deleteAvailability, updateAvailability } = useCourtAvailability({
-    courtNumber: availability.court_number,
-    startTime: dayjs(availability.start_time).startOf('day').toISOString(),
-    endTime: dayjs(availability.start_time).endOf('day').toISOString(),
-  })
+  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
   const isBooked = availability.status === AvailabilityStatus.Booked
   const isHeld = availability.status === AvailabilityStatus.Held
@@ -107,18 +106,19 @@ export function CourtAvailabilityDialog({
     [AvailabilityStatus.Held]: 'text-yellow-600 dark:text-yellow-400',
   }
 
-  async function handleTimeUpdate() {
+  const handleTimeUpdate = useCallback(async () => {
     try {
       setIsUpdating(true)
       const date = dayjs(availability.start_time).format('YYYY-MM-DD')
       const newStartTime = dayjs(`${date}T${startTime}`).toISOString()
       const newEndTime = dayjs(`${date}T${endTime}`).toISOString()
 
-      if (dayjs(newEndTime).isBefore(dayjs(newStartTime))) {
-        throw new Error('End time must be after start time')
+      const validation = AvailabilityClientService.validateTimeRange(newStartTime, newEndTime)
+      if (!validation.isValid) {
+        throw new Error(validation.error)
       }
 
-      await updateAvailability({
+      await availabilityService.updateAvailability({
         companyId: availability.company_id,
         courtNumber: availability.court_number,
         startTime: availability.start_time,
@@ -136,12 +136,13 @@ export function CourtAvailabilityDialog({
     } finally {
       setIsUpdating(false)
     }
-  }
+  }, [availability, startTime, endTime, availabilityService, onClose])
 
-  async function handleDelete() {
+  const handleDelete = useCallback(async () => {
     try {
       setIsUpdating(true)
-      await deleteAvailability({
+      await availabilityService.deleteAvailability({
+        companyId: availability.company_id,
         courtNumber: availability.court_number,
         startTime: availability.start_time,
       })
@@ -152,7 +153,7 @@ export function CourtAvailabilityDialog({
     } finally {
       setIsUpdating(false)
     }
-  }
+  }, [availability, availabilityService, onClose])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -1,12 +1,13 @@
 'use client'
 
+import { useApolloClient } from '@apollo/client'
 import dayjs from 'dayjs'
 import { Loader2 } from 'lucide-react'
 import { memo, useCallback, useState, useEffect, useMemo, Suspense } from 'react'
 
 import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
-import { useCompanyCourtAvailabilities } from '@/features/availability/hooks/useCourtAvailability'
+import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
 
 import { DashboardSkeleton } from '@/core/company/components/Skeletons'
 import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
@@ -47,22 +48,40 @@ const CalendarSection = memo(function CalendarSection({
 })
 
 function DashboardContent() {
+  const client = useApolloClient()
   const company = useCompanyStore((state) => state.company)
   const user = useUserStore((state) => state.user)
   const setAvailabilities = useCalendarStore((state) => state.setAvailabilities)
+
   const [initialLoading, setInitialLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [courts, setCourts] = useState<Courts[]>([])
   const [selectedDate, setSelectedDate] = useState(() => ({
     start: dayjs().startOf('day').toISOString(),
     end: dayjs().endOf('day').toISOString(),
   }))
 
   const companyId = useMemo(() => company?.id || '', [company?.id])
+  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
-  const {
-    courts: availabilityCourts,
-    loading: availabilitiesLoading,
-    availabilities,
-  } = useCompanyCourtAvailabilities(companyId, selectedDate.start, selectedDate.end)
+  const fetchAvailabilities = useCallback(
+    async (start: string, end: string) => {
+      if (!companyId) return
+
+      setLoading(true)
+      try {
+        const { courts: courtData, availabilities } =
+          await availabilityService.getCompanyAvailabilities(companyId, start, end)
+        setCourts(courtData)
+        setAvailabilities(availabilities)
+      } catch (error) {
+        console.error('Failed to fetch availabilities:', error)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [companyId, availabilityService, setAvailabilities]
+  )
 
   useEffect(() => {
     if (initialLoading && company !== undefined && user !== undefined) {
@@ -71,10 +90,8 @@ function DashboardContent() {
   }, [company, user, initialLoading])
 
   useEffect(() => {
-    if (availabilities) {
-      setAvailabilities(availabilities)
-    }
-  }, [availabilities, setAvailabilities])
+    fetchAvailabilities(selectedDate.start, selectedDate.end)
+  }, [fetchAvailabilities, selectedDate])
 
   const handleDateChange = useCallback((start: string, end: string) => {
     setSelectedDate({ start, end })
@@ -106,8 +123,8 @@ function DashboardContent() {
         <CalendarSection
           companyId={company.id}
           hasStripeAccount={!!company.stripe_account_id}
-          courts={availabilityCourts as Courts[]}
-          loading={availabilitiesLoading}
+          courts={courts}
+          loading={loading}
           onDateChange={handleDateChange}
         />
       </Suspense>

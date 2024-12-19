@@ -1,15 +1,14 @@
 'use client'
 
+import { useApolloClient } from '@apollo/client'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import dayjs from 'dayjs'
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 
-import {
-  useCompanyCourtAvailabilities,
-  useCourtAvailability,
-} from '@/features/availability/hooks/useCourtAvailability'
+import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
+import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
 import { BookingForm } from '@/features/booking/components/BookingForm'
 import { BottomBar, BottomBarContent } from '@/features/booking/components/bottom-bar'
 import { GuestCheckoutForm } from '@/features/booking/components/GuestCheckoutForm'
@@ -20,7 +19,7 @@ import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
 import { useCompanyProducts } from '@/core/company/hooks/useCompanyProducts'
 import { usePublicCompany } from '@/core/company/hooks/usePublicCompany'
 
-import { AvailabilityStatus } from '@/shared/types/graphql'
+import { AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
 
 import type { GuestInfo } from '@/features/booking/components/GuestInfoForm'
 
@@ -30,17 +29,18 @@ function getStripePromise(accountId: string) {
   })
 }
 
+// TODO: Remove using AvailabilityServerService and add that in bookings feature
+
 export default function BookingPage() {
   const params = useParams<{ slug: string }>()
-  const { company, loading: companyLoading, error: companyError } = usePublicCompany(params.slug)
+  const { company, error: companyError } = usePublicCompany(params.slug)
   const { products } = useCompanyProducts({ companyId: company?.id })
+  const client = useApolloClient()
   const {
     selectedAvailability,
     guestInfo,
     currentStep,
     setCurrentStep,
-    isLoading,
-    setLoading,
     paymentIntent,
     setPaymentIntent,
     setRemainingTime,
@@ -57,18 +57,31 @@ export default function BookingPage() {
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
   const formRef = useRef<{ submit: () => void }>(null)
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null)
+  const [availabilities, setAvailabilities] = useState<EnhancedAvailability[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const {
-    availabilities,
-    loading: availabilitiesLoading,
-    error: availabilitiesError,
-  } = useCompanyCourtAvailabilities(
-    company?.id || '',
-    dayjs(weekStartDate).startOf('day').toISOString(),
-    dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
-  )
-  const loading = companyLoading || availabilitiesLoading || isLoading
-  const error = companyError || availabilitiesError
+  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
+
+  useEffect(() => {
+    async function fetchAvailabilities() {
+      if (!company?.id) return
+      setLoading(true)
+      try {
+        const { availabilities: data } = await availabilityService.getCompanyAvailabilities(
+          company.id,
+          dayjs(weekStartDate).startOf('day').toISOString(),
+          dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
+        )
+        setAvailabilities(data)
+      } catch (error) {
+        console.error('Failed to fetch availabilities:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAvailabilities()
+  }, [company?.id, weekStartDate, availabilityService])
 
   useEffect(() => {
     if (company?.stripe_account_id) {
@@ -214,12 +227,12 @@ export default function BookingPage() {
     )
   }
 
-  if (error) {
+  if (companyError || !company) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="max-w-md p-6 text-center space-y-2">
           <p className="text-destructive font-medium">An error occurred</p>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
+          <p className="text-sm text-muted-foreground">{companyError?.message}</p>
         </div>
       </div>
     )
