@@ -212,7 +212,7 @@ export async function POST(request: Request) {
               },
               company: {
                 name: company.name,
-                address: company.address,
+                address: company.address || '',
               },
             }),
           })
