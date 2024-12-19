@@ -31,7 +31,6 @@ export function useCourt(courtNumber?: number) {
   })
   const [creating, setCreating] = useState(false)
   const [updating, setUpdating] = useState(false)
-  const [deleting, setDeleting] = useState(false)
 
   const companyId = useMemo(() => {
     if (!isAuthenticated || !user?.company_id) return null
@@ -94,11 +93,9 @@ export function useCourt(courtNumber?: number) {
 
       setUpdating(true)
       try {
-        const updatedCourt = await courtServerService.updateCourt(
-          user.company_id,
-          courtNumber,
-          formattedName
-        )
+        const updatedCourt = await courtServerService.updateCourt(user.company_id, courtNumber, {
+          name: formattedName,
+        })
         await fetchCourts()
         return updatedCourt
       } finally {
@@ -108,19 +105,21 @@ export function useCourt(courtNumber?: number) {
     [isAuthenticated, user?.company_id, courtServerService, fetchCourts]
   )
 
-  const deleteCourt = useCallback(
-    async (courtNumber: number): Promise<Courts> => {
+  const updateCourtStatus = useCallback(
+    async (courtNumber: number, isActive: boolean): Promise<Courts> => {
       if (!isAuthenticated || !user?.company_id) {
         throw new Error('Authentication required')
       }
 
-      setDeleting(true)
+      setUpdating(true)
       try {
-        const deletedCourt = await courtServerService.deleteCourt(user.company_id, courtNumber)
+        const updatedCourt = await courtServerService.updateCourt(user.company_id, courtNumber, {
+          is_active: isActive,
+        })
         await fetchCourts()
-        return deletedCourt
+        return updatedCourt
       } finally {
-        setDeleting(false)
+        setUpdating(false)
       }
     },
     [isAuthenticated, user?.company_id, courtServerService, fetchCourts]
@@ -163,10 +162,9 @@ export function useCourt(courtNumber?: number) {
     ...state,
     creating,
     updating,
-    deleting,
     createCourt,
     updateCourt,
-    deleteCourt,
+    updateCourtStatus,
     refetch: fetchCourts,
   }
 }

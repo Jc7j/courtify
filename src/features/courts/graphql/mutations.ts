@@ -26,16 +26,3 @@ export const UPDATE_COURT = gql`
     }
   }
 `
-
-export const DELETE_COURT = gql`
-  ${COURT_FIELDS}
-  mutation DeleteCourt($company_id: UUID!, $court_number: Int!) {
-    deleteFromcourtsCollection(
-      filter: { company_id: { eq: $company_id }, court_number: { eq: $court_number } }
-    ) {
-      records {
-        ...CourtFields
-      }
-    }
-  }
-`

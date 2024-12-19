@@ -2,7 +2,7 @@ import { ApolloClient } from '@apollo/client'
 
 import { Courts } from '@/shared/types/graphql'
 
-import { CREATE_COURT, UPDATE_COURT, DELETE_COURT } from '../graphql/mutations'
+import { CREATE_COURT, UPDATE_COURT } from '../graphql/mutations'
 import { GET_COMPANY_COURTS, GET_COURT } from '../graphql/queries'
 
 export class CourtServerService {
@@ -50,6 +50,7 @@ export class CourtServerService {
       name,
       created_at: now,
       updated_at: now,
+      is_active: true,
     }
 
     const { data } = await this.client.mutate({
@@ -63,14 +64,21 @@ export class CourtServerService {
     return newCourt
   }
 
-  async updateCourt(companyId: string, courtNumber: number, name: string): Promise<Courts> {
+  async updateCourt(
+    companyId: string,
+    courtNumber: number,
+    updates: {
+      name?: string
+      is_active?: boolean
+    }
+  ): Promise<Courts> {
     const { data } = await this.client.mutate({
       mutation: UPDATE_COURT,
       variables: {
         company_id: companyId,
         court_number: courtNumber,
         set: {
-          name,
+          ...updates,
           updated_at: new Date().toISOString(),
         },
       },
@@ -80,21 +88,6 @@ export class CourtServerService {
     if (!updatedCourt) throw new Error('Failed to update court')
 
     return updatedCourt
-  }
-
-  async deleteCourt(companyId: string, courtNumber: number): Promise<Courts> {
-    const { data } = await this.client.mutate({
-      mutation: DELETE_COURT,
-      variables: {
-        company_id: companyId,
-        court_number: courtNumber,
-      },
-    })
-
-    const deletedCourt = data?.deleteFromcourtsCollection?.records?.[0]
-    if (!deletedCourt) throw new Error('Failed to delete court')
-
-    return deletedCourt
   }
 
   private async getNextCourtNumber(companyId: string): Promise<number> {

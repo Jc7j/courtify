@@ -6,6 +6,7 @@ export const COURT_FIELDS = gql`
     name
     updated_at
     company_id
+    is_active
   }
 `
 
