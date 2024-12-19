@@ -5,8 +5,10 @@ import { ReactNode, Suspense, useEffect } from 'react'
 
 import { useCompanyStore } from '@/core/company/hooks/useCompanyStore'
 
-import { AppSidebar } from '@/shared/components/ui/app-sidebar'
+import { AppSidebar } from '@/shared/components/app-sidebar'
+import { AppTopbar } from '@/shared/components/app-topbar'
 import { SidebarProvider } from '@/shared/components/ui/sidebar'
+import { cn } from '@/shared/lib/utils/cn'
 
 function getPageTitle(pathname: string): string {
   const routes = {
@@ -25,8 +27,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const companyName = useCompanyStore((state) => state.company?.name)
   const pageTitle = getPageTitle(pathname)
+  const isSettingsPage = pathname.includes('/dashboard/settings')
 
-  // Update title when company or page changes
   useEffect(() => {
     document.title = companyName ? `${companyName} | ${pageTitle}` : `${pageTitle} | Courtify`
   }, [companyName, pageTitle])
@@ -35,9 +37,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <div className="flex flex-col lg:flex-row min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 overflow-y-auto lg:h-screen">
-          <Suspense fallback={<DashboardSkeleton />}>{children}</Suspense>
-        </main>
+        <div className="flex flex-col flex-1">
+          {!isSettingsPage && <AppTopbar />}
+          <main
+            className={cn(
+              'flex-1 overflow-y-auto',
+              isSettingsPage ? 'lg:h-screen' : 'lg:h-[calc(100vh-4rem)]'
+            )}
+          >
+            <Suspense fallback={<DashboardSkeleton />}>{children}</Suspense>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   )

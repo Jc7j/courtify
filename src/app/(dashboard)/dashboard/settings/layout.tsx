@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 
-import { SettingsSidebar } from '@/shared/components/ui/settings-sidebar'
+import { SettingsSidebar } from '@/shared/components/settings-sidebar'
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (
