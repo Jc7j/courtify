@@ -6,14 +6,18 @@ import {
   DELETE_COURT_AVAILABILITY,
 } from '../graphql/mutations'
 import { GET_FACILITY_COURTS_AVAILABILITIES } from '../graphql/queries'
-import { CreateAvailabilityInput } from '../types'
+import { CreateAvailabilityInput, GetFacilityAvailabilitiesResponse } from '../types'
 
 import type { CourtAvailability, AvailabilityStatus } from '@/shared/types/graphql'
 
 export class AvailabilityServerService {
   constructor(private client: ApolloClient<any>) {}
 
-  async getFacilityAvailabilities(facilityId: string, startTime: string, endTime: string) {
+  async getFacilityAvailabilities(
+    facilityId: string,
+    startTime: string,
+    endTime: string
+  ): Promise<GetFacilityAvailabilitiesResponse> {
     const { data } = await this.client.query({
       query: GET_FACILITY_COURTS_AVAILABILITIES,
       variables: {
@@ -26,7 +30,10 @@ export class AvailabilityServerService {
 
     return {
       courts: data.courtsCollection.edges.map((edge: any) => edge.node),
-      availabilities: data.court_availabilitiesCollection.edges.map((edge: any) => edge.node),
+      availabilities: data.court_availabilitiesCollection.edges.map((edge: any) => ({
+        ...edge.node,
+        booking: edge.node.booking?.edges[0]?.node || null,
+      })),
     }
   }
 

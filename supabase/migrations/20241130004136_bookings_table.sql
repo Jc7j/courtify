@@ -35,45 +35,7 @@ CREATE TABLE bookings (
     amount_paid INTEGER,
     currency TEXT NOT NULL DEFAULT 'usd',
     
-    metadata JSONB NOT NULL DEFAULT '{
-      "payment_details": {
-        "payment_method": null,
-        "payment_date": null,
-        "stripe_status": null,
-        "payment_intent_id": null,
-        "event_type": null,
-        "amount_paid": null
-      },
-      "products": {
-        "court_rental": {
-          "id": null,
-          "name": null,
-          "price_amount": null,
-          "type": "court_rental"
-        },
-        "equipment": []
-      },
-      "customer_preferences": {
-        "net_height": null
-      },
-      "court_details": {
-        "court_number": null,
-        "start_time": null,
-        "end_time": null,
-        "duration_hours": null
-      },
-      "booking_flow": {
-        "created_from": null,
-        "initialized_at": null,
-        "payment_completed_at": null,
-        "status": null
-      },
-      "customer_info": {
-        "name": null,
-        "email": null,
-        "phone": null
-      }
-    }'::jsonb,
+    metadata JSONB NOT NULL DEFAULT '{}',
     
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

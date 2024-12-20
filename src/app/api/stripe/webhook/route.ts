@@ -149,7 +149,7 @@ export async function POST(request: Request) {
             court_number: parseInt(paymentIntent.metadata.courtNumber),
             start_time: paymentIntent.metadata.startTime,
             end_time: paymentIntent.metadata.endTime,
-            duration_hours: paymentIntent.metadata.bookingDuration,
+            duration_hours: paymentIntent.metadata.durationInHours,
           },
           booking_flow: {
             created_from: 'guest_checkout',
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
                 time: `${dayjs(paymentIntent.metadata.startTime).format('h:mm A')} - ${dayjs(
                   paymentIntent.metadata.endTime
                 ).format('h:mm A')}`,
-                duration: parseFloat(paymentIntent.metadata.bookingDuration),
+                duration: parseFloat(paymentIntent.metadata.durationInHours),
                 facilityId: facilityId,
                 guestInfo: {
                   name: paymentIntent.metadata.customerName,

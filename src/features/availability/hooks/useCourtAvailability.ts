@@ -1,21 +1,18 @@
 'use client'
 
 import { useApolloClient } from '@apollo/client'
+import dayjs from 'dayjs'
 import { useMemo, useCallback } from 'react'
 
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
 import { ErrorToast, SuccessToast, WarningToast, InfoToast } from '@/shared/components/ui'
+import { AvailabilityStatus } from '@/shared/types/graphql'
 
 import { AvailabilityClientService } from '../services/availabilityClientService'
 import { AvailabilityServerService } from '../services/availabilityServerService'
 
-import type {
-  CourtAvailability,
-  AvailabilityStatus,
-  EnhancedAvailability,
-  Courts,
-} from '@/shared/types/graphql'
+import type { CourtAvailability, EnhancedAvailability, Courts } from '@/shared/types/graphql'
 
 interface CreateAvailabilityInput {
   courtNumber: number
@@ -39,6 +36,8 @@ interface UpdateAvailabilityInput {
 interface DeleteAvailabilityInput {
   courtNumber: number
   startTime: string
+  status: AvailabilityStatus
+  endTime: string
 }
 
 interface GetFacilityAvailabilitiesResponse {
@@ -69,7 +68,7 @@ export function useCourtAvailability() {
           start,
           end
         )
-        return { courts, availabilities }
+        return { courts, availabilities: availabilities as EnhancedAvailability[] }
       } catch (error) {
         console.error('[Court Availability] Get facility availabilities error:', {
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -180,9 +179,20 @@ export function useCourtAvailability() {
         throw new Error('Authentication required')
       }
 
+      if (input.status !== AvailabilityStatus.Available) {
+        ErrorToast('Only available slots can be deleted')
+        throw new Error('Only available slots can be deleted')
+      }
+
+      if (dayjs(input.endTime).isBefore(dayjs())) {
+        ErrorToast('Cannot delete past availabilities')
+        throw new Error('Cannot delete past availabilities')
+      }
+
       await services.availability.deleteAvailability({
         facilityId: user.facility_id,
-        ...input,
+        courtNumber: input.courtNumber,
+        startTime: input.startTime,
       })
 
       SuccessToast('Court availability deleted successfully')
@@ -192,7 +202,6 @@ export function useCourtAvailability() {
         input,
       })
 
-      ErrorToast('Failed to delete court availability')
       throw error
     }
   }

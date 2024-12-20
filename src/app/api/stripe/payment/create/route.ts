@@ -39,34 +39,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
-    // Create payment intent
+    // Create payment intent with flattened metadata for Stripe
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
         currency: 'usd',
         payment_method_types: ['card'],
         metadata: {
+          // Flat structure for Stripe webhook processing
           facilityId: body.facilityId,
-          courtNumber: body.courtNumber,
+          courtNumber: body.courtNumber.toString(),
           startTime: body.startTime,
           endTime: body.endTime,
-          bookingDuration: `${durationInHours} hours`,
+          durationInHours: `${durationInHours}`,
           customerEmail: body.guestInfo.email,
           customerName: body.guestInfo.name,
           customerPhone: body.guestInfo.phone,
           netHeight: body.guestInfo.net_height,
-          courtProduct: JSON.stringify({
-            id: body.selectedProducts.courtProduct.id,
-            name: body.selectedProducts.courtProduct.name,
-            price: body.selectedProducts.courtProduct.price_amount,
-          }),
+          courtProductId: body.selectedProducts.courtProduct.id,
+          courtProductName: body.selectedProducts.courtProduct.name,
+          courtProductPrice: body.selectedProducts.courtProduct.price_amount.toString(),
           equipmentProducts: JSON.stringify(
             body.selectedProducts.equipmentProducts.map((p) => ({
               id: p.id,
               name: p.name,
-              price: p.price_amount,
+              price_amount: p.price_amount,
+              type: 'equipment',
             }))
           ),
+          // Add initialized_at for consistent booking flow
+          initialized_at: new Date().toISOString(),
         },
       },
       {

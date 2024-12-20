@@ -20,20 +20,7 @@ CREATE TABLE facility_products (
     stripe_price_id TEXT,
     stripe_product_id TEXT,
     stripe_payment_type stripe_payment_type,
-    metadata JSONB DEFAULT '{
-      "created_at": null,
-      "updated_at": null,
-      "price_details": {
-        "currency": "usd",
-        "unit_amount": null,
-        "original_amount": null
-      },
-      "stripe_metadata": {
-        "facility_id": null,
-        "product_name": null,
-        "product_type": null
-      }
-    }'::jsonb,
+    metadata JSONB NOT NULL DEFAULT '{}',
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

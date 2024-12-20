@@ -74,7 +74,6 @@ export function useBookings() {
 
       // 3. Create payment intent
       const result = await services.booking.createPaymentIntent(input, facility.stripe_account_id)
-      SuccessToast('Payment session created')
       return result
     } catch (error) {
       // Release the hold if payment intent creation fails

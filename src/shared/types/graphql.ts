@@ -92,7 +92,6 @@ export interface Booking {
   status: BookingStatus
   payment_status: PaymentStatus
   stripe_payment_intent_id?: string | null
-  product_id?: string | null
   amount_total: number
   amount_paid?: number | null
   currency: string

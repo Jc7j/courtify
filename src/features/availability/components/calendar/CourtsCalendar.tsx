@@ -4,8 +4,9 @@ import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import dayjs from 'dayjs'
-import { memo, useRef, useState, useCallback } from 'react'
+import { memo, useRef, useCallback } from 'react'
 
+import { CalendarEvent } from './CalendarEvent'
 import { CalendarHeader } from './CalendarHeader'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents'
 import { useCalendarStore } from '../../hooks/useCalendarStore'
@@ -13,6 +14,7 @@ import { useCourtAvailability } from '../../hooks/useCourtAvailability'
 import { getAvailabilityColor } from '../../utils/availability-color'
 
 import type { Courts, EnhancedAvailability } from '@/shared/types/graphql'
+import type { EventContentArg } from '@fullcalendar/core'
 
 interface CourtsCalendarProps {
   courts: Courts[]
@@ -23,7 +25,6 @@ interface CourtsCalendarProps {
 
 function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
-  const [isDateChanging, setIsDateChanging] = useState(false)
 
   const {
     settings,
@@ -47,11 +48,8 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
   console.log('availabilities', availabilities)
   const handleDateChange = useCallback(
     async (start: string, end: string) => {
-      setIsDateChanging(true)
       setSelectedDate(dayjs(start))
       await onDateChange(start, end)
-      // Small delay to ensure smooth transition
-      setTimeout(() => setIsDateChanging(false), 100)
     },
     [setSelectedDate, onDateChange]
   )
@@ -76,7 +74,17 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
       const equipment =
         metadata.products?.equipment?.map((eq: { name: string }) => eq.name).join(', ') || ''
 
-      return `${availability.booking.customer_name} • ${courtRental} ${netHeight} • ${equipment}`
+      let title = availability.booking.customer_name
+
+      if (courtRental || netHeight) {
+        title += ` • ${courtRental} ${netHeight}`.trim()
+      }
+
+      if (equipment) {
+        title += ` • ${equipment}`
+      }
+
+      return title
     } catch (error) {
       console.error('Error parsing booking metadata:', error)
       return availability.booking.customer_name || ''
@@ -118,7 +126,23 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
             backgroundColor: getAvailabilityColor(availability.status),
             borderColor: 'transparent',
             textColor: 'hsl(var(--background))',
-            extendedProps: { availability },
+            classNames: `rounded-md border-none shadow-sm transition-opacity ${
+              settings.editMode ? 'hover:ring-2 hover:ring-primary/50' : ''
+            }`,
+            extendedProps: {
+              availability,
+              component: (
+                <CalendarEvent availability={availability}>
+                  <div className="w-full h-full p-1">
+                    <div className="fc-event-time">
+                      {dayjs(availability.start_time).format('h:mma')} -{' '}
+                      {dayjs(availability.end_time).format('h:mma')}
+                    </div>
+                    <div className="fc-event-title">{getBookingTitle(availability)}</div>
+                  </div>
+                </CalendarEvent>
+              ),
+            },
           }))}
           select={handleSelect}
           eventClick={handleEventClick}
@@ -160,20 +184,7 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
           expandRows={true}
           handleWindowResize={true}
         />
-        {/* Overlay for smoother transitions */}
-        {isDateChanging && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 animate-in fade-in duration-200" />
-        )}
       </div>
-
-      {/* {selectedAvailability && (
-        <CourtAvailabilityDialog
-          availability={selectedAvailability}
-          isOpen={!!selectedAvailability}
-          onClose={() => setSelectedAvailability(null)}
-          readOnly={!isEditMode}
-        />
-      )} */}
     </div>
   )
 }
