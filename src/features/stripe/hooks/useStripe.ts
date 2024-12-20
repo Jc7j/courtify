@@ -4,6 +4,8 @@ import { useState, useCallback, useRef } from 'react'
 
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
+import { ErrorToast, InfoToast, SuccessToast, WarningToast } from '@/shared/components/ui'
+
 import { StripeAccountDetails, StripeConnectResponse, StripeStatusResponse } from '../types'
 
 interface StripeStatus {
@@ -30,14 +32,11 @@ export function useStripe(): UseStripeReturn {
   const [connecting, setConnecting] = useState(false)
   const [checking, setChecking] = useState(false)
 
-  // Use refs to prevent unnecessary re-renders and race conditions
   const abortControllerRef = useRef<AbortController>()
   const lastRequestIdRef = useRef<string>('')
 
-  // Helper to handle API requests with abort control
   const makeRequest = useCallback(
     async <T>(url: string, options: Parameters<typeof fetch>[1], requestId: string): Promise<T> => {
-      // Cancel any pending requests
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -70,6 +69,7 @@ export function useStripe(): UseStripeReturn {
 
   const checkStripeStatus = useCallback(async (): Promise<StripeStatus> => {
     if (!facility?.id) {
+      ErrorToast('No facility found')
       return {
         isConnected: false,
         isEnabled: false,
@@ -83,6 +83,7 @@ export function useStripe(): UseStripeReturn {
       const requestId = `status-${Date.now()}`
 
       if (!facility.stripe_account_id) {
+        InfoToast('Stripe account not connected')
         return {
           isConnected: false,
           isEnabled: false,
@@ -107,6 +108,7 @@ export function useStripe(): UseStripeReturn {
       )
 
       if (data.accountId) {
+        SuccessToast('Stripe account verified')
         return {
           isConnected: true,
           isEnabled: data.isEnabled,
@@ -115,6 +117,7 @@ export function useStripe(): UseStripeReturn {
         }
       }
 
+      WarningToast('Stripe account needs setup')
       return {
         isConnected: false,
         isEnabled: false,
@@ -122,6 +125,11 @@ export function useStripe(): UseStripeReturn {
         error: null,
       }
     } catch (err) {
+      console.error('[Stripe] Status check error:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        facilityId: facility.id,
+      })
+      ErrorToast('Failed to check Stripe status')
       return {
         isConnected: false,
         isEnabled: false,
@@ -139,11 +147,14 @@ export function useStripe(): UseStripeReturn {
       linkType = 'onboarding',
     }: ConnectStripeOptions = {}): Promise<StripeConnectResponse> => {
       if (!facility?.id || !facility.name) {
+        ErrorToast('Facility information not found')
         return { url: null, error: 'Facility information not found' }
       }
 
       try {
         setConnecting(true)
+        InfoToast('Setting up Stripe connection...')
+
         const data = await makeRequest<StripeConnectResponse>(
           '/api/stripe/accounts/connect',
           {
@@ -160,11 +171,17 @@ export function useStripe(): UseStripeReturn {
         )
 
         if (data.url && !data.error) {
+          SuccessToast('Stripe connection ready')
           checkStripeStatus()
         }
 
         return data
       } catch (err) {
+        console.error('[Stripe] Connect error:', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          facilityId: facility.id,
+        })
+        ErrorToast('Failed to connect Stripe')
         return {
           url: null,
           error: err instanceof Error ? err.message : 'Failed to connect Stripe',

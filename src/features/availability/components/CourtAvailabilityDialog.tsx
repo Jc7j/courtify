@@ -1,10 +1,9 @@
 'use client'
 
-import { useApolloClient } from '@apollo/client'
 import { ConnectPaymentDetails } from '@stripe/react-connect-js'
 import dayjs from 'dayjs'
 import { Calendar, Clock, User, Mail, Phone, Trash2, Save } from 'lucide-react'
-import { useState, useCallback, ReactNode, useMemo } from 'react'
+import { useState, useCallback, ReactNode } from 'react'
 
 import {
   Dialog,
@@ -13,16 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
-  SuccessToast,
-  ErrorToast,
   Input,
   Separator,
 } from '@/shared/components/ui'
 import { cn } from '@/shared/lib/utils/cn'
 import { AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
 
-import { AvailabilityClientService } from '../services/availabilityClientService'
-import { AvailabilityServerService } from '../services/availabilityServerService'
+import { useCourtAvailability } from '../hooks/useCourtAvailability'
 
 interface CourtAvailabilityDialogProps {
   availability: EnhancedAvailability
@@ -85,14 +81,52 @@ export function CourtAvailabilityDialog({
   loading = false,
   readOnly = false,
 }: CourtAvailabilityDialogProps) {
-  const client = useApolloClient()
+  const { updateAvailability, deleteAvailability } = useCourtAvailability()
   const [isUpdating, setIsUpdating] = useState(false)
   const [timeEditing, setTimeEditing] = useState(false)
   const [startTime, setStartTime] = useState(dayjs(availability.start_time).format('HH:mm'))
   const [endTime, setEndTime] = useState(dayjs(availability.end_time).format('HH:mm'))
   const [showPaymentDetails, setShowPaymentDetails] = useState(false)
 
-  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
+  const handleTimeUpdate = useCallback(async () => {
+    try {
+      setIsUpdating(true)
+      const selectedDate = dayjs(availability.start_time)
+      const newStartTime = dayjs(`${selectedDate.format('YYYY-MM-DD')}T${startTime}`).toISOString()
+      const newEndTime = dayjs(`${selectedDate.format('YYYY-MM-DD')}T${endTime}`).toISOString()
+
+      await updateAvailability({
+        facilityId: availability.facility_id,
+        courtNumber: availability.court_number,
+        startTime: availability.start_time,
+        update: {
+          start_time: newStartTime,
+          end_time: newEndTime,
+        },
+      })
+
+      setTimeEditing(false)
+    } catch (error) {
+      console.error('Failed to update time:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [availability, startTime, endTime, updateAvailability])
+
+  const handleDelete = useCallback(async () => {
+    try {
+      setIsUpdating(true)
+      await deleteAvailability({
+        courtNumber: availability.court_number,
+        startTime: availability.start_time,
+      })
+      onClose()
+    } catch (error) {
+      console.error('Failed to delete availability:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [availability, deleteAvailability, onClose])
 
   const isBooked = availability.status === AvailabilityStatus.Booked
   const isHeld = availability.status === AvailabilityStatus.Held
@@ -105,55 +139,6 @@ export function CourtAvailabilityDialog({
     [AvailabilityStatus.Booked]: 'text-red-600 dark:text-red-400',
     [AvailabilityStatus.Held]: 'text-yellow-600 dark:text-yellow-400',
   }
-
-  const handleTimeUpdate = useCallback(async () => {
-    try {
-      setIsUpdating(true)
-      const date = dayjs(availability.start_time).format('YYYY-MM-DD')
-      const newStartTime = dayjs(`${date}T${startTime}`).toISOString()
-      const newEndTime = dayjs(`${date}T${endTime}`).toISOString()
-
-      const validation = AvailabilityClientService.validateTimeRange(newStartTime, newEndTime)
-      if (!validation.isValid) {
-        throw new Error(validation.error)
-      }
-
-      await availabilityService.updateAvailability({
-        facilityId: availability.facility_id,
-        courtNumber: availability.court_number,
-        startTime: availability.start_time,
-        update: {
-          start_time: newStartTime,
-          end_time: newEndTime,
-        },
-      })
-
-      SuccessToast('Time updated successfully')
-      setTimeEditing(false)
-      onClose()
-    } catch (error) {
-      ErrorToast(error instanceof Error ? error.message : 'Failed to update time')
-    } finally {
-      setIsUpdating(false)
-    }
-  }, [availability, startTime, endTime, availabilityService, onClose])
-
-  const handleDelete = useCallback(async () => {
-    try {
-      setIsUpdating(true)
-      await availabilityService.deleteAvailability({
-        facilityId: availability.facility_id,
-        courtNumber: availability.court_number,
-        startTime: availability.start_time,
-      })
-      SuccessToast('Availability deleted')
-      onClose()
-    } catch (error) {
-      ErrorToast(error instanceof Error ? error.message : 'Failed to delete availability')
-    } finally {
-      setIsUpdating(false)
-    }
-  }, [availability, availabilityService, onClose])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

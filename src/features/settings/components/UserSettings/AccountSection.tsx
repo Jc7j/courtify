@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 
 import { useUserOperations } from '@/core/user/hooks/useUserOperations'
 
-import { Card, InlineEdit, SuccessToast, ErrorToast } from '@/shared/components/ui'
+import { Card, InlineEdit } from '@/shared/components/ui'
 
 import type { BaseUser } from '@/shared/types/auth'
 
@@ -13,25 +13,24 @@ interface AccountSectionProps {
 }
 
 export function AccountSection({ user }: AccountSectionProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const { updateProfile } = useUserOperations()
+  const { updateProfile, loading, error } = useUserOperations()
 
   const handleSaveName = useCallback(
     async (newName: string) => {
       if (!user.email) return
 
       try {
-        setIsLoading(true)
         await updateProfile({
           currentEmail: user.email,
           name: newName.trim(),
         })
-        SuccessToast('Name updated successfully')
-      } catch (error) {
-        ErrorToast(error instanceof Error ? error.message : 'Failed to update name')
-        throw error
-      } finally {
-        setIsLoading(false)
+      } catch (err) {
+        console.error('[Account Section] Name update error:', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          userId: user.id,
+          newName,
+        })
+        throw err
       }
     },
     [user.email, updateProfile]
@@ -42,21 +41,29 @@ export function AccountSection({ user }: AccountSectionProps) {
       if (!user.email) return
 
       try {
-        setIsLoading(true)
         await updateProfile({
           currentEmail: user.email,
           email: newEmail.trim(),
         })
-        SuccessToast('Email updated successfully')
-      } catch (error) {
-        ErrorToast(error instanceof Error ? error.message : 'Failed to update email')
-        throw error
-      } finally {
-        setIsLoading(false)
+      } catch (err) {
+        console.error('[Account Section] Email update error:', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          userId: user.id,
+          newEmail,
+        })
+        throw err
       }
     },
     [user.email, updateProfile]
   )
+
+  if (error) {
+    return (
+      <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
+        <p className="font-medium">{error.message}</p>
+      </div>
+    )
+  }
 
   return (
     <Card>
@@ -65,7 +72,7 @@ export function AccountSection({ user }: AccountSectionProps) {
         <InlineEdit
           value={user.name || ''}
           onSave={handleSaveName}
-          saving={isLoading}
+          saving={loading}
           className="w-[150px] text-right bg-muted"
           validate={(value) => {
             if (!value.trim()) return 'Name cannot be empty'
@@ -80,7 +87,7 @@ export function AccountSection({ user }: AccountSectionProps) {
         <InlineEdit
           value={user.email || ''}
           onSave={handleSaveEmail}
-          saving={isLoading}
+          saving={loading}
           type="email"
           className="w-[150px] text-right bg-muted"
           validate={(value) => {

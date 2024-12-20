@@ -1,12 +1,13 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { Input, Button, SuccessToast, ErrorToast } from '@/shared/components/ui'
-import { ROUTES } from '@/shared/constants/routes'
+import { Input, Button } from '@/shared/components/ui'
+import { ASSET_PATHS, ROUTES } from '@/shared/constants/routes'
 import { useAuth } from '@/shared/providers/AuthProvider'
 
 const signInSchema = z.object({
@@ -17,8 +18,7 @@ const signInSchema = z.object({
 type SignInFormData = z.infer<typeof signInSchema>
 
 export default function SignInPage() {
-  const { signIn } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
+  const { signIn, isLoading } = useAuth()
 
   const {
     register,
@@ -30,70 +30,77 @@ export default function SignInPage() {
   })
 
   async function onSubmit(data: SignInFormData) {
-    setIsLoading(true)
     try {
       await signIn(data.email, data.password)
-      SuccessToast('Signed in successfully')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sign in'
-
-      if (message.toLowerCase().includes('invalid credentials')) {
+      if (message.toLowerCase().includes('invalid')) {
         setError('email', { message: 'Invalid email or password' })
         setError('password', { message: 'Invalid email or password' })
-      } else {
-        ErrorToast(message)
       }
-    } finally {
-      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Title */}
-        <div className="text-center">
-          <h1 className="text-3xl font-semibold text-foreground">Welcome back</h1>
-          <p className="mt-2 text-base text-muted-foreground">
-            Sign in to your account to continue
-          </p>
+    <div className="min-h-screen bg-gray-900">
+      <div className="relative overflow-hidden">
+        {/* Background with overlay */}
+        <div className="absolute inset-0">
+          <Image
+            src={`${ASSET_PATHS.IMAGES}/volleyball.png`}
+            alt="Volleyball Court"
+            className="w-full h-full object-cover"
+            fill
+          />
+          <div className="absolute inset-0 bg-gray-900/70"></div>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <Input
-            {...register('email')}
-            type="email"
-            label="Email address"
-            placeholder="Enter your email"
-            error={errors.email?.message}
-            disabled={isLoading}
-            autoComplete="email"
-          />
+        {/* Content */}
+        <div className="relative min-h-screen flex items-center justify-center px-4">
+          <div className="w-full max-w-md space-y-8 bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl border border-gray-700">
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold text-white">Sign in to Courtify</h1>
+              <p className="text-base text-gray-400">
+                Welcome back! Please enter your details to continue.
+              </p>
+            </div>
 
-          <Input
-            {...register('password')}
-            type="password"
-            label="Password"
-            placeholder="Enter your password"
-            error={errors.password?.message}
-            disabled={isLoading}
-            autoComplete="current-password"
-          />
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+              <Input
+                {...register('email')}
+                type="email"
+                label="Email address"
+                placeholder="Enter your email"
+                error={errors.email?.message}
+                disabled={isLoading}
+                autoComplete="email"
+              />
 
-          <Button type="submit" loading={isLoading} fullWidth>
-            Sign in
-          </Button>
-        </form>
+              <Input
+                {...register('password')}
+                type="password"
+                label="Password"
+                placeholder="Enter your password"
+                error={errors.password?.message}
+                disabled={isLoading}
+                autoComplete="current-password"
+              />
 
-        {/* Sign Up Link */}
-        <div className="text-center text-sm">
-          <span className="text-muted-foreground">Don&apos;t have an account? </span>
-          <a
-            href={ROUTES.AUTH.SIGNUP}
-            className="font-medium text-primary hover:text-primary/90 transition-colors duration-200"
-          >
-            Sign up
-          </a>
+              <Button type="submit" loading={isLoading} fullWidth>
+                Sign in
+              </Button>
+            </form>
+
+            <div className="text-center text-sm">
+              <span className="text-gray-300">Don&apos;t have an account? </span>
+              <Link
+                href={ROUTES.AUTH.SIGNUP}
+                className="font-medium text-primary hover:text-primary/90 transition-colors duration-200"
+              >
+                Sign up
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

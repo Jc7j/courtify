@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 
 import { useFacility } from '@/core/facility/hooks/useFacility'
 
-import { Card, InlineEdit, SuccessToast, ErrorToast } from '@/shared/components/ui'
+import { Card, InlineEdit } from '@/shared/components/ui'
 import { Facility } from '@/shared/types/graphql'
 
 import { FacilityProfileSkeleton } from '../Skeletons'
@@ -14,7 +14,7 @@ interface FacilityProfileSectionProps {
 }
 
 export function FacilityProfileSection({ facility }: FacilityProfileSectionProps) {
-  const { updateFacility, updating } = useFacility()
+  const { updateFacility, updating, error: facilityError } = useFacility()
 
   const handleSaveName = useCallback(
     async (newName: string) => {
@@ -25,9 +25,12 @@ export function FacilityProfileSection({ facility }: FacilityProfileSectionProps
           name: newName.trim(),
           slug: facility.slug,
         })
-        SuccessToast('Facility name updated')
       } catch (err) {
-        ErrorToast(err instanceof Error ? err.message : 'Failed to update facility name')
+        console.error('[Facility Profile] Name update error:', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          facilityId: facility.id,
+          newName,
+        })
         throw err
       }
     },
@@ -43,9 +46,12 @@ export function FacilityProfileSection({ facility }: FacilityProfileSectionProps
           name: facility.name,
           slug: newSlug.trim(),
         })
-        SuccessToast('Facility URL updated')
       } catch (err) {
-        ErrorToast(err instanceof Error ? err.message : 'Failed to update facility URL')
+        console.error('[Facility Profile] Slug update error:', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          facilityId: facility.id,
+          newSlug,
+        })
         throw err
       }
     },
@@ -54,6 +60,14 @@ export function FacilityProfileSection({ facility }: FacilityProfileSectionProps
 
   if (!facility) {
     return <FacilityProfileSkeleton />
+  }
+
+  if (facilityError) {
+    return (
+      <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
+        <p className="font-medium">{facilityError.message}</p>
+      </div>
+    )
   }
 
   return (

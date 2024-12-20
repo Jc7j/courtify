@@ -1,14 +1,13 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 
 import { PaymentProcessorSection } from '@/features/settings/components/FacilitySettings/PaymentProcessorSection'
 import { useStripe } from '@/features/stripe/hooks/useStripe'
 
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
-import { ErrorToast } from '@/shared/components/ui'
 import StripeConnectProvider from '@/shared/providers/StripeConnectProvider'
 
 import type { StripeStatus } from '@/features/stripe/types'
@@ -17,7 +16,16 @@ export default function PaymentProcessorPage() {
   const searchParams = useSearchParams()
   const facility = useFacilityStore((state) => state.facility)
   const { checkStripeStatus, checking } = useStripe()
-  const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null)
+
+  const [state, setState] = useState({
+    status: null as StripeStatus | null,
+    error: null as string | null,
+  })
+
+  const shouldRefresh = useMemo(
+    () => searchParams.get('refresh') === 'true' || searchParams.get('stripe') === 'success',
+    [searchParams]
+  )
 
   useEffect(() => {
     let mounted = true
@@ -27,33 +35,33 @@ export default function PaymentProcessorPage() {
         const status = await checkStripeStatus()
         if (!mounted) return
 
-        if (status.error && status.error !== 'No facility found') {
-          ErrorToast(status.error)
-          return
-        }
-
-        setStripeStatus(status)
+        setState((prev) => ({
+          ...prev,
+          status,
+          error: status.error && status.error !== 'No facility found' ? status.error : null,
+        }))
       } catch (error) {
-        ErrorToast(`Failed to fetch Stripe status: ${error}`)
+        setState((prev) => ({
+          ...prev,
+          error: error instanceof Error ? error.message : 'Failed to fetch Stripe status',
+        }))
       }
     }
 
     if (facility?.id) {
-      if (searchParams.get('refresh') === 'true' || searchParams.get('stripe') === 'success') {
-        fetchStatus()
-      } else {
-        fetchStatus()
-      }
+      fetchStatus()
     }
 
     return () => {
       mounted = false
     }
-  }, [checkStripeStatus, searchParams, facility?.id])
+  }, [checkStripeStatus, facility?.id, shouldRefresh])
 
-  const pageContent = <PaymentProcessorSection stripeStatus={stripeStatus} checking={checking} />
+  const pageContent = (
+    <PaymentProcessorSection stripeStatus={state.status} checking={checking} error={state.error} />
+  )
 
-  const content = (
+  return (
     <div className="p-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Payment Processor</h1>
@@ -71,6 +79,4 @@ export default function PaymentProcessorPage() {
       </div>
     </div>
   )
-
-  return content
 }

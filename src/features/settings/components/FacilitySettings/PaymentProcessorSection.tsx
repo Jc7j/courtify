@@ -16,8 +16,6 @@ import {
   CardContent,
   CardFooter,
   ConfirmationDialog,
-  ErrorToast,
-  SuccessToast,
   Progress,
 } from '@/shared/components/ui'
 
@@ -122,11 +120,16 @@ const SetupProgress = memo(function SetupProgress({
 interface PaymentProcessorSectionProps {
   stripeStatus: StripeStatus | null
   checking: boolean
+  error?: string | null
 }
 
-export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProcessorSectionProps) {
+export function PaymentProcessorSection({
+  stripeStatus,
+  checking,
+  error,
+}: PaymentProcessorSectionProps) {
   const { connectStripe, connecting } = useStripe()
-  const { updateFacility } = useFacility()
+  const { updateFacility, error: facilityError } = useFacility()
   const facility = useFacilityStore((state) => state.facility)
   const [disconnecting, setDisconnecting] = useState(false)
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
@@ -143,8 +146,11 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
       if (error) throw new Error(error)
       if (!url) throw new Error('Failed to get Stripe connect URL')
       window.location.href = url
-    } catch (error) {
-      ErrorToast(error instanceof Error ? error.message : 'Failed to connect Stripe')
+    } catch (err) {
+      console.error('[Payment Processor] Connect error:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      })
+      throw err
     }
   }, [
     stripeStatus?.isEnabled,
@@ -161,11 +167,12 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
         stripe_account_id: null,
         stripe_account_enabled: false,
       })
-      SuccessToast('Stripe account disconnected successfully')
       window.location.reload()
     } catch (err) {
-      console.error('Error disconnecting Stripe:', err)
-      ErrorToast('Failed to disconnect Stripe account')
+      console.error('[Payment Processor] Disconnect error:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      })
+      throw err
     } finally {
       setDisconnecting(false)
       setShowDisconnectDialog(false)
@@ -179,6 +186,14 @@ export function PaymentProcessorSection({ stripeStatus, checking }: PaymentProce
           <Loader2 className="h-6 w-6 animate-spin" />
         </CardContent>
       </Card>
+    )
+  }
+
+  if (error || facilityError) {
+    return (
+      <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
+        <p className="font-medium">{error || facilityError?.message}</p>
+      </div>
     )
   }
 

@@ -1,10 +1,9 @@
 'use client'
 
-import { useApolloClient } from '@apollo/client'
 import { loadStripe } from '@stripe/stripe-js'
 import dayjs from 'dayjs'
 import { useRouter, useParams } from 'next/navigation'
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 
 import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
 import { BookingWizard } from '@/features/booking/components/flow/BookingWizard'
@@ -13,7 +12,6 @@ import { BottomBar, BottomBarContent } from '@/features/booking/components/layou
 import { Footer } from '@/features/booking/components/layout/Footer'
 import { useBookings } from '@/features/booking/hooks/useBookings'
 import { useBookingStore } from '@/features/booking/hooks/useBookingStore'
-import { BookingServerService } from '@/features/booking/services/bookingServerService'
 import { GuestDetailsType } from '@/features/booking/types'
 
 import { useFacilityProducts } from '@/core/facility/hooks/useFacilityProducts'
@@ -31,7 +29,6 @@ export default function BookingPage() {
   const params = useParams<{ slug: string }>()
   const { facility } = usePublicFacility(params.slug)
   const { products } = useFacilityProducts({ facilityId: facility?.id })
-  const client = useApolloClient()
   const router = useRouter()
   const formRef = useRef<{ submit: () => void }>(null)
 
@@ -42,7 +39,8 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
 
-  const bookingService = useMemo(() => new BookingServerService(client), [client])
+  const { getAvailabilities, createPaymentIntent } = useBookings()
+  const { updateAvailability } = useCourtAvailability()
   const {
     selectedAvailability,
     guestInfo,
@@ -55,15 +53,13 @@ export default function BookingPage() {
     remainingTime,
     startHold,
   } = useBookingStore()
-  const { createPaymentIntent } = useBookings()
-  const { updateAvailability } = useCourtAvailability()
 
   useEffect(() => {
     async function fetchAvailabilities() {
       if (!facility?.id) return
       setLoading(true)
       try {
-        const { availabilities: data } = await bookingService.getAvailabilities(
+        const { availabilities: data } = await getAvailabilities(
           facility.id,
           dayjs(weekStartDate).startOf('day').toISOString(),
           dayjs(weekStartDate).endOf('week').endOf('day').toISOString()
@@ -77,7 +73,7 @@ export default function BookingPage() {
     }
 
     fetchAvailabilities()
-  }, [facility?.id, weekStartDate, bookingService])
+  }, [facility?.id, weekStartDate, getAvailabilities])
 
   useEffect(() => {
     if (facility?.stripe_account_id) {

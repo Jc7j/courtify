@@ -1,13 +1,12 @@
 'use client'
 
-import { useApolloClient } from '@apollo/client'
 import dayjs from 'dayjs'
 import { Loader2 } from 'lucide-react'
 import { memo, useCallback, useState, useEffect, useMemo, Suspense } from 'react'
 
 import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
-import { AvailabilityServerService } from '@/features/availability/services/availabilityServerService'
+import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
 
 import { DashboardSkeleton } from '@/core/facility/components/Skeletons'
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
@@ -48,56 +47,74 @@ const CalendarSection = memo(function CalendarSection({
 })
 
 function DashboardContent() {
-  const client = useApolloClient()
   const facility = useFacilityStore((state) => state.facility)
   const user = useUserStore((state) => state.user)
   const setAvailabilities = useCalendarStore((state) => state.setAvailabilities)
+  const { getFacilityAvailabilities } = useCourtAvailability()
 
-  const [initialLoading, setInitialLoading] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const [courts, setCourts] = useState<Courts[]>([])
-  const [selectedDate, setSelectedDate] = useState(() => ({
-    start: dayjs().startOf('day').toISOString(),
-    end: dayjs().endOf('day').toISOString(),
-  }))
+  const [state, setState] = useState({
+    initialLoading: true,
+    loading: false,
+    courts: [] as Courts[],
+    error: null as Error | null,
+  })
+
+  const selectedDate = useMemo(
+    () => ({
+      start: dayjs().startOf('day').toISOString(),
+      end: dayjs().endOf('day').toISOString(),
+    }),
+    []
+  )
 
   const facilityId = useMemo(() => facility?.id || '', [facility?.id])
-  const availabilityService = useMemo(() => new AvailabilityServerService(client), [client])
 
   const fetchAvailabilities = useCallback(
     async (start: string, end: string) => {
       if (!facilityId) return
 
-      setLoading(true)
+      setState((prev) => ({ ...prev, loading: true }))
       try {
-        const { courts: courtData, availabilities } =
-          await availabilityService.getFacilityAvailabilities(facilityId, start, end)
-        setCourts(courtData)
+        const { courts: courtData, availabilities } = await getFacilityAvailabilities(
+          facilityId,
+          start,
+          end
+        )
+        setState((prev) => ({ ...prev, courts: courtData, loading: false }))
         setAvailabilities(availabilities)
       } catch (error) {
         console.error('Failed to fetch availabilities:', error)
-      } finally {
-        setLoading(false)
+        setState((prev) => ({
+          ...prev,
+          error: error instanceof Error ? error : new Error('Failed to fetch availabilities'),
+          loading: false,
+        }))
       }
     },
-    [facilityId, availabilityService, setAvailabilities]
+    [facilityId, getFacilityAvailabilities, setAvailabilities]
   )
 
+  // Handle initial loading state
   useEffect(() => {
-    if (initialLoading && facility !== undefined && user !== undefined) {
-      setInitialLoading(false)
+    if (state.initialLoading && facility !== undefined && user !== undefined) {
+      setState((prev) => ({ ...prev, initialLoading: false }))
     }
-  }, [facility, user, initialLoading])
+  }, [facility, user, state.initialLoading])
 
+  // Handle date changes
+  const handleDateChange = useCallback(
+    (start: string, end: string) => {
+      fetchAvailabilities(start, end)
+    },
+    [fetchAvailabilities]
+  )
+
+  // Initial fetch
   useEffect(() => {
     fetchAvailabilities(selectedDate.start, selectedDate.end)
-  }, [fetchAvailabilities, selectedDate])
+  }, [fetchAvailabilities, selectedDate.start, selectedDate.end])
 
-  const handleDateChange = useCallback((start: string, end: string) => {
-    setSelectedDate({ start, end })
-  }, [])
-
-  if (initialLoading || facility === undefined || user === undefined) {
+  if (state.initialLoading || facility === undefined || user === undefined) {
     return <DashboardSkeleton />
   }
 
@@ -123,8 +140,8 @@ function DashboardContent() {
         <CalendarSection
           facilityId={facility.id}
           hasStripeAccount={!!facility.stripe_account_id}
-          courts={courts}
-          loading={loading}
+          courts={state.courts}
+          loading={state.loading}
           onDateChange={handleDateChange}
         />
       </Suspense>

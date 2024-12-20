@@ -19,3 +19,11 @@ export const ROUTES = {
   },
   UNAUTHORIZED: '/unauthorized',
 } as const
+
+export const ASSET_PATHS = {
+  IMAGES: '/images',
+  SVG: {
+    BRAND: '/svg/brand',
+    UI: '/svg/ui',
+  },
+} as const

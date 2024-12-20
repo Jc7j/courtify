@@ -8,6 +8,7 @@ import { AUTH_ERRORS, getAuthErrorMessage } from '@/features/auth/utils/auth-err
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
+import { ErrorToast, SuccessToast } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
 import { clearApolloCache } from '@/shared/lib/apollo/client'
 import { supabase } from '@/shared/lib/supabase/client'
@@ -156,19 +157,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     try {
       setIsLoading(true)
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        if (error.message.toLowerCase().includes('invalid credentials')) {
+          throw new Error('Invalid email or password')
+        }
+        throw error
+      }
 
       await handleSession(data.session)
+      SuccessToast('Signed in successfully')
     } catch (error) {
       console.error('[Auth] Sign in error:', {
         error: error instanceof Error ? error.message : 'Unknown error',
       })
+      ErrorToast(getAuthErrorMessage(error))
       throw new Error(getAuthErrorMessage(error))
     } finally {
       setIsLoading(false)
@@ -187,10 +194,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       })
 
-      if (error) throw error
-      if (!data.user?.id) throw new Error('No user ID returned from signup')
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
+        }
+        throw error
+      }
 
-      const { data: userData, error: profileError } = await supabase
+      if (!data.user?.id) {
+        throw new Error('No user ID returned from signup')
+      }
+
+      const { error: profileError } = await supabase
         .from('users')
         .insert([
           {
@@ -210,27 +225,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw profileError
       }
 
-      setSession({
-        user: {
-          ...data.user,
-          name: userData.name,
-          facility_id: null,
-          role: userData.role,
-          is_active: userData.is_active,
-        },
-        accessToken: data.session?.access_token || '',
-        refreshToken: data.session?.refresh_token || null,
-        expiresAt: data.session?.expires_at || null,
-      })
-
-      return signIn(email, password)
+      await signIn(email, password)
+      SuccessToast('Account created successfully!')
     } catch (error) {
       console.error('[Auth] Sign up error:', {
         error: error instanceof Error ? error.message : 'Unknown error',
       })
-      if (error instanceof Error && error.message.includes('User already registered')) {
-        throw new Error(AUTH_ERRORS.EMAIL_EXISTS)
-      }
+      ErrorToast(getAuthErrorMessage(error))
       throw new Error(getAuthErrorMessage(error))
     } finally {
       setIsLoading(false)

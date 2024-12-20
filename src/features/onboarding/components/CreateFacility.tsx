@@ -2,22 +2,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useJsApiLoader, StandaloneSearchBox } from '@react-google-maps/api'
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { useFacility } from '@/core/facility/hooks/useFacility'
-import { useUserStore } from '@/core/user/hooks/useUserStore'
 
-import {
-  Input,
-  Button,
-  SuccessToast,
-  ErrorToast,
-  Label,
-  RadioGroup,
-  RadioGroupItem,
-} from '@/shared/components/ui'
+import { Input, Button, Label, RadioGroup, RadioGroupItem } from '@/shared/components/ui'
 
 import type { Libraries } from '@react-google-maps/api'
 
@@ -36,7 +27,7 @@ type CreateFacilityFormData = z.infer<typeof createFacilitySchema>
 const libraries: Libraries = ['places']
 
 export function CreateFacility({ onBack }: { onBack?: () => void }) {
-  const { createFacility, creating } = useFacility()
+  const { createFacility, creating, error: facilityError } = useFacility()
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -49,6 +40,7 @@ export function CreateFacility({ onBack }: { onBack?: () => void }) {
     handleSubmit,
     setValue,
     formState: { errors },
+    setError,
   } = useForm<CreateFacilityFormData>({
     resolver: zodResolver(createFacilitySchema),
     defaultValues: {
@@ -58,7 +50,7 @@ export function CreateFacility({ onBack }: { onBack?: () => void }) {
     },
   })
 
-  const handlePlacesChanged = () => {
+  const handlePlacesChanged = useCallback(() => {
     const places = searchBoxRef.current?.getPlaces()
     if (!places?.length) return
 
@@ -66,22 +58,31 @@ export function CreateFacility({ onBack }: { onBack?: () => void }) {
     if (place.formatted_address) {
       setValue('address', place.formatted_address)
     }
-  }
+  }, [setValue])
 
   const onSubmit = async (data: CreateFacilityFormData) => {
     try {
       await createFacility(data.name.trim(), data.address, data.sports)
-
-      const updatedUser = useUserStore.getState().user
-      if (!updatedUser?.facility_id) {
-        throw new Error('Facility created but user state not updated')
-      }
-
-      SuccessToast('Facility created successfully!')
     } catch (err) {
-      console.error('Error creating facility:', err)
-      ErrorToast(err instanceof Error ? err.message : 'Failed to create facility')
+      console.error('[Create Facility] Submit error:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        data,
+      })
+
+      if (err instanceof Error && err.message.toLowerCase().includes('name')) {
+        setError('name', { message: err.message })
+      } else if (err instanceof Error && err.message.toLowerCase().includes('address')) {
+        setError('address', { message: err.message })
+      }
     }
+  }
+
+  if (facilityError) {
+    return (
+      <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
+        <p className="font-medium">{facilityError.message}</p>
+      </div>
+    )
   }
 
   return (

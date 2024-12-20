@@ -5,6 +5,7 @@ import { useCallback } from 'react'
 
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
+import { ErrorToast, InfoToast, SuccessToast } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuth } from '@/shared/providers/AuthProvider'
 
@@ -27,10 +28,33 @@ export function useOnboarding(): OnboardingState {
 
   const handleStepChange = useCallback(
     (newStep: OnboardingStep) => {
-      if (newStep === 'signup') {
-        router.replace(ROUTES.AUTH.SIGNUP)
-      } else {
-        router.replace(`${ROUTES.AUTH.SIGNUP}?step=${newStep}`)
+      try {
+        if (newStep === 'signup') {
+          router.replace(ROUTES.AUTH.SIGNUP)
+        } else {
+          router.replace(`${ROUTES.AUTH.SIGNUP}?step=${newStep}`)
+        }
+
+        // Show appropriate step messages
+        switch (newStep) {
+          case 'create-intro':
+            InfoToast("Welcome! Let's set up your facility")
+            break
+          case 'create':
+            InfoToast('Enter your facility details')
+            break
+          case 'invite-team':
+            InfoToast('Almost done! Invite your team members')
+            break
+          default:
+            break
+        }
+      } catch (error) {
+        console.error('[Onboarding] Step change error:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          newStep,
+        })
+        ErrorToast('Failed to navigate to next step')
       }
     },
     [router]
@@ -40,6 +64,7 @@ export function useOnboarding(): OnboardingState {
     try {
       const currentUser = useUserStore.getState().user
       if (!currentUser?.facility_id) {
+        ErrorToast('Facility setup incomplete')
         throw new Error('Facility ID not found after database update')
       }
 
@@ -49,12 +74,17 @@ export function useOnboarding(): OnboardingState {
       // Verify the update was successful
       const updatedUser = useUserStore.getState().user
       if (!updatedUser?.facility_id) {
+        ErrorToast('Failed to update user information')
         throw new Error('Store update verification failed')
       }
 
+      SuccessToast('Facility created successfully')
       handleStepChange('invite-team')
     } catch (err) {
-      console.error('Error completing facility creation:', err)
+      console.error('[Onboarding] Facility creation error:', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      })
+      ErrorToast('Failed to complete facility setup')
       throw err instanceof Error ? err : new Error('Failed to complete facility setup')
     }
   }, [updateUser, handleStepChange])
@@ -62,7 +92,7 @@ export function useOnboarding(): OnboardingState {
   return {
     isOnboarding: isAuthenticated && !user?.facility_id,
     step: currentStep,
-    handleFacilityCreated: handleFacilityCreated,
+    handleFacilityCreated,
     handleStepChange,
   }
 }
