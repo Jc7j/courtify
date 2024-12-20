@@ -125,7 +125,7 @@ export const CourtAvailabilityPanel = memo(function CourtAvailabilityPanel() {
         {/* Header */}
         <div className="p-4 border-b flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Court {selectedAvailability.court_number}</h2>
+            {/* <h2 className="text-lg font-semibold">Court {selectedAvailability.court_number}</h2> */}
             <p className="text-sm text-muted-foreground">
               {formatDate(selectedAvailability.start_time)}
             </p>

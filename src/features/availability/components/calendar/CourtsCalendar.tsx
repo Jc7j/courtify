@@ -6,6 +6,8 @@ import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid'
 import dayjs from 'dayjs'
 import { memo, useRef, useCallback } from 'react'
 
+import { cn } from '@/shared/lib/utils/cn'
+
 import { CalendarEvent } from './CalendarEvent'
 import { CalendarHeader } from './CalendarHeader'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents'
@@ -14,7 +16,6 @@ import { useCourtAvailability } from '../../hooks/useCourtAvailability'
 import { getAvailabilityColor } from '../../utils/availability-color'
 
 import type { Courts, EnhancedAvailability } from '@/shared/types/graphql'
-import type { EventContentArg } from '@fullcalendar/core'
 
 interface CourtsCalendarProps {
   courts: Courts[]
@@ -45,7 +46,7 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
     updateAvailability,
     onEventClick: setSelectedAvailability,
   })
-  console.log('availabilities', availabilities)
+
   const handleDateChange = useCallback(
     async (start: string, end: string) => {
       setSelectedDate(dayjs(start))
@@ -92,9 +93,7 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
   }
 
   return (
-    <div
-      className={`bg-background border rounded-lg p-2 sm:p-6 overflow-hidden transition-all duration-300 ease-in-out`}
-    >
+    <>
       <CalendarHeader onDateChange={handleDateChange} calendarRef={calendarRef} />
 
       <div className="relative">
@@ -126,24 +125,25 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
             backgroundColor: getAvailabilityColor(availability.status),
             borderColor: 'transparent',
             textColor: 'hsl(var(--background))',
-            classNames: `rounded-md border-none shadow-sm transition-opacity ${
-              settings.editMode ? 'hover:ring-2 hover:ring-primary/50' : ''
-            }`,
-            extendedProps: {
-              availability,
-              component: (
-                <CalendarEvent availability={availability}>
-                  <div className="w-full h-full p-1">
-                    <div className="fc-event-time">
-                      {dayjs(availability.start_time).format('h:mma')} -{' '}
-                      {dayjs(availability.end_time).format('h:mma')}
-                    </div>
-                    <div className="fc-event-title">{getBookingTitle(availability)}</div>
-                  </div>
-                </CalendarEvent>
-              ),
-            },
+            extendedProps: { availability },
           }))}
+          eventContent={(eventInfo) => {
+            const availability = eventInfo.event.extendedProps.availability
+            return (
+              <CalendarEvent
+                availability={availability}
+                className={cn(
+                  eventInfo.isStart && 'rounded-l-md',
+                  eventInfo.isEnd && 'rounded-r-md'
+                )}
+              >
+                <div className="w-full h-full p-1">
+                  <div className="fc-event-time">{eventInfo.timeText}</div>
+                  <div className="fc-event-title">{eventInfo.event.title}</div>
+                </div>
+              </CalendarEvent>
+            )
+          }}
           select={handleSelect}
           eventClick={handleEventClick}
           eventDrop={handleEventDrop}
@@ -165,14 +165,10 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
           resourceLabelClassNames={`font-semibold text-md px-4 ${settings.editMode ? 'text-primary' : 'text-black'}`}
           slotLabelClassNames={`text-xs font-medium pr-2 ${settings.editMode ? 'text-primary' : 'text-muted-foreground'}`}
           slotLaneClassNames={`border-x ${settings.editMode ? 'border-primary/20' : 'border-border/50'}`}
-          eventClassNames={`rounded-md border-none shadow-sm transition-opacity ${
-            settings.editMode ? 'hover:ring-2 hover:ring-primary/50' : ''
-          }`}
-          // eventMinHeight={24}
-          // eventShortHeight={24}
           selectConstraint={{
             start: '00:00',
             end: '24:00',
+            overlap: false,
           }}
           // dayMinWidth={200}
           // stickyHeaderDates={true}
@@ -185,7 +181,7 @@ function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCal
           handleWindowResize={true}
         />
       </div>
-    </div>
+    </>
   )
 }
 

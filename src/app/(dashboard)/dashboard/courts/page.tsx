@@ -7,7 +7,7 @@ import { CourtList } from '@/features/courts/components/CourtList'
 import { CourtsErrorBoundary } from '@/features/courts/components/CourtsErrorBoundary'
 import { useCourt } from '@/features/courts/hooks/useCourt'
 
-import { Button, Card } from '@/shared/components/ui'
+import { Button } from '@/shared/components/ui'
 
 export default function CourtsPage() {
   const {
@@ -66,16 +66,14 @@ export default function CourtsPage() {
           </div>
         </div>
 
-        <Card className="p-6">
-          <CourtList
-            courts={courts}
-            loading={courtsLoading}
-            creating={creating}
-            onCreateCourt={handleCreateCourt}
-            onStatusChange={handleStatusChange}
-            onUpdateCourt={handleUpdateCourt}
-          />
-        </Card>
+        <CourtList
+          courts={courts}
+          loading={courtsLoading}
+          creating={creating}
+          onCreateCourt={handleCreateCourt}
+          onStatusChange={handleStatusChange}
+          onUpdateCourt={handleUpdateCourt}
+        />
       </div>
     </CourtsErrorBoundary>
   )
