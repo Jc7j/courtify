@@ -4,6 +4,8 @@ import { AvailabilityStatus } from '@/shared/types/graphql'
 
 import { CreateAvailabilityInput } from '../types'
 
+import type { EnhancedAvailability } from '@/shared/types/graphql'
+
 export class AvailabilityClientService {
   static validateTimeRange(
     startTime: string,
@@ -51,5 +53,42 @@ export class AvailabilityClientService {
       console.error('Failed to parse booking metadata:', e)
       return {}
     }
+  }
+
+  static findAvailabilityFromEventId(
+    eventId: string,
+    availabilities: EnhancedAvailability[],
+    oldEventStart?: Date | null
+  ): EnhancedAvailability | undefined {
+    const courtNumber = parseInt(eventId.split('-')[0], 10)
+
+    return availabilities.find(
+      (a) =>
+        a.court_number === courtNumber &&
+        (oldEventStart ? dayjs(a.start_time).isSame(oldEventStart) : true)
+    )
+  }
+
+  static updateAvailabilityInList(
+    availabilities: EnhancedAvailability[],
+    oldAvailability: EnhancedAvailability,
+    updates: Partial<EnhancedAvailability>
+  ): EnhancedAvailability[] {
+    return availabilities.map((a) =>
+      a.court_number === oldAvailability.court_number && a.start_time === oldAvailability.start_time
+        ? { ...a, ...updates }
+        : a
+    )
+  }
+
+  static validateTimeConstraints(selectedStart: string | Date): {
+    isValid: boolean
+    error?: string
+  } {
+    const startDateTime = dayjs(selectedStart)
+    if (startDateTime.isBefore(dayjs())) {
+      return { isValid: false, error: 'Cannot create availability in the past' }
+    }
+    return { isValid: true }
   }
 }

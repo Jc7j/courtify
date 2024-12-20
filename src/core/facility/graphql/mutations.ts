@@ -14,11 +14,15 @@ export const CREATE_FACILITY = gql`
 `
 
 export const UPDATE_FACILITY = gql`
-  ${FACILITY_FIELDS}
   mutation UpdateFacility($id: UUID!, $set: facilitiesUpdateInput!) {
-    updatefacilitiesCollection(filter: { id: { eq: $id } }, set: $set) {
+    updatefacilitiesCollection(set: $set, filter: { id: { eq: $id } }) {
       records {
-        ...FacilityFields
+        id
+        name
+        slug
+        stripe_account_id
+        stripe_account_enabled
+        updated_at
       }
     }
   }

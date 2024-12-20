@@ -71,7 +71,7 @@ export function AppTopbar({ className }: { className?: string }) {
       {/* Right side - Actions */}
       <div className="flex items-center gap-3">
         {facility?.slug && (
-          <Button variant="outline" size="sm" onClick={handleCopySlug} className="gap-2">
+          <Button variant="outline-primary" size="sm" onClick={handleCopySlug} className="gap-2">
             <span className="text-xs">Booking link</span>
             {copied ? (
               <Check className="h-3.5 w-3.5 text-green-500" />
@@ -83,7 +83,7 @@ export function AppTopbar({ className }: { className?: string }) {
 
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline-primary" size="sm" className="gap-2">
               <MessageSquarePlus className="h-4 w-4" />
               Feedback
             </Button>

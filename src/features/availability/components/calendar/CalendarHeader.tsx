@@ -7,38 +7,31 @@ import { memo, RefObject } from 'react'
 import { Button, Switch, DatePicker } from '@/shared/components/ui'
 
 import { CalendarOptionsMenu } from './CalendarOptionsMenu'
-import { useCalendarStore } from '../hooks/useCalendarStore'
+import { useCalendarStore } from '../../hooks/useCalendarStore'
 
 import type FullCalendar from '@fullcalendar/react'
 
 interface CalendarHeaderProps {
   onDateChange: (start: string, end: string) => void
   calendarRef: RefObject<FullCalendar>
-  isEditMode: boolean
-  setIsEditMode: (value: boolean) => void
 }
 
-function CalendarHeaderComponent({
-  onDateChange,
-  calendarRef,
-  isEditMode,
-  setIsEditMode,
-}: CalendarHeaderProps) {
-  const { selectedDate } = useCalendarStore()
+function CalendarHeaderComponent({ onDateChange, calendarRef }: CalendarHeaderProps) {
+  const { selectedDate, setSettings, settings } = useCalendarStore()
 
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="w-[200px] flex items-center gap-2">
         <div className="flex items-center gap-2">
           <span
-            className={`text-sm font-medium ${isEditMode ? 'text-primary' : 'text-muted-foreground'}`}
+            className={`text-sm font-medium ${settings.editMode ? 'text-primary' : 'text-muted-foreground'}`}
           >
-            {isEditMode ? 'Edit Mode' : 'Read Only'}
+            {settings.editMode ? 'Edit Mode' : 'Read Only'}
           </span>
           <Switch
-            checked={isEditMode}
-            onCheckedChange={setIsEditMode}
-            className={isEditMode ? 'data-[state=checked]:bg-primary' : ''}
+            checked={settings.editMode}
+            onCheckedChange={() => setSettings({ editMode: !settings.editMode })}
+            className={settings.editMode ? 'data-[state=checked]:bg-primary' : ''}
           />
         </div>
       </div>
@@ -46,7 +39,7 @@ function CalendarHeaderComponent({
       <div className="flex items-center gap-4">
         <div className={`flex items-center gap-2 bg-background/50  p-1`}>
           <Button
-            variant={isEditMode ? 'outline-primary' : 'outline'}
+            variant={settings.editMode ? 'outline-primary' : 'outline'}
             size="icon"
             onClick={() => {
               const newDate = selectedDate.subtract(1, 'day')
@@ -55,7 +48,7 @@ function CalendarHeaderComponent({
             }}
           >
             <ChevronLeft
-              className={`h-5 w-5 ${isEditMode ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`h-5 w-5 ${settings.editMode ? 'text-primary' : 'text-muted-foreground'}`}
             />
           </Button>
 
@@ -67,20 +60,20 @@ function CalendarHeaderComponent({
               calendarRef.current?.getApi().gotoDate(date)
             }}
             buttonClassName={`w-[280px] text-lg font-medium items-center justify-center ${
-              isEditMode
+              settings.editMode
                 ? 'text-primary hover:bg-primary/10'
                 : 'text-muted-foreground hover:bg-muted'
             }`}
             variant="ghost"
             leftIcon={
               <CalendarIcon
-                className={`h-4 w-4 ${isEditMode ? 'text-primary' : 'text-muted-foreground'}`}
+                className={`h-4 w-4 ${settings.editMode ? 'text-primary' : 'text-muted-foreground'}`}
               />
             }
           />
 
           <Button
-            variant={isEditMode ? 'outline-primary' : 'outline'}
+            variant={settings.editMode ? 'outline-primary' : 'outline'}
             size="icon"
             onClick={() => {
               const newDate = selectedDate.add(1, 'day')
@@ -89,7 +82,7 @@ function CalendarHeaderComponent({
             }}
           >
             <ChevronRight
-              className={`h-5 w-5 ${isEditMode ? 'text-primary' : 'text-muted-foreground'}`}
+              className={`h-5 w-5 ${settings.editMode ? 'text-primary' : 'text-muted-foreground'}`}
             />
           </Button>
         </div>

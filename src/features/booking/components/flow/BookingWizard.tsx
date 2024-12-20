@@ -17,7 +17,6 @@ interface BookingWizardProps {
   weekStartDate: Date
   setWeekStartDate: (date: Date) => void
   availabilities: EnhancedAvailability[]
-  loading: boolean
   products: FacilityProduct[]
   guestInfo?: GuestDetailsType
   selectedAvailability?: EnhancedAvailability
@@ -41,7 +40,6 @@ function BookingWizardComponent({
   weekStartDate,
   setWeekStartDate,
   availabilities,
-  loading,
   products,
   guestInfo,
   selectedAvailability,
@@ -77,7 +75,6 @@ function BookingWizardComponent({
         <GuestDetails
           onSubmit={onGuestInfoSubmit}
           products={products}
-          loading={loading}
           defaultValues={guestInfo}
           selectedTime={
             selectedAvailability

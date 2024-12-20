@@ -14,8 +14,13 @@ interface CalendarStore {
     slotMaxTime: string
     isFullHeight: boolean
     slotDuration: string
+    editMode: boolean
   }
   setSettings: (settings: Partial<CalendarStore['settings']>) => void
+  selectedAvailability: EnhancedAvailability | null
+  isPanelOpen: boolean
+  setSelectedAvailability: (availability: EnhancedAvailability | null) => void
+  setPanelOpen: (isOpen: boolean) => void
 }
 
 export const useCalendarStore = create<CalendarStore>()(
@@ -30,6 +35,7 @@ export const useCalendarStore = create<CalendarStore>()(
         slotMaxTime: '22:00:00',
         isFullHeight: false,
         slotDuration: '00:30:00',
+        editMode: false,
       },
       setSettings: (newSettings) =>
         set((state) => ({
@@ -38,12 +44,29 @@ export const useCalendarStore = create<CalendarStore>()(
             ...newSettings,
           },
         })),
+      selectedAvailability: null,
+      isPanelOpen: false,
+      setSelectedAvailability: (availability) =>
+        set(() => ({
+          selectedAvailability: availability,
+          isPanelOpen: !!availability,
+        })),
+      setPanelOpen: (isOpen) =>
+        set((state) => ({
+          isPanelOpen: isOpen,
+          selectedAvailability: isOpen ? state.selectedAvailability : null,
+        })),
     }),
     {
       name: 'courtify-calendar-store',
+      partialize: (state) => ({
+        selectedDate: state.selectedDate,
+        settings: state.settings,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.selectedDate = dayjs(state.selectedDate)
+          state.availabilities = []
         }
       },
     }

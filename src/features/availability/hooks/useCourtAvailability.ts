@@ -94,16 +94,16 @@ export function useCourtAvailability() {
             InfoToast('Court is now on hold')
             break
           case 'booked':
-            SuccessToast('Court booked successfully')
+            SuccessToast('Booking created')
             break
           case 'available':
             WarningToast('Court released back to available')
             break
           default:
-            SuccessToast('Court availability updated')
+            SuccessToast('Availability updated')
         }
       } else {
-        SuccessToast('Court availability updated successfully')
+        SuccessToast('Availability updated')
       }
 
       return result
@@ -151,7 +151,7 @@ export function useCourtAvailability() {
       )
 
       const result = await services.availability.createAvailability(formattedInput)
-      SuccessToast('New court availability created successfully')
+      SuccessToast('Availability created')
       return result
     } catch (error) {
       console.error('[Court Availability] Create error:', {

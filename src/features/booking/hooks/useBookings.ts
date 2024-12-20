@@ -45,6 +45,11 @@ export function useBookings() {
   }
 
   async function createPaymentIntent(input: CreatePaymentIntentInput) {
+    // @TODO Free court rental should happen when we plan out
+    // subscription model. For now, we'll just check if the facility
+    // has a stripe account id. This requires some thinking to do
+    // for free court rentals. Probably just a different functionality without the stripe
+    // payment element.
     if (!facility?.stripe_account_id) {
       ErrorToast('Facility not setup for payments')
       throw new Error('Facility not setup for payments')
@@ -52,7 +57,11 @@ export function useBookings() {
 
     try {
       // 1. Validate input
-      BookingClientService.validateBookingInput(input)
+      const validation = BookingClientService.validateBookingInput(input)
+      if (!validation.isValid) {
+        WarningToast(validation.error || 'Invalid booking input')
+        throw new Error(validation.error)
+      }
 
       // 2. Hold the court
       await services.availability.updateAvailability({
@@ -61,7 +70,7 @@ export function useBookings() {
         startTime: input.startTime,
         update: { status: AvailabilityStatus.Held },
       })
-      InfoToast('Court held for your booking')
+      InfoToast('Court held for 10 minutesfor your booking')
 
       // 3. Create payment intent
       const result = await services.booking.createPaymentIntent(input, facility.stripe_account_id)
@@ -88,7 +97,6 @@ export function useBookings() {
         error: error instanceof Error ? error.message : 'Unknown error',
         input,
       })
-      ErrorToast('Failed to setup payment')
       throw error
     }
   }

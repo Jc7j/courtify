@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 
+import { useFacility } from '@/core/facility/hooks/useFacility'
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import { ErrorToast, InfoToast, SuccessToast, WarningToast } from '@/shared/components/ui'
@@ -29,6 +30,7 @@ interface ConnectStripeOptions {
 
 export function useStripe(): UseStripeReturn {
   const facility = useFacilityStore((state) => state.facility)
+  const { updateFacility } = useFacility()
   const [connecting, setConnecting] = useState(false)
   const [checking, setChecking] = useState(false)
 
@@ -108,7 +110,22 @@ export function useStripe(): UseStripeReturn {
       )
 
       if (data.accountId) {
-        SuccessToast('Stripe account verified')
+        if (data.isEnabled !== facility.stripe_account_enabled) {
+          try {
+            await updateFacility({
+              stripe_account_enabled: data.isEnabled,
+            })
+            SuccessToast(
+              data.isEnabled
+                ? 'Stripe account verified and enabled for payments'
+                : 'Stripe account requires additional setup'
+            )
+          } catch (updateError) {
+            console.error('[Stripe] Failed to update facility stripe status:', updateError)
+            ErrorToast('Failed to update facility payment status')
+          }
+        }
+
         return {
           isConnected: true,
           isEnabled: data.isEnabled,
@@ -139,7 +156,13 @@ export function useStripe(): UseStripeReturn {
     } finally {
       setChecking(false)
     }
-  }, [facility?.id, makeRequest, facility?.stripe_account_id])
+  }, [
+    facility?.id,
+    makeRequest,
+    facility?.stripe_account_id,
+    facility?.stripe_account_enabled,
+    updateFacility,
+  ])
 
   const connectStripe = useCallback(
     async ({

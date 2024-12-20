@@ -1,10 +1,11 @@
 'use client'
 
-import dayjs from 'dayjs'
 import { Loader2 } from 'lucide-react'
 import { memo, useCallback, useState, useEffect, useMemo, Suspense } from 'react'
 
-import { CourtsCalendar } from '@/features/availability/components/CourtsCalendar'
+import { CourtsCalendar } from '@/features/availability/components/calendar/CourtsCalendar'
+import { CourtAvailabilityPanel } from '@/features/availability/components/calendar/details/CourtAvailabilityPanel'
+import { useAvailabilitySubscription } from '@/features/availability/hooks/useAvailabilitySubscription'
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
 import { useCourtAvailability } from '@/features/availability/hooks/useCourtAvailability'
 
@@ -49,6 +50,7 @@ const CalendarSection = memo(function CalendarSection({
 function DashboardContent() {
   const facility = useFacilityStore((state) => state.facility)
   const user = useUserStore((state) => state.user)
+  const { selectedDate: storeSelectedDate } = useCalendarStore()
   const setAvailabilities = useCalendarStore((state) => state.setAvailabilities)
   const { getFacilityAvailabilities } = useCourtAvailability()
 
@@ -59,15 +61,16 @@ function DashboardContent() {
     error: null as Error | null,
   })
 
-  const selectedDate = useMemo(
-    () => ({
-      start: dayjs().startOf('day').toISOString(),
-      end: dayjs().endOf('day').toISOString(),
-    }),
-    []
-  )
-
   const facilityId = useMemo(() => facility?.id || '', [facility?.id])
+
+  // Derive date range from store's selected date
+  const dateRange = useMemo(
+    () => ({
+      start: storeSelectedDate.startOf('day').toISOString(),
+      end: storeSelectedDate.endOf('day').toISOString(),
+    }),
+    [storeSelectedDate]
+  )
 
   const fetchAvailabilities = useCallback(
     async (start: string, end: string) => {
@@ -89,6 +92,8 @@ function DashboardContent() {
           error: error instanceof Error ? error : new Error('Failed to fetch availabilities'),
           loading: false,
         }))
+        // Clear availabilities on error
+        setAvailabilities([])
       }
     },
     [facilityId, getFacilityAvailabilities, setAvailabilities]
@@ -109,10 +114,12 @@ function DashboardContent() {
     [fetchAvailabilities]
   )
 
-  // Initial fetch
+  // Initial fetch on mount and when date changes
   useEffect(() => {
-    fetchAvailabilities(selectedDate.start, selectedDate.end)
-  }, [fetchAvailabilities, selectedDate.start, selectedDate.end])
+    fetchAvailabilities(dateRange.start, dateRange.end)
+  }, [fetchAvailabilities, dateRange.start, dateRange.end])
+
+  useAvailabilitySubscription(facility?.id || '')
 
   if (state.initialLoading || facility === undefined || user === undefined) {
     return <DashboardSkeleton />
@@ -128,23 +135,27 @@ function DashboardContent() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <Suspense
-        fallback={
-          <Card>
-            <CardContent className="flex items-center justify-center py-6">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </CardContent>
-          </Card>
-        }
-      >
-        <CalendarSection
-          facilityId={facility.id}
-          hasStripeAccount={!!facility.stripe_account_id}
-          courts={state.courts}
-          loading={state.loading}
-          onDateChange={handleDateChange}
-        />
-      </Suspense>
+      <div className={`transition-all duration-300 ease-in-out `}>
+        <Suspense
+          fallback={
+            <Card>
+              <CardContent className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </CardContent>
+            </Card>
+          }
+        >
+          <CalendarSection
+            facilityId={facility.id}
+            hasStripeAccount={!!facility.stripe_account_id}
+            courts={state.courts}
+            loading={state.loading}
+            onDateChange={handleDateChange}
+          />
+        </Suspense>
+      </div>
+
+      <CourtAvailabilityPanel />
     </div>
   )
 }

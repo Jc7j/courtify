@@ -27,8 +27,8 @@ interface UseFacilityReturn {
 }
 
 interface UpdateFacilityInput {
-  name: string
-  slug: string
+  name?: string
+  slug?: string
   stripe_account_id?: string | null
   stripe_account_enabled?: boolean
 }
@@ -170,7 +170,6 @@ export function useFacility(): UseFacilityReturn {
         setState((prev) => ({ ...prev, updating: true, error: null }))
         const updatedFacility = await services.facility.updateFacility(state.facility.id, {
           ...data,
-          updated_at: new Date().toISOString(),
         })
 
         setState((prev) => ({ ...prev, facility: updatedFacility, error: null }))

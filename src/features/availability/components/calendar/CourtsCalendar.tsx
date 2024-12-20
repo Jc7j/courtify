@@ -7,11 +7,10 @@ import dayjs from 'dayjs'
 import { memo, useRef, useState, useCallback } from 'react'
 
 import { CalendarHeader } from './CalendarHeader'
-import { CourtAvailabilityDialog } from './CourtAvailabilityDialog'
-import { useCalendarEvents } from '../hooks/useCalendarEvents'
-import { useCalendarStore } from '../hooks/useCalendarStore'
-import { useCourtAvailability } from '../hooks/useCourtAvailability'
-import { getAvailabilityColor } from '../utils/availability-color'
+import { useCalendarEvents } from '../../hooks/useCalendarEvents'
+import { useCalendarStore } from '../../hooks/useCalendarStore'
+import { useCourtAvailability } from '../../hooks/useCourtAvailability'
+import { getAvailabilityColor } from '../../utils/availability-color'
 
 import type { Courts, EnhancedAvailability } from '@/shared/types/graphql'
 
@@ -22,21 +21,19 @@ interface CourtsCalendarProps {
   facilityId: string
 }
 
-function CourtsCalendarComponent({
-  courts,
-  loading: externalLoading,
-  onDateChange,
-  facilityId: facilityId,
-}: CourtsCalendarProps) {
+function CourtsCalendarComponent({ courts, onDateChange, facilityId }: CourtsCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
-  const [selectedAvailability, setSelectedAvailability] = useState<EnhancedAvailability | null>(
-    null
-  )
-  const [isEditMode, setIsEditMode] = useState(false)
   const [isDateChanging, setIsDateChanging] = useState(false)
 
-  const { settings, availabilities, setAvailabilities, selectedDate, setSelectedDate } =
-    useCalendarStore()
+  const {
+    settings,
+    availabilities,
+    setAvailabilities,
+    selectedDate,
+    setSelectedDate,
+    setSelectedAvailability,
+  } = useCalendarStore()
+
   const { createAvailability, updateAvailability } = useCourtAvailability()
 
   const { handleSelect, handleEventClick, handleEventDrop, handleEventResize } = useCalendarEvents({
@@ -47,7 +44,7 @@ function CourtsCalendarComponent({
     updateAvailability,
     onEventClick: setSelectedAvailability,
   })
-
+  console.log('availabilities', availabilities)
   const handleDateChange = useCallback(
     async (start: string, end: string) => {
       setIsDateChanging(true)
@@ -59,33 +56,38 @@ function CourtsCalendarComponent({
     [setSelectedDate, onDateChange]
   )
 
-  const loading = externalLoading || isDateChanging
-
-  if (loading) {
-    return (
-      <div className="relative h-[800px] w-full">
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 animate-in fade-in duration-200" />
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
-    )
-  }
-
   const resources = courts.map((court) => ({
     id: court.court_number.toString().padStart(2, '0'),
     title: court.name || `Court ${court.court_number}`,
     courtNumber: court.court_number,
   }))
 
+  function getBookingTitle(availability: EnhancedAvailability) {
+    if (!availability.booking) return ''
+
+    try {
+      const metadata =
+        typeof availability.booking.metadata === 'string'
+          ? JSON.parse(availability.booking.metadata)
+          : availability.booking.metadata
+
+      const courtRental = metadata.products?.court_rental?.name || ''
+      const netHeight = metadata.customer_preferences?.net_height || ''
+      const equipment =
+        metadata.products?.equipment?.map((eq: { name: string }) => eq.name).join(', ') || ''
+
+      return `${availability.booking.customer_name} • ${courtRental} ${netHeight} • ${equipment}`
+    } catch (error) {
+      console.error('Error parsing booking metadata:', error)
+      return availability.booking.customer_name || ''
+    }
+  }
+
   return (
-    <div className="bg-background border rounded-lg p-2 sm:p-6 overflow-hidden">
-      <CalendarHeader
-        onDateChange={handleDateChange}
-        calendarRef={calendarRef}
-        isEditMode={isEditMode}
-        setIsEditMode={setIsEditMode}
-      />
+    <div
+      className={`bg-background border rounded-lg p-2 sm:p-6 overflow-hidden transition-all duration-300 ease-in-out`}
+    >
+      <CalendarHeader onDateChange={handleDateChange} calendarRef={calendarRef} />
 
       <div className="relative">
         <FullCalendar
@@ -101,7 +103,7 @@ function CourtsCalendarComponent({
           allDaySlot={false}
           height={settings.isFullHeight ? 'auto' : '800px'}
           nowIndicator
-          selectable={isEditMode}
+          selectable={settings.editMode}
           selectMirror
           slotDuration={settings.slotDuration}
           selectMinDistance={15}
@@ -110,7 +112,7 @@ function CourtsCalendarComponent({
           events={availabilities.map((availability) => ({
             id: `${availability.court_number}-${availability.start_time}`,
             resourceId: availability.court_number.toString().padStart(2, '0'),
-            title: availability.booking?.customer_name || '',
+            title: getBookingTitle(availability),
             start: availability.start_time,
             end: availability.end_time,
             backgroundColor: getAvailabilityColor(availability.status),
@@ -124,7 +126,9 @@ function CourtsCalendarComponent({
           eventResize={handleEventResize}
           snapDuration={settings.slotDuration}
           slotEventOverlap={false}
-          editable={isEditMode}
+          selectOverlap={false}
+          eventOverlap={false}
+          editable={settings.editMode}
           eventDurationEditable
           eventResizableFromStart
           //
@@ -133,13 +137,12 @@ function CourtsCalendarComponent({
             minute: '2-digit',
             meridiem: 'short',
           }}
-          // slotLabelInterval="01:00"
-          nowIndicatorClassNames={isEditMode ? 'bg-primary' : 'bg-muted-foreground'}
-          resourceLabelClassNames={`font-medium text-sm px-4 ${isEditMode ? 'text-primary' : 'text-muted-foreground'}`}
-          slotLabelClassNames={`text-xs font-medium pr-2 ${isEditMode ? 'text-primary' : 'text-muted-foreground'}`}
-          slotLaneClassNames={`border-x ${isEditMode ? 'border-primary/20' : 'border-border/50'}`}
+          nowIndicatorClassNames={settings.editMode ? 'bg-primary' : 'bg-muted-foreground'}
+          resourceLabelClassNames={`font-semibold text-md px-4 ${settings.editMode ? 'text-primary' : 'text-black'}`}
+          slotLabelClassNames={`text-xs font-medium pr-2 ${settings.editMode ? 'text-primary' : 'text-muted-foreground'}`}
+          slotLaneClassNames={`border-x ${settings.editMode ? 'border-primary/20' : 'border-border/50'}`}
           eventClassNames={`rounded-md border-none shadow-sm transition-opacity ${
-            isEditMode ? 'hover:ring-2 hover:ring-primary/50' : ''
+            settings.editMode ? 'hover:ring-2 hover:ring-primary/50' : ''
           }`}
           // eventMinHeight={24}
           // eventShortHeight={24}
@@ -150,12 +153,12 @@ function CourtsCalendarComponent({
           // dayMinWidth={200}
           // stickyHeaderDates={true}
           // viewClassNames="border rounded-lg bg-background shadow-sm"
-          dayCellClassNames={`${isEditMode ? 'hover:bg-primary/5' : 'hover:bg-muted/50'}`}
+          dayCellClassNames={`${settings.editMode ? 'hover:bg-primary/5' : 'hover:bg-muted/50'}`}
           // moreLinkClassNames="text-primary font-medium"
           // weekNumbers={false}
           // weekText=""
           expandRows={true}
-          // handleWindowResize={true}
+          handleWindowResize={true}
         />
         {/* Overlay for smoother transitions */}
         {isDateChanging && (
@@ -163,14 +166,14 @@ function CourtsCalendarComponent({
         )}
       </div>
 
-      {selectedAvailability && (
+      {/* {selectedAvailability && (
         <CourtAvailabilityDialog
           availability={selectedAvailability}
           isOpen={!!selectedAvailability}
           onClose={() => setSelectedAvailability(null)}
           readOnly={!isEditMode}
         />
-      )}
+      )} */}
     </div>
   )
 }

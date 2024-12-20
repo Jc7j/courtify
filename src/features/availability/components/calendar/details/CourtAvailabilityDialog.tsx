@@ -18,7 +18,7 @@ import {
 import { cn } from '@/shared/lib/utils/cn'
 import { AvailabilityStatus, EnhancedAvailability } from '@/shared/types/graphql'
 
-import { useCourtAvailability } from '../hooks/useCourtAvailability'
+import { useCourtAvailability } from '../../../hooks/useCourtAvailability'
 
 interface CourtAvailabilityDialogProps {
   availability: EnhancedAvailability

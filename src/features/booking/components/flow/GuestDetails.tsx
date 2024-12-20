@@ -45,7 +45,6 @@ type FormRef = {
 
 interface GuestDetailsProps {
   onSubmit: (data: GuestDetailsType) => void
-  loading?: boolean
   products: FacilityProduct[]
   defaultValues?: Partial<GuestDetailsType>
   selectedTime?: {
@@ -64,7 +63,6 @@ const NET_HEIGHT_OPTIONS = [
 
 export function GuestDetails({
   onSubmit,
-  loading,
   products,
   defaultValues,
   selectedTime,
@@ -174,7 +172,7 @@ export function GuestDetails({
                       'transition-colors',
                       showError('name') ? 'border-destructive' : ''
                     )}
-                    disabled={loading}
+                    // disabled={loading}
                   />
                   {showError('name') && (
                     <p className="text-sm text-destructive">{errors.name?.message}</p>
@@ -192,7 +190,7 @@ export function GuestDetails({
                     {...register('email')}
                     onBlur={() => handleFieldBlur('email')}
                     className={cn(showError('email') ? 'border-destructive' : '')}
-                    disabled={loading}
+                    // disabled={loading}
                   />
                   {showError('email') && (
                     <p className="text-sm text-destructive">{errors.email?.message}</p>
@@ -211,7 +209,6 @@ export function GuestDetails({
                     {...register('phone')}
                     onBlur={() => handleFieldBlur('phone')}
                     className={cn(showError('phone') ? 'border-destructive' : '')}
-                    disabled={loading}
                   />
                   {showError('phone') && (
                     <p className="text-sm text-destructive">{errors.phone?.message}</p>
@@ -237,7 +234,6 @@ export function GuestDetails({
                         }
                         handleFieldBlur('selectedCourtProduct')
                       }}
-                      disabled={loading}
                     >
                       <SelectTrigger className="w-full h-fit">
                         <SelectValue placeholder="Select court type" />
@@ -277,7 +273,6 @@ export function GuestDetails({
                       setValue('net_height', value as GuestDetailsType['net_height'])
                       handleFieldBlur('net_height')
                     }}
-                    disabled={loading}
                   >
                     <SelectTrigger id="net_height" className="w-full">
                       <SelectValue placeholder="Select net height" />

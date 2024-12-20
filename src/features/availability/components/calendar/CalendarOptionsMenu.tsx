@@ -1,3 +1,5 @@
+'use client'
+
 import { Expand, Shrink, MoreHorizontal } from 'lucide-react'
 
 import { useCalendarStore } from '@/features/availability/hooks/useCalendarStore'
@@ -28,9 +30,9 @@ const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
 })
 
 const DURATION_OPTIONS = [
-  { value: '00:15:00', label: '15 minutes' },
-  { value: '00:30:00', label: '30 minutes' },
-  { value: '01:00:00', label: 'One hour' },
+  { value: '00:15:00', label: '15 min' },
+  { value: '00:30:00', label: '30 min' },
+  { value: '01:00:00', label: '1 hour' },
 ]
 
 export function CalendarOptionsMenu() {
@@ -139,7 +141,7 @@ export function CalendarOptionsMenu() {
                         <div className="flex items-center gap-2">
                           <span>{option.label}</span>
                           <span className="text-xs text-muted-foreground">
-                            (splits each hour into{' '}
+                            (splits hour into{' '}
                             {option.value === '00:15:00'
                               ? '4'
                               : option.value === '00:30:00'

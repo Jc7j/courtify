@@ -34,7 +34,6 @@ export default function BookingPage() {
 
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null)
   const [availabilities, setAvailabilities] = useState<EnhancedAvailability[]>([])
-  const [loading, setLoading] = useState(false)
   const today = dayjs().startOf('day').toDate()
   const [selectedDate, setSelectedDate] = useState(today)
   const [weekStartDate, setWeekStartDate] = useState(dayjs(today).startOf('week').toDate())
@@ -57,7 +56,6 @@ export default function BookingPage() {
   useEffect(() => {
     async function fetchAvailabilities() {
       if (!facility?.id) return
-      setLoading(true)
       try {
         const { availabilities: data } = await getAvailabilities(
           facility.id,
@@ -67,8 +65,6 @@ export default function BookingPage() {
         setAvailabilities(data)
       } catch (error) {
         console.error('Failed to fetch availabilities:', error)
-      } finally {
-        setLoading(false)
       }
     }
 
@@ -91,7 +87,6 @@ export default function BookingPage() {
       if (!facility?.id || !selectedAvailability) return
 
       try {
-        setLoading(true)
         useBookingStore.getState().setGuestInfo(data)
 
         const { paymentIntentId, clientSecret, amount } = await createPaymentIntent({
@@ -110,8 +105,6 @@ export default function BookingPage() {
         setCurrentStep('payment')
       } catch (error) {
         console.error('Failed to create payment intent:', error)
-      } finally {
-        setLoading(false)
       }
     },
     [facility?.id, selectedAvailability, createPaymentIntent, setPaymentIntent, setCurrentStep]
@@ -213,7 +206,6 @@ export default function BookingPage() {
               weekStartDate={weekStartDate}
               setWeekStartDate={setWeekStartDate}
               availabilities={availabilities}
-              loading={loading}
               products={products}
               guestInfo={guestInfo}
               selectedAvailability={selectedAvailability}

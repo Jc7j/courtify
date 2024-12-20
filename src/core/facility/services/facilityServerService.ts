@@ -19,7 +19,6 @@ interface UpdateFacilityInput {
   slug?: string
   stripe_account_id?: string | null
   stripe_account_enabled?: boolean
-  updated_at: string
 }
 
 export class FacilityServerService {
@@ -63,7 +62,13 @@ export class FacilityServerService {
     try {
       const { data } = await this.client.mutate({
         mutation: UPDATE_FACILITY,
-        variables: { id, set: input },
+        variables: {
+          id,
+          set: {
+            ...input,
+            updated_at: new Date().toISOString(),
+          },
+        },
       })
 
       const facility = data?.updatefacilitiesCollection?.records?.[0]

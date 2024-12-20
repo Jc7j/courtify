@@ -1,8 +1,10 @@
 import dayjs from 'dayjs'
 import { useCallback } from 'react'
 
-import { ErrorToast, SuccessToast, WarningToast, InfoToast } from '@/shared/components/ui'
+import { ErrorToast, SuccessToast, WarningToast } from '@/shared/components/ui'
 import { AvailabilityStatus, type EnhancedAvailability } from '@/shared/types/graphql'
+
+import { AvailabilityClientService } from '../services/availabilityClientService'
 
 import type { EventClickArg, DateSelectArg, EventDropArg } from '@fullcalendar/core'
 import type { EventResizeDoneArg } from '@fullcalendar/interaction'
@@ -27,7 +29,7 @@ export function useCalendarEvents({
   const handleSelect = useCallback(
     async (selectInfo: DateSelectArg) => {
       try {
-        const selectedStart = dayjs(selectInfo.startStr)
+        const selectedStart = dayjs(selectInfo.startStr).toDate()
         const resourceId = parseInt(selectInfo.resource?.id || '0', 10)
 
         if (!resourceId) {
@@ -35,8 +37,9 @@ export function useCalendarEvents({
           return
         }
 
-        if (selectedStart.isBefore(dayjs())) {
-          WarningToast('Cannot create availability in the past')
+        const { isValid, error } = AvailabilityClientService.validateTimeConstraints(selectedStart)
+        if (!isValid) {
+          WarningToast(error!)
           return
         }
 
@@ -64,168 +67,96 @@ export function useCalendarEvents({
           status: AvailabilityStatus.Available,
         })
 
-        SuccessToast('Court availability created successfully')
+        SuccessToast('Court time created successfully')
       } catch (error) {
         // Revert optimistic update
         setAvailabilities(availabilities)
-
-        console.error('[Calendar Events] Create error:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          selectInfo,
-        })
-        ErrorToast('Failed to create court availability')
+        console.error('[Calendar Events] Create error:', error)
+        ErrorToast('Failed to create court time')
       }
     },
-    [availabilities, createAvailability, facilityId, setAvailabilities]
+    [facilityId, availabilities, setAvailabilities, createAvailability]
   )
 
   const handleEventClick = useCallback(
     (clickInfo: EventClickArg) => {
-      try {
-        const availability = availabilities.find(
-          (a) => `${a.court_number}-${a.start_time}` === clickInfo.event.id
-        )
-        if (availability) onEventClick(availability)
-      } catch (error) {
-        console.error('[Calendar Events] Click error:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          clickInfo,
-        })
-        ErrorToast('Failed to handle event click')
-      }
+      const availability = clickInfo.event.extendedProps.availability as EnhancedAvailability
+      onEventClick(availability)
     },
-    [availabilities, onEventClick]
+    [onEventClick]
   )
 
-  const handleEventDrop = useCallback(
-    async (dropInfo: EventDropArg) => {
-      const { event, oldEvent } = dropInfo
-      try {
-        const availability = availabilities.find(
-          (a) => `${a.court_number}-${a.start_time}` === event.id
-        )
+  const handleEventModification = useCallback(
+    async (
+      event: { start: Date | null; end: Date | null; id: string },
+      oldEvent: { start: Date | null; end: Date | null },
+      revertFunc: () => void,
+      newResourceId?: string
+    ) => {
+      const availability = AvailabilityClientService.findAvailabilityFromEventId(
+        event.id,
+        availabilities,
+        oldEvent.start
+      )
 
-        if (!availability) {
-          InfoToast('No changes needed - availability not found')
-          return
-        }
-
-        if (availability.status === AvailabilityStatus.Booked) {
-          dropInfo.revert()
-          WarningToast('Cannot move booked slots')
-          return
-        }
-
-        if (dayjs(event.start).isBefore(dayjs())) {
-          dropInfo.revert()
-          WarningToast('Cannot move availability to past dates')
-          return
-        }
-
-        const newCourtNumber = parseInt(event.getResources()[0]?.id || '0', 10)
-        const oldCourtNumber = parseInt(oldEvent.getResources()[0]?.id || '0', 10)
-
-        const updatedAvailability = {
-          ...availability,
-          court_number: newCourtNumber,
-          start_time: event.start?.toISOString() || '',
-          end_time: event.end?.toISOString() || '',
-        }
-
-        // Optimistic update
-        setAvailabilities(
-          availabilities.map((a) =>
-            a.court_number === oldCourtNumber && a.start_time === availability.start_time
-              ? updatedAvailability
-              : a
-          )
-        )
-
-        await updateAvailability({
-          facilityId,
-          courtNumber: oldCourtNumber,
-          startTime: oldEvent.start?.toISOString() || '',
-          update: {
-            court_number: newCourtNumber,
-            start_time: event.start?.toISOString() || '',
-            end_time: event.end?.toISOString() || '',
-          },
-        })
-
-        SuccessToast('Court time moved successfully')
-      } catch (error) {
-        // Revert optimistic update
-        setAvailabilities(availabilities)
-        dropInfo.revert()
-
-        console.error('[Calendar Events] Drop error:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          dropInfo,
-        })
-        ErrorToast('Failed to move court time')
+      if (!availability) {
+        ErrorToast('Availability not found')
+        revertFunc()
+        return
       }
-    },
-    [availabilities, updateAvailability, facilityId, setAvailabilities]
-  )
 
-  const handleEventResize = useCallback(
-    async (resizeInfo: EventResizeDoneArg) => {
-      const { event, oldEvent } = resizeInfo
+      if (availability.status === AvailabilityStatus.Booked) {
+        revertFunc()
+        WarningToast('Cannot modify booked slots')
+        return
+      }
+
+      const updates = {
+        start_time: event.start?.toISOString() || '',
+        end_time: event.end?.toISOString() || '',
+        ...(newResourceId && { court_number: parseInt(newResourceId) }),
+      }
+
       try {
-        const availability = availabilities.find(
-          (a) => `${a.court_number}-${a.start_time}` === event.id
-        )
-
-        if (!availability) {
-          InfoToast('No changes needed - availability not found')
-          return
-        }
-
-        if (availability.status === AvailabilityStatus.Booked) {
-          resizeInfo.revert()
-          WarningToast('Cannot resize booked slots')
-          return
-        }
-
-        const updatedAvailability = {
-          ...availability,
-          start_time: event.start?.toISOString() || '',
-          end_time: event.end?.toISOString() || '',
-        }
-
         // Optimistic update
         setAvailabilities(
-          availabilities.map((a) =>
-            a.court_number === availability.court_number && a.start_time === availability.start_time
-              ? updatedAvailability
-              : a
-          )
+          AvailabilityClientService.updateAvailabilityInList(availabilities, availability, updates)
         )
 
         await updateAvailability({
           facilityId,
           courtNumber: availability.court_number,
           startTime: oldEvent.start?.toISOString() || '',
-          update: {
-            start_time: event.start?.toISOString() || '',
-            end_time: event.end?.toISOString() || '',
-          },
+          update: updates,
         })
-
-        SuccessToast('Court time duration updated successfully')
       } catch (error) {
         // Revert optimistic update
         setAvailabilities(availabilities)
-        resizeInfo.revert()
-
-        console.error('[Calendar Events] Resize error:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          resizeInfo,
-        })
-        ErrorToast('Failed to update court time duration')
+        revertFunc()
+        console.error('[Calendar Events] Modification error:', error)
+        ErrorToast('Failed to update court time')
       }
     },
-    [availabilities, updateAvailability, facilityId, setAvailabilities]
+    [facilityId, availabilities, updateAvailability, setAvailabilities]
+  )
+
+  const handleEventDrop = useCallback(
+    (dropInfo: EventDropArg) => {
+      handleEventModification(
+        dropInfo.event,
+        dropInfo.oldEvent,
+        dropInfo.revert,
+        dropInfo.newResource?.id
+      )
+    },
+    [handleEventModification]
+  )
+
+  const handleEventResize = useCallback(
+    (resizeInfo: EventResizeDoneArg) => {
+      handleEventModification(resizeInfo.event, resizeInfo.oldEvent, resizeInfo.revert)
+    },
+    [handleEventModification]
   )
 
   return {

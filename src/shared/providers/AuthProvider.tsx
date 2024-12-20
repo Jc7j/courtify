@@ -38,8 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSession = useCallback(
     async (session: Session | null, options: { skipRedirect?: boolean } = {}) => {
       if (!session) {
-        await reset()
-        resetFacility()
+        await Promise.all([reset(), resetFacility()])
         return
       }
 
@@ -70,32 +69,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!userData) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
         if (!userData.is_active) throw new Error(AUTH_ERRORS.ACCOUNT_INACTIVE)
 
-        setSession({
-          user: {
-            ...session.user,
-            name: userData.name,
-            facility_id: userData.facility_id,
-            role: userData.role,
-            is_active: userData.is_active,
-          },
-          accessToken: session.access_token,
-          refreshToken: session.refresh_token,
-          expiresAt: session.expires_at,
-        })
+        await Promise.all([
+          setSession({
+            user: {
+              ...session.user,
+              name: userData.name,
+              facility_id: userData.facility_id,
+              role: userData.role,
+              is_active: userData.is_active,
+            },
+            accessToken: session.access_token,
+            refreshToken: session.refresh_token,
+            expiresAt: session.expires_at,
+          }),
+          userData.facility_id && userData.facilities
+            ? setFacility({
+                id: userData.facilities.id,
+                name: userData.facilities.name,
+                slug: userData.facilities.slug,
+                stripe_account_id: userData.facilities.stripe_account_id,
+                stripe_account_enabled: userData.facilities.stripe_account_enabled || false,
+              })
+            : resetFacility(),
+        ])
 
-        if (userData.facility_id && userData.facilities) {
-          setFacility({
-            id: userData.facilities.id,
-            name: userData.facilities.name,
-            slug: userData.facilities.slug,
-            stripe_account_id: userData.facilities.stripe_account_id,
-            stripe_account_enabled: userData.facilities.stripe_account_enabled || false,
-          })
-        } else {
-          resetFacility()
-        }
-
-        if (pathname === ROUTES.AUTH.SIGNIN) {
+        if (!options.skipRedirect && pathname === ROUTES.AUTH.SIGNIN) {
           router.replace(ROUTES.DASHBOARD.HOME)
         }
       } catch (error) {
@@ -111,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [reset, resetFacility, setFacility, router, setSession, pathname, isSignupPage]
+    [pathname, reset, resetFacility, router, setFacility, setSession]
   )
 
   useEffect(() => {
