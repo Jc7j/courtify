@@ -5,6 +5,7 @@ import { stripe } from '@/shared/lib/stripe/stripe'
 
 import type { CreatePaymentIntentInput } from '@/features/booking/types'
 
+// TODO: Error on prod (possibly on local too) occurs  because less than 10 minutes between start and end time
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as CreatePaymentIntentInput

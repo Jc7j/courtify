@@ -187,33 +187,36 @@ async function handlePaymentFailure(
 }
 
 export async function POST(request: Request) {
-  if (request.method !== 'POST') {
-    return new NextResponse(null, {
-      status: 405,
-      headers: { Allow: 'POST', 'Content-Type': 'application/json' },
-    })
-  }
-
   const body = await request.text()
   const headerList = await headers()
   const signature = headerList.get('stripe-signature')
 
+  console.log('🔍 Webhook received:', {
+    hasSignature: !!signature,
+    bodyLength: body.length,
+  })
+
   if (!signature) {
+    console.error('❌ Missing stripe-signature header')
     return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 })
   }
 
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    // Convert the raw body string to a Buffer
+    const rawBody = Buffer.from(body)
+
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err)
-    return new NextResponse(JSON.stringify({ error: 'Invalid signature' }), {
-      status: 400,
-      headers: {
-        'Content-Type': 'application/json',
+    return NextResponse.json(
+      {
+        error: 'Invalid signature',
+        details: err instanceof Error ? err.message : 'Unknown error',
       },
-    })
+      { status: 400 }
+    )
   }
 
   const supabaseAdmin = createAdminClient()
