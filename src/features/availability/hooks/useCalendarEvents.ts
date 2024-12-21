@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { useCallback } from 'react'
 
-import { ErrorToast, SuccessToast, WarningToast } from '@/shared/components/ui'
+import { ErrorToast, WarningToast } from '@/shared/components/ui'
 import { AvailabilityStatus, type EnhancedAvailability } from '@/shared/types/graphql'
 
 import { AvailabilityClientService } from '../services/availabilityClientService'
@@ -66,13 +66,10 @@ export function useCalendarEvents({
           endTime: selectInfo.endStr,
           status: AvailabilityStatus.Available,
         })
-
-        SuccessToast('Court time created successfully')
       } catch (error) {
         // Revert optimistic update
         setAvailabilities(availabilities)
         console.error('[Calendar Events] Create error:', error)
-        ErrorToast('Failed to create court time')
       }
     },
     [facilityId, availabilities, setAvailabilities, createAvailability]

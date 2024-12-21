@@ -33,6 +33,7 @@ async function createBooking(
       facility_id: facilityId,
       court_number: parseInt(paymentIntent.metadata.courtNumber),
       start_time: paymentIntent.metadata.startTime,
+      // end_time: paymentIntent.metadata.endTime, // Add this in if we want to test failures ONLY ON LOCAL DEVELOPMENT
       customer_email: paymentIntent.metadata.customerEmail,
       customer_name: paymentIntent.metadata.customerName,
       customer_phone: paymentIntent.metadata.customerPhone,

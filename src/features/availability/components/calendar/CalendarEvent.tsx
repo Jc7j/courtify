@@ -39,6 +39,10 @@ export const CalendarEvent = memo(function CalendarEvent({
   const { deleteAvailability } = useCourtAvailability()
   const { selectedAvailability } = useCalendarStore()
 
+  if (!availability?.court_number) {
+    return null
+  }
+
   const isSelected =
     selectedAvailability?.court_number === availability.court_number &&
     selectedAvailability?.start_time === availability.start_time
