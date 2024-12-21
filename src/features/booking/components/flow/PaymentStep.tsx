@@ -4,8 +4,6 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Clock, Calendar, DollarSign } from 'lucide-react'
 import { FormEvent, useState } from 'react'
 
-import { useBookings } from '@/features/booking/hooks/useBookings'
-
 import { Card, Button, Separator } from '@/shared/components/ui'
 
 import type { GuestDetailsType } from '../../types'
@@ -28,7 +26,6 @@ interface PaymentStepProps {
 export function PaymentStep({ onSuccess, onBack, amount, bookingDetails }: PaymentStepProps) {
   const stripe = useStripe()
   const elements = useElements()
-  const { confirmPaymentIntentAndBook } = useBookings()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
 
@@ -59,8 +56,6 @@ export function PaymentStep({ onSuccess, onBack, amount, bookingDetails }: Payme
       if (confirmError) {
         throw new Error(confirmError.message)
       }
-
-      await confirmPaymentIntentAndBook(bookingDetails.facilityId)
       onSuccess()
     } catch (error) {
       console.error('Payment failed:', error)

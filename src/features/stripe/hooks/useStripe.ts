@@ -45,7 +45,6 @@ export function useStripe(): UseStripeReturn {
       }
 
       if (!facility.stripe_account_id) {
-        InfoToast('Stripe account not connected')
         return {
           isConnected: false,
           isEnabled: false,

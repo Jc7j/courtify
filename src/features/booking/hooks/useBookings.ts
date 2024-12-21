@@ -7,10 +7,9 @@ import { AvailabilityServerService } from '@/features/availability/services/avai
 
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
-import { ErrorToast, InfoToast, SuccessToast, WarningToast } from '@/shared/components/ui'
+import { ErrorToast, InfoToast, WarningToast } from '@/shared/components/ui'
 import { AvailabilityStatus } from '@/shared/types/graphql'
 
-import { useBookingStore } from './useBookingStore'
 import { BookingClientService } from '../services/bookingClientService'
 import { BookingServerService } from '../services/bookingServerService'
 
@@ -45,11 +44,6 @@ export function useBookings() {
   }
 
   async function createPaymentIntent(input: CreatePaymentIntentInput) {
-    // @TODO Free court rental should happen when we plan out
-    // subscription model. For now, we'll just check if the facility
-    // has a stripe account id. This requires some thinking to do
-    // for free court rentals. Probably just a different functionality without the stripe
-    // payment element.
     if (!facility?.stripe_account_id) {
       ErrorToast('Facility not setup for payments')
       throw new Error('Facility not setup for payments')
@@ -70,11 +64,10 @@ export function useBookings() {
         startTime: input.startTime,
         update: { status: AvailabilityStatus.Held },
       })
-      InfoToast('Court held for 10 minutesfor your booking')
+      InfoToast('Court held for 10 minutes')
 
       // 3. Create payment intent
-      const result = await services.booking.createPaymentIntent(input, facility.stripe_account_id)
-      return result
+      return await services.booking.createPaymentIntent(input, facility.stripe_account_id)
     } catch (error) {
       // Release the hold if payment intent creation fails
       try {
@@ -86,58 +79,9 @@ export function useBookings() {
         })
         WarningToast('Court released - payment setup failed')
       } catch (releaseError) {
-        console.error('[Bookings] Release hold error:', {
-          error: releaseError instanceof Error ? releaseError.message : 'Unknown error',
-          input,
-        })
+        console.error('[Bookings] Release hold error:', releaseError)
       }
 
-      console.error('[Bookings] Create payment intent error:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        input,
-      })
-      throw error
-    }
-  }
-
-  async function confirmPaymentIntentAndBook(facilityId: string) {
-    const state = useBookingStore.getState()
-    if (!state.selectedAvailability || !state.guestInfo || !state.paymentIntent) {
-      ErrorToast('Missing booking information')
-      throw new Error('Missing booking information')
-    }
-
-    try {
-      // 1. Create booking record
-      const booking = await services.booking.createBooking({
-        facilityId,
-        courtNumber: state.selectedAvailability.court_number,
-        startTime: state.selectedAvailability.start_time,
-        customerEmail: state.guestInfo.email,
-        customerName: state.guestInfo.name,
-        customerPhone: state.guestInfo.phone || null,
-        paymentIntentId: state.paymentIntent.paymentIntentId,
-        amount: state.paymentIntent.amount,
-      })
-
-      if (!booking) {
-        ErrorToast('Failed to create booking record')
-        throw new Error('Failed to create booking record')
-      }
-
-      // 2. Update court availability
-      await services.availability.updateAvailability({
-        facilityId,
-        courtNumber: state.selectedAvailability.court_number,
-        startTime: state.selectedAvailability.start_time,
-        update: { status: AvailabilityStatus.Booked },
-      })
-
-      SuccessToast('Booking confirmed successfully')
-      return booking
-    } catch (error) {
-      console.error('Failed to create booking:', error)
-      ErrorToast('Failed to confirm booking')
       throw error
     }
   }
@@ -145,6 +89,5 @@ export function useBookings() {
   return {
     getAvailabilities,
     createPaymentIntent,
-    confirmPaymentIntentAndBook,
   }
 }

@@ -20,65 +20,174 @@ export const dynamic = 'force-dynamic'
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-async function getExistingBookingMetadata(supabase: any, paymentIntentId: string) {
-  const { data: existingBooking, error: fetchError } = await supabase
+async function createBooking(
+  supabase: any,
+  paymentIntent: Stripe.PaymentIntent,
+  facilityId: string,
+  status: BookingStatus,
+  paymentStatus: PaymentStatus
+) {
+  const { data: booking, error } = await supabase
     .from('bookings')
-    .select('metadata')
-    .eq('stripe_payment_intent_id', paymentIntentId)
-    .single()
-
-  if (fetchError) {
-    console.error('❌ Error fetching booking metadata:', {
-      error: fetchError,
-      paymentIntentId,
+    .insert({
+      facility_id: facilityId,
+      court_number: parseInt(paymentIntent.metadata.courtNumber),
+      start_time: paymentIntent.metadata.startTime,
+      customer_email: paymentIntent.metadata.customerEmail,
+      customer_name: paymentIntent.metadata.customerName,
+      customer_phone: paymentIntent.metadata.customerPhone,
+      stripe_payment_intent_id: paymentIntent.id,
+      amount_total: paymentIntent.amount,
+      amount_paid: status === BookingStatus.Confirmed ? paymentIntent.amount : null,
+      status,
+      payment_status: paymentStatus,
+      metadata: {
+        payment_details: {
+          payment_method: paymentIntent.payment_method_types[0],
+          payment_date: new Date().toISOString(),
+          stripe_status: paymentIntent.status,
+          payment_intent_id: paymentIntent.id,
+        },
+        products: {
+          court_rental: {
+            id: paymentIntent.metadata.courtProductId,
+            name: paymentIntent.metadata.courtProductName,
+            price_amount: parseInt(paymentIntent.metadata.courtProductPrice),
+            type: 'court_rental',
+          },
+          equipment: JSON.parse(paymentIntent.metadata.equipmentProducts || '[]'),
+        },
+        customer_preferences: {
+          net_height: paymentIntent.metadata.netHeight,
+        },
+        court_details: {
+          court_number: parseInt(paymentIntent.metadata.courtNumber),
+          start_time: paymentIntent.metadata.startTime,
+          end_time: paymentIntent.metadata.endTime,
+          duration_hours: paymentIntent.metadata.durationInHours,
+        },
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    throw new Error(`Failed to fetch booking metadata: ${fetchError.message}`)
-  }
-
-  if (!existingBooking) {
-    console.error('❌ No booking found for payment intent:', paymentIntentId)
-    throw new Error('Booking not found')
-  }
-
-  if (typeof existingBooking.metadata === 'string') {
-    try {
-      return JSON.parse(existingBooking.metadata)
-    } catch (err) {
-      console.error('❌ Error parsing metadata string:', existingBooking.metadata + ' ' + err)
-      return {}
-    }
-  }
-
-  return existingBooking.metadata || {}
-}
-
-async function updateBooking(supabase: any, paymentIntentId: string, updateData: any) {
-  const dataToUpdate = {
-    ...updateData,
-    metadata:
-      typeof updateData.metadata === 'string'
-        ? updateData.metadata
-        : JSON.stringify(updateData.metadata),
-    updated_at: new Date().toISOString(),
-  }
-
-  const { data, error } = await supabase
-    .from('bookings')
-    .update(dataToUpdate)
-    .eq('stripe_payment_intent_id', paymentIntentId)
     .select()
     .single()
 
   if (error) {
-    console.error('❌ Error updating booking:', {
-      error,
-      paymentIntentId,
-      updateData: dataToUpdate,
-    })
-    throw new Error(`Failed to update booking: ${error.message}`)
+    console.error('❌ Error creating booking:', error)
+    throw new Error('Failed to create booking')
   }
 
-  return data
+  return booking
+}
+
+async function handlePaymentSuccess(
+  supabase: any,
+  paymentIntent: Stripe.PaymentIntent,
+  facilityId: string
+) {
+  // 1. Create booking record
+  const booking = await createBooking(
+    supabase,
+    paymentIntent,
+    facilityId,
+    BookingStatus.Confirmed,
+    PaymentStatus.Paid
+  )
+
+  // 2. Update court availability
+  const { error: courtError } = await supabase
+    .from('court_availabilities')
+    .update({
+      status: 'booked',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('facility_id', facilityId)
+    .eq('court_number', parseInt(paymentIntent.metadata.courtNumber))
+    .eq('start_time', paymentIntent.metadata.startTime)
+
+  if (courtError) {
+    console.error('❌ Error updating court availability:', courtError)
+    throw new Error('Failed to update court availability')
+  }
+
+  // 3. Send confirmation email
+  try {
+    const { data: facility } = await supabase
+      .from('facilities')
+      .select('name, address')
+      .eq('id', facilityId)
+      .single()
+
+    await resend.emails.send({
+      from: `${facility.name} <bookings@courtify.app>`,
+      to: [paymentIntent.metadata.customerEmail],
+      subject: 'Reservation Confirmation',
+      react: ConfirmationEmail({
+        booking: {
+          date: dayjs(paymentIntent.metadata.startTime).format('dddd, MMMM D, YYYY'),
+          time: `${dayjs(paymentIntent.metadata.startTime).format('h:mm A')} - ${dayjs(
+            paymentIntent.metadata.endTime
+          ).format('h:mm A')}`,
+          duration: parseFloat(paymentIntent.metadata.durationInHours),
+          facilityId,
+          guestInfo: {
+            name: paymentIntent.metadata.customerName,
+            email: paymentIntent.metadata.customerEmail,
+            phone: paymentIntent.metadata.customerPhone,
+            net_height: paymentIntent.metadata.netHeight as GuestDetailsType['net_height'],
+            selectedCourtProduct: {
+              id: paymentIntent.metadata.courtProductId,
+              name: paymentIntent.metadata.courtProductName,
+              price_amount: parseInt(paymentIntent.metadata.courtProductPrice),
+              type: ProductType.CourtRental,
+            },
+            selectedEquipment: JSON.parse(paymentIntent.metadata.equipmentProducts || '[]'),
+          },
+          amount: paymentIntent.amount,
+        },
+        facility: {
+          name: facility.name,
+          address: facility.address || '',
+        },
+      }),
+    })
+  } catch (error) {
+    console.error('Failed to send confirmation email:', error)
+  }
+
+  return booking
+}
+
+async function handlePaymentFailure(
+  supabase: any,
+  paymentIntent: Stripe.PaymentIntent,
+  facilityId: string
+) {
+  // 1. Create cancelled booking record
+  await createBooking(
+    supabase,
+    paymentIntent,
+    facilityId,
+    BookingStatus.Cancelled,
+    PaymentStatus.Failed
+  )
+
+  // 2. Release court availability
+  const { error: courtError } = await supabase
+    .from('court_availabilities')
+    .update({
+      status: 'available',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('facility_id', facilityId)
+    .eq('court_number', parseInt(paymentIntent.metadata.courtNumber))
+    .eq('start_time', paymentIntent.metadata.startTime)
+
+  if (courtError) {
+    console.error('❌ Error releasing court:', courtError)
+    throw new Error('Failed to release court')
+  }
 }
 
 export async function POST(request: Request) {
@@ -111,176 +220,27 @@ export async function POST(request: Request) {
     const facilityId = paymentIntent.metadata.facilityId
 
     if (!facilityId) {
-      console.error('❌ No facility ID in payment intent metadata')
-      return new NextResponse(JSON.stringify({ error: 'Missing facility ID' }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      throw new Error('Missing facility ID')
     }
 
     switch (event.type) {
-      case 'payment_intent.succeeded': {
-        const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
-
-        const updatedMetadata = {
-          payment_details: {
-            payment_method: paymentIntent.payment_method_types[0],
-            payment_date: new Date().toISOString(),
-            stripe_status: paymentIntent.status,
-            payment_intent_id: paymentIntent.id,
-            event_type: 'payment_intent.succeeded',
-            amount_paid: paymentIntent.amount,
-          },
-          products: {
-            court_rental: {
-              id: paymentIntent.metadata.courtProductId,
-              name: paymentIntent.metadata.courtProductName,
-              price_amount: parseInt(paymentIntent.metadata.courtProductPrice),
-              type: 'court_rental',
-            },
-            equipment: JSON.parse(paymentIntent.metadata.equipmentProducts || '[]'),
-          },
-          customer_preferences: {
-            net_height: paymentIntent.metadata.netHeight,
-          },
-          court_details: {
-            court_number: parseInt(paymentIntent.metadata.courtNumber),
-            start_time: paymentIntent.metadata.startTime,
-            end_time: paymentIntent.metadata.endTime,
-            duration_hours: paymentIntent.metadata.durationInHours,
-          },
-          booking_flow: {
-            created_from: 'guest_checkout',
-            initialized_at: existingMetadata.initialized_at,
-            payment_completed_at: new Date().toISOString(),
-            status: 'payment_completed',
-          },
-          customer_info: {
-            name: paymentIntent.metadata.customerName,
-            email: paymentIntent.metadata.customerEmail,
-            phone: paymentIntent.metadata.customerPhone,
-          },
-        }
-
-        await updateBooking(supabaseAdmin, paymentIntent.id, {
-          status: BookingStatus.Confirmed,
-          payment_status: PaymentStatus.Paid,
-          amount_paid: paymentIntent.amount,
-          amount_total: paymentIntent.amount,
-          metadata: updatedMetadata,
-        })
-
-        try {
-          const { data: facility, error: facilityError } = await supabaseAdmin
-            .from('facilities')
-            .select('name, address')
-            .eq('id', facilityId)
-            .single()
-
-          if (facilityError) {
-            console.error('Failed to fetch facility info:', facilityError)
-            throw new Error('Failed to fetch facility info')
-          }
-          await resend.emails.send({
-            from: `${facility.name} <bookings@courtify.app>`,
-            to: [paymentIntent.metadata.customerEmail],
-            subject: `Reservation Confirmation`,
-            react: ConfirmationEmail({
-              booking: {
-                date: dayjs(paymentIntent.metadata.startTime).format('dddd, MMMM D, YYYY'),
-                time: `${dayjs(paymentIntent.metadata.startTime).format('h:mm A')} - ${dayjs(
-                  paymentIntent.metadata.endTime
-                ).format('h:mm A')}`,
-                duration: parseFloat(paymentIntent.metadata.durationInHours),
-                facilityId: facilityId,
-                guestInfo: {
-                  name: paymentIntent.metadata.customerName,
-                  email: paymentIntent.metadata.customerEmail,
-                  phone: paymentIntent.metadata.customerPhone,
-                  net_height: paymentIntent.metadata.netHeight as GuestDetailsType['net_height'],
-                  selectedCourtProduct: {
-                    id: paymentIntent.metadata.courtProductId,
-                    name: paymentIntent.metadata.courtProductName,
-                    price_amount: parseInt(paymentIntent.metadata.courtProductPrice),
-                    type: ProductType.CourtRental,
-                  },
-                  selectedEquipment: JSON.parse(paymentIntent.metadata.equipmentProducts || '[]'),
-                },
-                amount: paymentIntent.amount,
-              },
-              facility: {
-                name: facility.name,
-                address: facility.address || '',
-              },
-            }),
-          })
-        } catch (error) {
-          console.error('Failed to send confirmation email:', error)
-        }
-
+      case 'payment_intent.succeeded':
+        await handlePaymentSuccess(supabaseAdmin, paymentIntent, facilityId)
         break
-      }
 
-      case 'payment_intent.processing': {
-        const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
-
-        const updatedMetadata = {
-          ...existingMetadata,
-          payment_attempt: {
-            attempted_at: new Date().toISOString(),
-            status: 'processing',
-          },
-        }
-
-        await updateBooking(supabaseAdmin, paymentIntent.id, {
-          status: BookingStatus.Pending,
-          payment_status: PaymentStatus.Processing,
-          metadata: JSON.stringify(updatedMetadata),
-        })
+      case 'payment_intent.payment_failed':
+        await handlePaymentFailure(supabaseAdmin, paymentIntent, facilityId)
         break
-      }
 
-      case 'payment_intent.payment_failed': {
-        const existingMetadata = await getExistingBookingMetadata(supabaseAdmin, paymentIntent.id)
-
-        const updatedMetadata = {
-          ...existingMetadata,
-          failure_details: {
-            failure_code: paymentIntent.last_payment_error?.code,
-            failure_message: paymentIntent.last_payment_error?.message,
-            failed_at: new Date().toISOString(),
-            payment_intent_id: paymentIntent.id,
-            event_type: 'payment_intent.payment_failed',
-          },
-        }
-
-        const updatedBooking = await updateBooking(supabaseAdmin, paymentIntent.id, {
-          status: BookingStatus.Cancelled,
-          payment_status: PaymentStatus.Failed,
-          metadata: JSON.stringify(updatedMetadata),
-        })
-
-        const { error: courtError } = await supabaseAdmin
-          .from('court_availabilities')
-          .update({
-            status: 'available',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('facility_id', updatedBooking.facility_id)
-          .eq('court_number', updatedBooking.court_number)
-          .eq('start_time', updatedBooking.start_time)
-
-        if (courtError) {
-          console.error('❌ Error releasing court:', {
-            error: courtError,
-            booking: updatedBooking,
-          })
-          throw new Error(`Failed to release court: ${courtError.message}`)
-        }
+      case 'payment_intent.processing':
+        await createBooking(
+          supabaseAdmin,
+          paymentIntent,
+          facilityId,
+          BookingStatus.Pending,
+          PaymentStatus.Processing
+        )
         break
-      }
     }
 
     return NextResponse.json({ received: true })
@@ -290,12 +250,7 @@ export async function POST(request: Request) {
       JSON.stringify({
         error: err instanceof Error ? err.message : 'Webhook handler failed',
       }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+      { status: 500 }
     )
   }
 }

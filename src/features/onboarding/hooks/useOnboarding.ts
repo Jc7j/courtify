@@ -34,21 +34,6 @@ export function useOnboarding(): OnboardingState {
         } else {
           router.replace(`${ROUTES.AUTH.SIGNUP}?step=${newStep}`)
         }
-
-        // Show appropriate step messages
-        switch (newStep) {
-          case 'create-intro':
-            InfoToast("Welcome! Let's set up your facility")
-            break
-          case 'create':
-            InfoToast('Enter your facility details')
-            break
-          case 'invite-team':
-            InfoToast('Almost done! Invite your team members')
-            break
-          default:
-            break
-        }
       } catch (error) {
         console.error('[Onboarding] Step change error:', {
           error: error instanceof Error ? error.message : 'Unknown error',
