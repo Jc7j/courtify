@@ -18,6 +18,7 @@ import {
   ConfirmationDialog,
   Progress,
 } from '@/shared/components/ui'
+import { cn } from '@/shared/lib/utils/cn'
 
 import type { StripeStatus, StripeAccountDetails } from '@/features/stripe/types'
 
@@ -119,15 +120,10 @@ const SetupProgress = memo(function SetupProgress({
 
 interface PaymentProcessorSectionProps {
   stripeStatus: StripeStatus | null
-  checking: boolean
   error?: string | null
 }
 
-export function PaymentProcessorSection({
-  stripeStatus,
-  checking,
-  error,
-}: PaymentProcessorSectionProps) {
+export function PaymentProcessorSection({ stripeStatus, error }: PaymentProcessorSectionProps) {
   const { connectStripe, connecting } = useStripe()
   const { updateFacility, error: facilityError } = useFacility()
   const facility = useFacilityStore((state) => state.facility)
@@ -179,16 +175,6 @@ export function PaymentProcessorSection({
     }
   }, [stripeStatus?.accountDetails?.business_profile?.name, updateFacility])
 
-  if (checking || !stripeStatus) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-6">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </CardContent>
-      </Card>
-    )
-  }
-
   if (error || facilityError) {
     return (
       <div className="p-4 rounded-lg bg-destructive/10 text-destructive">
@@ -197,7 +183,7 @@ export function PaymentProcessorSection({
     )
   }
 
-  const requirements = stripeStatus.accountDetails?.requirements || {
+  const requirements = stripeStatus?.accountDetails?.requirements || {
     currently_due: [],
     eventually_due: [],
     pending_verification: [],
@@ -213,45 +199,61 @@ export function PaymentProcessorSection({
   return (
     <Card>
       <CardContent className="space-y-6 pt-4">
-        {!facility?.stripe_account_id && (
-          <ConnectPrompt onConnect={handleConnect} connecting={connecting} />
+        {!stripeStatus && (
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-muted rounded-md w-1/3" />
+            <div className="h-32 bg-muted rounded-md" />
+          </div>
         )}
 
-        {facility?.stripe_account_id && facility?.stripe_account_enabled && (
-          <SetupProgress requirements={requirements} completionPercentage={completionPercentage} />
-        )}
+        <div
+          className={cn('space-y-6 transition-opacity duration-200', !stripeStatus && 'opacity-0')}
+        >
+          {stripeStatus && !facility?.stripe_account_id && (
+            <ConnectPrompt onConnect={handleConnect} connecting={connecting} />
+          )}
 
-        {stripeStatus.accountDetails && (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <PaymentStatus
-                type="charges"
-                enabled={stripeStatus.accountDetails.charges_enabled}
-                title="Card Payments"
-                description={
-                  stripeStatus.accountDetails.charges_enabled
-                    ? 'Ready to accept payments'
-                    : 'Not yet enabled (pending verification by Stripe or update your stripe account)'
-                }
+          {stripeStatus?.accountDetails &&
+            facility?.stripe_account_id &&
+            facility?.stripe_account_enabled && (
+              <SetupProgress
+                requirements={requirements}
+                completionPercentage={completionPercentage}
               />
-              <PaymentStatus
-                type="payouts"
-                enabled={stripeStatus.accountDetails.payouts_enabled}
-                title="Payouts"
-                description={
-                  stripeStatus.accountDetails.payouts_enabled
-                    ? 'Ready to receive payouts'
-                    : 'Not yet enabled (pending verification by Stripe or update your stripe account)'
-                }
-              />
-            </div>
+            )}
 
-            {facility?.stripe_account_id && <ConnectAccountManagement />}
-          </>
-        )}
+          {stripeStatus?.accountDetails && (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <PaymentStatus
+                  type="charges"
+                  enabled={stripeStatus.accountDetails.charges_enabled}
+                  title="Card Payments"
+                  description={
+                    stripeStatus.accountDetails.charges_enabled
+                      ? 'Ready to accept payments'
+                      : 'Not yet enabled (pending verification)'
+                  }
+                />
+                <PaymentStatus
+                  type="payouts"
+                  enabled={stripeStatus.accountDetails.payouts_enabled}
+                  title="Payouts"
+                  description={
+                    stripeStatus.accountDetails.payouts_enabled
+                      ? 'Ready to receive payouts'
+                      : 'Not yet enabled (pending verification)'
+                  }
+                />
+              </div>
+
+              {facility?.stripe_account_id && <ConnectAccountManagement />}
+            </>
+          )}
+        </div>
       </CardContent>
 
-      {stripeStatus.isConnected && (
+      {stripeStatus?.isConnected && (
         <CardFooter className="flex flex-col">
           <div className="flex gap-2 mt-8">
             <Button variant="outline-destructive" onClick={() => setShowDisconnectDialog(true)}>

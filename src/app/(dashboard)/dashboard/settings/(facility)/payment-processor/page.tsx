@@ -15,7 +15,7 @@ import type { StripeStatus } from '@/features/stripe/types'
 export default function PaymentProcessorPage() {
   const searchParams = useSearchParams()
   const facility = useFacilityStore((state) => state.facility)
-  const { checkStripeStatus, checking } = useStripe()
+  const { checkStripeStatus } = useStripe()
 
   const [state, setState] = useState({
     status: null as StripeStatus | null,
@@ -57,9 +57,7 @@ export default function PaymentProcessorPage() {
     }
   }, [checkStripeStatus, facility?.id, shouldRefresh])
 
-  const pageContent = (
-    <PaymentProcessorSection stripeStatus={state.status} checking={checking} error={state.error} />
-  )
+  const pageContent = <PaymentProcessorSection stripeStatus={state.status} error={state.error} />
 
   return (
     <div className="p-8">

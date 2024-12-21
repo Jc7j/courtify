@@ -70,7 +70,7 @@ export function ProductDialog({ open, onOpenChange, facilityId, product }: Produ
       return
     }
 
-    const priceInCents = Math.round(formData.price_amount * 100) // This is correct
+    const priceInCents = Math.round(formData.price_amount * 100)
 
     if (isEditing && product) {
       await updateProduct(product.id, {

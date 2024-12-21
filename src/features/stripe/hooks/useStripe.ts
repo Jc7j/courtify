@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 
 import { useFacility } from '@/core/facility/hooks/useFacility'
 import { useFacilityStore } from '@/core/facility/hooks/useFacilityStore'
 
 import { ErrorToast, InfoToast, SuccessToast, WarningToast } from '@/shared/components/ui'
 
-import { StripeAccountDetails, StripeConnectResponse, StripeStatusResponse } from '../types'
+import { StripeAccountDetails, StripeConnectResponse } from '../types'
 
 interface StripeStatus {
   isConnected: boolean
@@ -20,7 +20,6 @@ interface UseStripeReturn {
   connectStripe: (options?: ConnectStripeOptions) => Promise<StripeConnectResponse>
   checkStripeStatus: () => Promise<StripeStatus>
   connecting: boolean
-  checking: boolean
 }
 
 interface ConnectStripeOptions {
@@ -32,57 +31,18 @@ export function useStripe(): UseStripeReturn {
   const facility = useFacilityStore((state) => state.facility)
   const { updateFacility } = useFacility()
   const [connecting, setConnecting] = useState(false)
-  const [checking, setChecking] = useState(false)
-
-  const abortControllerRef = useRef<AbortController>()
-  const lastRequestIdRef = useRef<string>('')
-
-  const makeRequest = useCallback(
-    async <T>(url: string, options: Parameters<typeof fetch>[1], requestId: string): Promise<T> => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      abortControllerRef.current = new AbortController()
-      lastRequestIdRef.current = requestId
-
-      try {
-        const response = await fetch(url, {
-          ...options,
-          signal: abortControllerRef.current.signal,
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.error || `Request failed: ${response.statusText}`)
-        }
-
-        return data as T
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          throw new Error('Request cancelled')
-        }
-        throw err
-      }
-    },
-    []
-  )
 
   const checkStripeStatus = useCallback(async (): Promise<StripeStatus> => {
-    if (!facility?.id) {
-      ErrorToast('No facility found')
-      return {
-        isConnected: false,
-        isEnabled: false,
-        accountDetails: null,
-        error: 'No facility found',
-      }
-    }
-
     try {
-      setChecking(true)
-      const requestId = `status-${Date.now()}`
+      if (!facility?.id) {
+        ErrorToast('No facility found')
+        return {
+          isConnected: false,
+          isEnabled: false,
+          accountDetails: null,
+          error: 'No facility found',
+        }
+      }
 
       if (!facility.stripe_account_id) {
         InfoToast('Stripe account not connected')
@@ -94,20 +54,22 @@ export function useStripe(): UseStripeReturn {
         }
       }
 
-      const data = await makeRequest<StripeStatusResponse>(
-        '/api/stripe/accounts/status',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Stripe-Account': facility.stripe_account_id,
-          },
-          body: JSON.stringify({
-            facility_id: facility.id,
-          }),
+      const response = await fetch('/api/stripe/accounts/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Stripe-Account': facility.stripe_account_id,
         },
-        requestId
-      )
+        body: JSON.stringify({
+          facility_id: facility.id,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed: ${response.statusText}`)
+      }
 
       if (data.accountId) {
         if (data.isEnabled !== facility.stripe_account_enabled) {
@@ -144,7 +106,7 @@ export function useStripe(): UseStripeReturn {
     } catch (err) {
       console.error('[Stripe] Status check error:', {
         error: err instanceof Error ? err.message : 'Unknown error',
-        facilityId: facility.id,
+        facilityId: facility?.id,
       })
       ErrorToast('Failed to check Stripe status')
       return {
@@ -153,16 +115,8 @@ export function useStripe(): UseStripeReturn {
         accountDetails: null,
         error: err instanceof Error ? err.message : 'Failed to check Stripe status',
       }
-    } finally {
-      setChecking(false)
     }
-  }, [
-    facility?.id,
-    makeRequest,
-    facility?.stripe_account_id,
-    facility?.stripe_account_enabled,
-    updateFacility,
-  ])
+  }, [facility?.id, facility?.stripe_account_id, updateFacility])
 
   const connectStripe = useCallback(
     async ({
@@ -178,27 +132,25 @@ export function useStripe(): UseStripeReturn {
         setConnecting(true)
         InfoToast('Setting up Stripe connection...')
 
-        const data = await makeRequest<StripeConnectResponse>(
-          '/api/stripe/accounts/connect',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              facility_id: facility.id,
-              facility_name: facility.name,
-              reconnect,
-              link_type: linkType,
-            }),
-          },
-          `connect-${Date.now()}`
-        )
+        const data = await fetch('/api/stripe/accounts/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            facility_id: facility.id,
+            facility_name: facility.name,
+            reconnect,
+            link_type: linkType,
+          }),
+        })
 
-        if (data.url && !data.error) {
+        const dataJson = await data.json()
+
+        if (dataJson.url && !dataJson.error) {
           SuccessToast('Stripe connection ready')
           checkStripeStatus()
         }
 
-        return data
+        return dataJson
       } catch (err) {
         console.error('[Stripe] Connect error:', {
           error: err instanceof Error ? err.message : 'Unknown error',
@@ -213,13 +165,12 @@ export function useStripe(): UseStripeReturn {
         setConnecting(false)
       }
     },
-    [facility?.id, facility?.name, makeRequest, checkStripeStatus]
+    [facility?.id, facility?.name, checkStripeStatus]
   )
 
   return {
     connectStripe,
     checkStripeStatus,
     connecting,
-    checking,
   }
 }
