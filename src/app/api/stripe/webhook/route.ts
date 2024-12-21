@@ -17,9 +17,22 @@ export const runtime = 'nodejs'
 export const preferredRegion = 'auto'
 export const dynamic = 'force-dynamic'
 
+export const allowedMethods = ['POST']
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      Allow: 'POST',
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// end_time: paymentIntent.metadata.endTime, // Add this in if we want to test failures ONLY ON LOCAL DEVELOPMENT
 async function createBooking(
   supabase: any,
   paymentIntent: Stripe.PaymentIntent,
@@ -27,7 +40,6 @@ async function createBooking(
   status: BookingStatus,
   paymentStatus: PaymentStatus
 ) {
-  // end_time: paymentIntent.metadata.endTime, // Add this in if we want to test failures ONLY ON LOCAL DEVELOPMENT
   const { data: booking, error } = await supabase
     .from('bookings')
     .insert({
@@ -87,7 +99,6 @@ async function handlePaymentSuccess(
   paymentIntent: Stripe.PaymentIntent,
   facilityId: string
 ) {
-  // 1. Create booking record
   const booking = await createBooking(
     supabase,
     paymentIntent,
@@ -96,7 +107,6 @@ async function handlePaymentSuccess(
     PaymentStatus.Paid
   )
 
-  // 2. Update court availability
   const { error: courtError } = await supabase
     .from('court_availabilities')
     .update({
@@ -112,7 +122,6 @@ async function handlePaymentSuccess(
     throw new Error('Failed to update court availability')
   }
 
-  // 3. Send confirmation email
   try {
     const { data: facility } = await supabase
       .from('facilities')
@@ -165,7 +174,6 @@ async function handlePaymentFailure(
   paymentIntent: Stripe.PaymentIntent,
   facilityId: string
 ) {
-  // 1. Create cancelled booking record
   await createBooking(
     supabase,
     paymentIntent,
@@ -174,7 +182,6 @@ async function handlePaymentFailure(
     PaymentStatus.Failed
   )
 
-  // 2. Release court availability
   const { error: courtError } = await supabase
     .from('court_availabilities')
     .update({
@@ -227,7 +234,6 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'payment_intent.succeeded':
         await handlePaymentSuccess(supabaseAdmin, paymentIntent, facilityId)
-        // Return immediate success response
         return new NextResponse(JSON.stringify({ success: true }), {
           status: 200,
           headers: {
@@ -260,7 +266,6 @@ export async function POST(request: Request) {
         })
 
       default:
-        // Return 200 for unhandled events to prevent retries
         return new NextResponse(JSON.stringify({ success: true }), {
           status: 200,
           headers: {
@@ -270,7 +275,6 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     console.error('❌ Error processing webhook:', err)
-    // Return 500 for internal errors to trigger retry
     return new NextResponse(
       JSON.stringify({
         error: err instanceof Error ? err.message : 'Webhook handler failed',

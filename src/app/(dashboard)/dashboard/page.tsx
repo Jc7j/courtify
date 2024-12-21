@@ -99,14 +99,12 @@ function DashboardContent() {
     [facilityId, getFacilityAvailabilities, setAvailabilities]
   )
 
-  // Handle initial loading state
   useEffect(() => {
     if (state.initialLoading && facility !== undefined && user !== undefined) {
       setState((prev) => ({ ...prev, initialLoading: false }))
     }
   }, [facility, user, state.initialLoading])
 
-  // Handle date changes
   const handleDateChange = useCallback(
     (start: string, end: string) => {
       fetchAvailabilities(start, end)
@@ -114,7 +112,6 @@ function DashboardContent() {
     [fetchAvailabilities]
   )
 
-  // Initial fetch on mount and when date changes
   useEffect(() => {
     fetchAvailabilities(dateRange.start, dateRange.end)
   }, [fetchAvailabilities, dateRange.start, dateRange.end])

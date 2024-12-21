@@ -10,7 +10,6 @@ export async function POST(req: Request) {
     const body = (await req.json()) as CreatePaymentIntentInput
     const stripeAccountId = req.headers.get('X-Stripe-Account')
 
-    // Basic validation
     if (!body.facilityId || !body.courtNumber || !body.startTime || !body.endTime) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
@@ -19,7 +18,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Facility not setup for payments' }, { status: 400 })
     }
 
-    // Time validation
     const startTime = dayjs(body.startTime)
     const endTime = dayjs(body.endTime)
     const now = dayjs()
@@ -28,7 +26,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid booking time' }, { status: 400 })
     }
 
-    // Calculate amount
     const durationInHours = endTime.diff(startTime, 'hour', true)
     const amount = body.selectedProducts.equipmentProducts.reduce(
       (sum, product) => sum + product.price_amount,
@@ -39,7 +36,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
-    // Create payment intent with flattened metadata for Stripe
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount,
@@ -67,7 +63,6 @@ export async function POST(req: Request) {
               type: 'equipment',
             }))
           ),
-          // Add initialized_at for consistent booking flow
           initialized_at: new Date().toISOString(),
         },
       },

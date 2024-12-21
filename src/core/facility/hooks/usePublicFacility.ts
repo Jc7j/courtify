@@ -39,7 +39,6 @@ export function usePublicFacility(slug: string): UsePublicFacilityReturn {
 
       setFacility(result)
 
-      // Update store with public facility data
       facilityStore.setFacility({
         id: result.id,
         name: result.name,
