@@ -191,30 +191,19 @@ export async function POST(request: Request) {
   const headerList = await headers()
   const signature = headerList.get('stripe-signature')
 
-  console.log('🔍 Webhook received:', {
-    hasSignature: !!signature,
-    bodyLength: body.length,
-  })
-
   if (!signature) {
-    console.error('❌ Missing stripe-signature header')
     return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 })
   }
 
   let event: Stripe.Event
 
   try {
-    // Convert the raw body string to a Buffer
-    const rawBody = Buffer.from(body)
-
-    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
+    // Use the raw body directly without any transformation
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err)
     return NextResponse.json(
-      {
-        error: 'Invalid signature',
-        details: err instanceof Error ? err.message : 'Unknown error',
-      },
+      { error: 'Invalid signature', details: err instanceof Error ? err.message : 'Unknown error' },
       { status: 400 }
     )
   }
