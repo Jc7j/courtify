@@ -27,13 +27,13 @@ async function createBooking(
   status: BookingStatus,
   paymentStatus: PaymentStatus
 ) {
+  // end_time: paymentIntent.metadata.endTime, // Add this in if we want to test failures ONLY ON LOCAL DEVELOPMENT
   const { data: booking, error } = await supabase
     .from('bookings')
     .insert({
       facility_id: facilityId,
       court_number: parseInt(paymentIntent.metadata.courtNumber),
       start_time: paymentIntent.metadata.startTime,
-      // end_time: paymentIntent.metadata.endTime, // Add this in if we want to test failures ONLY ON LOCAL DEVELOPMENT
       customer_email: paymentIntent.metadata.customerEmail,
       customer_name: paymentIntent.metadata.customerName,
       customer_phone: paymentIntent.metadata.customerPhone,
@@ -227,11 +227,22 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'payment_intent.succeeded':
         await handlePaymentSuccess(supabaseAdmin, paymentIntent, facilityId)
-        break
+        // Return immediate success response
+        return new NextResponse(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
 
       case 'payment_intent.payment_failed':
         await handlePaymentFailure(supabaseAdmin, paymentIntent, facilityId)
-        break
+        return new NextResponse(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
 
       case 'payment_intent.processing':
         await createBooking(
@@ -241,17 +252,35 @@ export async function POST(request: Request) {
           BookingStatus.Pending,
           PaymentStatus.Processing
         )
-        break
-    }
+        return new NextResponse(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
 
-    return NextResponse.json({ received: true })
+      default:
+        // Return 200 for unhandled events to prevent retries
+        return new NextResponse(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+    }
   } catch (err) {
     console.error('❌ Error processing webhook:', err)
+    // Return 500 for internal errors to trigger retry
     return new NextResponse(
       JSON.stringify({
         error: err instanceof Error ? err.message : 'Webhook handler failed',
       }),
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     )
   }
 }
