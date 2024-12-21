@@ -12,8 +12,12 @@ import type { EventResizeDoneArg } from '@fullcalendar/interaction'
 interface UseCalendarEventsProps {
   facilityId: string
   availabilities: EnhancedAvailability[]
-  setAvailabilities: (availabilities: EnhancedAvailability[]) => void
-  createAvailability: (input: any) => Promise<any>
+  setAvailabilities: (
+    availabilities:
+      | EnhancedAvailability[]
+      | ((prev: EnhancedAvailability[]) => EnhancedAvailability[])
+  ) => void
+  createAvailability: (input: any) => Promise<EnhancedAvailability>
   updateAvailability: (input: any) => Promise<any>
   onEventClick: (availability: EnhancedAvailability) => void
 }
@@ -28,48 +32,29 @@ export function useCalendarEvents({
 }: UseCalendarEventsProps) {
   const handleSelect = useCallback(
     async (selectInfo: DateSelectArg) => {
+      const courtNumber = parseInt(selectInfo.resource?.id || '0', 10)
+
+      if (!courtNumber) {
+        console.error('Invalid court number')
+        return
+      }
+
       try {
-        const selectedStart = dayjs(selectInfo.startStr).toDate()
-        const resourceId = parseInt(selectInfo.resource?.id || '0', 10)
+        const start = dayjs(selectInfo.start).toISOString()
+        const end = dayjs(selectInfo.end).toISOString()
 
-        if (!resourceId) {
-          ErrorToast('Please select a court')
-          return
-        }
+        selectInfo.view.calendar.unselect()
 
-        const { isValid, error } = AvailabilityClientService.validateTimeConstraints(selectedStart)
-        if (!isValid) {
-          WarningToast(error!)
-          return
-        }
-
-        const calendarApi = selectInfo.view.calendar
-        calendarApi.unselect()
-
-        const newAvailability = {
-          facility_id: facilityId,
-          court_number: resourceId,
-          start_time: selectInfo.startStr,
-          end_time: selectInfo.endStr,
-          status: AvailabilityStatus.Available,
-          booking: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-
-        // Optimistic update
-        setAvailabilities([...availabilities, newAvailability as EnhancedAvailability])
-
-        await createAvailability({
-          courtNumber: resourceId,
-          startTime: selectInfo.startStr,
-          endTime: selectInfo.endStr,
+        const newAvailability = await createAvailability({
+          courtNumber,
+          startTime: start,
+          endTime: end,
           status: AvailabilityStatus.Available,
         })
+
+        setAvailabilities((prev: EnhancedAvailability[]) => [...prev, newAvailability])
       } catch (error) {
-        // Revert optimistic update
-        setAvailabilities(availabilities)
-        console.error('[Calendar Events] Create error:', error)
+        console.error('Failed to create availability:', error)
       }
     },
     [facilityId, availabilities, setAvailabilities, createAvailability]

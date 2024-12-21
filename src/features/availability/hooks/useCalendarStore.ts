@@ -6,7 +6,11 @@ import type { EnhancedAvailability } from '@/shared/types/graphql'
 
 interface CalendarStore {
   availabilities: EnhancedAvailability[]
-  setAvailabilities: (availabilities: EnhancedAvailability[]) => void
+  setAvailabilities: (
+    availabilities:
+      | EnhancedAvailability[]
+      | ((prev: EnhancedAvailability[]) => EnhancedAvailability[])
+  ) => void
   selectedDate: dayjs.Dayjs
   setSelectedDate: (date: dayjs.Dayjs) => void
   settings: {
@@ -27,7 +31,13 @@ export const useCalendarStore = create<CalendarStore>()(
   persist(
     (set) => ({
       availabilities: [],
-      setAvailabilities: (newAvailabilities) => set({ availabilities: newAvailabilities }),
+      setAvailabilities: (newAvailabilities) =>
+        set((state) => ({
+          availabilities:
+            typeof newAvailabilities === 'function'
+              ? newAvailabilities(state.availabilities)
+              : newAvailabilities,
+        })),
       selectedDate: dayjs(),
       setSelectedDate: (date) => set({ selectedDate: date }),
       settings: {

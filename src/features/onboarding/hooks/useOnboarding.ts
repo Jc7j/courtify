@@ -5,7 +5,7 @@ import { useCallback } from 'react'
 
 import { useUserStore } from '@/core/user/hooks/useUserStore'
 
-import { ErrorToast, InfoToast, SuccessToast } from '@/shared/components/ui'
+import { ErrorToast, SuccessToast } from '@/shared/components/ui'
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuth } from '@/shared/providers/AuthProvider'
 
