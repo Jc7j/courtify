@@ -17,18 +17,6 @@ export const runtime = 'nodejs'
 export const preferredRegion = 'auto'
 export const dynamic = 'force-dynamic'
 
-export const allowedMethods = ['POST']
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      Allow: 'POST',
-      'Content-Type': 'application/json',
-    },
-  })
-}
-
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -199,6 +187,13 @@ async function handlePaymentFailure(
 }
 
 export async function POST(request: Request) {
+  if (request.method !== 'POST') {
+    return new NextResponse(null, {
+      status: 405,
+      headers: { Allow: 'POST', 'Content-Type': 'application/json' },
+    })
+  }
+
   const body = await request.text()
   const headerList = await headers()
   const signature = headerList.get('stripe-signature')
